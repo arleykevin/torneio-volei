@@ -409,32 +409,24 @@ function speakNarration(text) {
 }
 
 function buildElevenLabsScript() {
-  const t1 = state.teams[0]?.name || 'Time 01';
-  const t2 = state.teams[1]?.name || 'Time 02';
-  const t3 = state.teams[2]?.name || 'Time 03';
-  const t4 = state.teams[3]?.name || 'Time 04';
+  const t1 = state.teams[0]?.name || 'Time 1';
+  const t2 = state.teams[1]?.name || 'Time 2';
+  const t3 = state.teams[2]?.name || 'Time 3';
+  const t4 = state.teams[3]?.name || 'Time 4';
 
   return [
-    `=== ROTEIRO DE NARRAÇÃO ESPORTIVA PARA ELEVENLABS ===`,
-    `(Dica: Use o modelo Eleven Multilingual v2 com voz energética!)`,
-    ``,
-    `[ÁUDIO 1 - PONTO ${t1.toUpperCase()}]`,
-    `Ponto para o ${t1}! ... Que jogadaça na quadra!`,
-    ``,
-    `[ÁUDIO 2 - PONTO ${t2.toUpperCase()}]`,
-    `Ponto para o ${t2}! ... Cravou no chão sem chance de defesa!`,
-    ``,
-    `[ÁUDIO 3 - PONTO ${t3.toUpperCase()}]`,
-    `Ponto para o ${t3}! ... Virada de bola, vai pro saque!`,
-    ``,
-    `[ÁUDIO 4 - PONTO ${t4.toUpperCase()}]`,
-    `Ponto para o ${t4}! ... Bloqueio monstro na rede!`,
-    ``,
-    `[ÁUDIO 5 - MATCH POINT / DECISÃO]`,
-    `Atenção galera! ... É Match Point! ... Ponto decisivo na quadra, segura a emoção!`,
-    ``,
-    `[ÁUDIO 6 - VITÓRIA DA PARTIDA]`,
-    `Fim de papo na quadra! ... Vitória confirmada! ... Quem ganha fica, e já chama o próximo time da fila!`
+    `Ponto para o ${t1}.`,
+    `Ponto para o ${t2}.`,
+    `Ponto para o ${t3}.`,
+    `Ponto para o ${t4}.`,
+    `Match point para o ${t1}.`,
+    `Match point para o ${t2}.`,
+    `Match point para o ${t3}.`,
+    `Match point para o ${t4}.`,
+    `${t1} ganhou a partida.`,
+    `${t2} ganhou a partida.`,
+    `${t3} ganhou a partida.`,
+    `${t4} ganhou a partida.`
   ].join('\n');
 }
 
@@ -908,15 +900,14 @@ function addPointToSide(sideKey) {
     const mpTeam = mpSide === 'A' ? teamA : teamB;
     playCustomAudioOrSpeak(
       'matchpoint',
-      `Ponto para ${scoringTeamObj.name}! ${match.scoreA} a ${match.scoreB}. Atenção quadra, Match Point para ${mpTeam.name}!`
+      `Ponto para ${scoringTeamObj.name}. Match point para ${mpTeam.name}.`
     );
   } else {
     playSound('point');
     triggerHaptic(25);
-    const sideOutPhrase = isSideOut ? 'Virada de bola! ' : '';
     playCustomAudioOrSpeak(
       customPointSlot,
-      `${sideOutPhrase}Ponto para ${scoringTeamObj.name}! ${match.scoreA} a ${match.scoreB}!`
+      `Ponto para ${scoringTeamObj.name}.`
     );
   }
 
@@ -1022,7 +1013,7 @@ function finalizeMatchFromLive(match) {
 
   playCustomAudioOrSpeak(
     'victory',
-    `Fim de partida! Vitória do ${winnerName} por ${match.scoreA} a ${match.scoreB}! Próximo confronto na quadra: ${nextTeamA.name} contra ${nextTeamB.name}!`
+    `${winnerName} ganhou a partida.`
   );
 
   showToast(
@@ -2124,20 +2115,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-test-voice-point')?.addEventListener('click', () => {
-    const t1 = state.teams[0]?.name || 'Time 01';
+    const t1 = state.teams[0]?.name || 'Time 1';
     state.voiceEnabled = true;
     renderHeaderAndNav();
-    playCustomAudioOrSpeak('point_t1', `Ponto para o ${t1}! Quinze a treze na quadra!`);
+    playCustomAudioOrSpeak('point_t1', `Ponto para o ${t1}.`);
   });
 
   document.getElementById('btn-test-voice-win')?.addEventListener('click', () => {
-    const t1 = state.teams[0]?.name || 'Time 01';
-    const t3 = state.teams[2]?.name || 'Time 03';
+    const t1 = state.teams[0]?.name || 'Time 1';
     state.voiceEnabled = true;
     renderHeaderAndNav();
     playCustomAudioOrSpeak(
       'victory',
-      `Fim de partida! Vitória do ${t1}! Quem ganha fica na quadra, e já entra o ${t3}!`
+      `${t1} ganhou a partida.`
     );
   });
 
