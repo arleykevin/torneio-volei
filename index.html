@@ -311,9 +311,24 @@
         </div>
       </div>
 
-      <!-- Soundboard de Deboche Instantâneo (Acertou vs Errou) -->
-      <div class="glass-card deboche-soundboard-bar" style="padding:12px 16px;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <!-- Soundboard de Locução Oficial ElevenLabs & Deboche Instantâneo -->
+      <div class="glass-card deboche-soundboard-bar" style="padding:12px 16px;margin-bottom:16px;display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <span class="toolbar-label" style="color:#38bdf8;display:flex;align-items:center;gap:6px;">
+            🎙️ LOCUÇÃO OFICIAL ELEVENLABS (TOCA SOZINHO NO JOGO OU CLIQUE PARA SOLTAR):
+          </span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;justify-content:flex-end;">
+            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t1')">🔥 Match Point T1</button>
+            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t2')">🔥 Match Point T2</button>
+            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t3')">🔥 Match Point T3</button>
+            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t4')">🔥 Match Point T4</button>
+            <button type="button" class="chip-btn" onclick="triggerDebocheAudio('victory_t1')">🏆 Vitória T1</button>
+            <button type="button" class="chip-btn" onclick="triggerDebocheAudio('victory_t2')">🏆 Vitória T2</button>
+            <button type="button" class="chip-btn" onclick="triggerDebocheAudio('victory_t3')">🏆 Vitória T3</button>
+            <button type="button" class="chip-btn" onclick="triggerDebocheAudio('victory_t4')">🏆 Vitória T4</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid rgba(148,163,184,0.12);padding-top:8px;">
           <span class="toolbar-label" style="color:#f472b6;display:flex;align-items:center;gap:6px;">
             💅 SOUNDBOARD DEBOCHE NA HORA (TOQUE PARA SOLTAR O ÁUDIO):
           </span>

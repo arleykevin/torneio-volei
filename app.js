@@ -483,6 +483,14 @@ function speakNarration(text) {
 }
 
 const DEBOCHE_LINES = {
+  matchpoint_t1: 'Atenção! É Match Point para o Time 1!',
+  matchpoint_t2: 'Atenção! É Match Point para o Time 2!',
+  matchpoint_t3: 'Atenção! É Match Point para o Time 3!',
+  matchpoint_t4: 'Atenção! É Match Point para o Time 4!',
+  victory_t1: 'Fim de jogo! O Time 1 ganhou a partida!',
+  victory_t2: 'Fim de jogo! O Time 2 ganhou a partida!',
+  victory_t3: 'Fim de jogo! O Time 3 ganhou a partida!',
+  victory_t4: 'Fim de jogo! O Time 4 ganhou a partida!',
   slay_1: 'Aiiin, PISOU MENOS, querida! Nem precisei suar o glitter!',
   slay_2: 'ENTREGOU TUDO, mona! Aceita ou surta, bebê!',
   slay_3: 'Milagre! Até que enfim a gata acertou UMA bola dentro da quadra!',
