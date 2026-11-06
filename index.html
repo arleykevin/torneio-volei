@@ -11,16 +11,16 @@
 
   <title>Vôlei Pro Arena • Placar & Jogos na Hora</title>
 
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" type="image/svg+xml" href="./volleyball-svgrepo-com (5).svg" />
-  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="manifest" href="./manifest.json?v=4.2.0" />
+  <link rel="icon" type="image/png" href="./logo.png?v=4.2.0" />
+  <link rel="apple-touch-icon" href="./icon-192.png?v=4.2.0" />
 
   <!-- Modern Typography (with offline system fallback) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.1.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.2.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -41,7 +41,7 @@
     <div class="header-inner">
       <div class="brand-group">
         <div class="brand-logo" aria-hidden="true">
-          <img src="./volleyball-svgrepo-com (5).svg" alt="" width="32" height="32" class="brand-ball-svg" />
+          <img src="./logo.png?v=4.2.0" alt="Logo Vôlei" width="44" height="44" class="brand-ball-svg brand-official-logo" />
           <span class="live-dot"></span>
         </div>
         <div class="brand-text">
@@ -129,6 +129,9 @@
         <div class="banner-timer">
           <button id="btn-start-focus-match" class="btn-start-focus-match" type="button" title="Travar tela no placar gigante até o final da partida">
             ▶️ Iniciar Partida (Tela Fixa)
+          </button>
+          <button type="button" class="btn-reset-games-top" onclick="openResetGamesPinModal('scores_only')" title="Zerar todos os jogos e começar de novo (Protegido por senha)">
+            🔄 Zerar Jogos
           </button>
           <div class="timer-pill-box">
             <span class="timer-icon">⏱️</span>
@@ -360,10 +363,15 @@
             </div>
 
             <div class="rule-group">
-              <span class="toolbar-label">TELA</span>
-              <button id="btn-fullscreen-score" class="chip-btn" type="button">
-                📺 Tela Cheia
-              </button>
+              <span class="toolbar-label">TELA / REINICIAR</span>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button id="btn-fullscreen-score" class="chip-btn" type="button">
+                  📺 Tela Cheia
+                </button>
+                <button type="button" class="chip-btn danger-subtle" onclick="openResetGamesPinModal('scores_only')">
+                  🔄 Zerar Todos os Jogos
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -417,6 +425,9 @@
             </button>
             <button id="btn-generate-mini-round" class="chip-btn accent" type="button" title="Gerar automaticamente uma rodada de Vencedores x Perdedores">
               ⚡ Gerar Rodada (Mini-Torneio)
+            </button>
+            <button type="button" class="chip-btn danger-subtle" onclick="openResetGamesPinModal('scores_only')" title="Zerar todos os jogos e começar de novo do Jogo #1 (Pede senha)">
+              🔄 Zerar Todos os Jogos
             </button>
           </div>
         </div>
@@ -758,6 +769,9 @@
           </button>
           <button id="btn-print-summary" class="chip-btn" type="button">
             🖨️ Imprimir Súmula / Salvar PDF
+          </button>
+          <button type="button" class="chip-btn danger-subtle" onclick="openResetGamesPinModal('scores_only')">
+            🔄 Zerar Todos os Jogos e Recomeçar
           </button>
         </div>
       </div>
@@ -1215,9 +1229,71 @@
     </div>
   </div>
 
+  <!-- ==========================================
+       MODAL 9: CONFIRMAÇÃO COM SENHA (2026) PARA ZERAR TODOS OS JOGOS
+       ========================================== -->
+  <div id="modal-reset-pin" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-reset-pin-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow-tag">🔒 PROTEÇÃO CONTRA TOQUE ACIDENTAL</span>
+          <h3 id="modal-reset-pin-title" class="modal-title">🔄 Zerar Todos os Jogos e Começar de Novo</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-reset-pin" type="button" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body settings-modal-body">
+        <p class="modal-hint" style="margin-bottom:12px;">
+          Para evitar que alguém apague o campeonato sem querer, digite a <strong>senha de confirmação</strong> abaixo para zerar todos os jogos e recomeçar do <strong>Jogo #1 (0 × 0)</strong>:
+        </p>
+
+        <div class="reset-mode-options">
+          <label class="radio-card active" id="label-reset-scores-only">
+            <input type="radio" name="resetPinMode" value="scores_only" checked />
+            <div>
+              <strong>🔄 Zerar Jogos e Ranking (Manter Times)</strong>
+              <small>Apaga os placares e recomeça do Jogo #1 mantendo as equipes escaladas</small>
+            </div>
+          </label>
+          <label class="radio-card" id="label-reset-factory">
+            <input type="radio" name="resetPinMode" value="factory" />
+            <div>
+              <strong>⚠️ Reiniciar Tudo do Zero (Limpar Times)</strong>
+              <small>Reseta jogos e times do dia (seu ⭐ Elenco Fixo continua salvo)</small>
+            </div>
+          </label>
+        </div>
+
+        <div class="setting-field" style="margin-top:14px;">
+          <label for="input-reset-pin" class="toolbar-label" style="text-align:center;display:block;">DIGITE A SENHA DE SEGURANÇA</label>
+          <input
+            type="password"
+            id="input-reset-pin"
+            class="modern-input pin-code-input"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="8"
+            placeholder="••••"
+            autocomplete="off"
+          />
+          <p id="reset-pin-error" class="pin-error-msg hidden">
+            ❌ Senha incorreta! Digite a senha correta para zerar os jogos.
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="chip-btn" data-close-modal="modal-reset-pin" type="button">Cancelar</button>
+        <button id="btn-confirm-reset-pin" class="chip-btn danger" type="button" style="font-weight:800;padding:10px 18px;">
+          🔓 Confirmar e Zerar Jogos
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="./volei-ui.js?v=4.1.0"></script>
+  <script src="./volei-ui.js?v=4.2.0"></script>
 </body>
 </html>

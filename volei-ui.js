@@ -4372,24 +4372,121 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsText(file);
   });
 
-  document.getElementById('btn-reset-scores-only').addEventListener('click', () => {
-    state.matches = createMiniTorneioBlock(1, 1, state.teams);
-    state.liveMatchId = 1;
-    state.courtStreakCount = 0;
-    state.courtStreakTeamId = null;
-    syncWaitingQueueWithCurrentMatch();
+  // ==========================================
+  // RESET DE TODOS OS JOGOS PROTEGIDO POR SENHA (2026)
+  // ==========================================
+  const RESET_SECURITY_PIN = '2026';
+
+  function syncResetModeRadioUI(selectedMode) {
+    const radios = document.querySelectorAll('input[name="resetPinMode"]');
+    radios.forEach((r) => {
+      r.checked = r.value === selectedMode;
+    });
+    document.getElementById('label-reset-scores-only')?.classList.toggle('active', selectedMode === 'scores_only');
+    document.getElementById('label-reset-factory')?.classList.toggle('active', selectedMode === 'factory');
+  }
+
+  window.openResetGamesPinModal = function (mode = 'scores_only') {
+    const resolvedMode = mode === 'factory' ? 'factory' : 'scores_only';
+    syncResetModeRadioUI(resolvedMode);
+
+    const pinInput = document.getElementById('input-reset-pin');
+    const pinError = document.getElementById('reset-pin-error');
+    if (pinInput) {
+      pinInput.value = '';
+      pinInput.classList.remove('pin-shake');
+    }
+    if (pinError) {
+      pinError.classList.add('hidden');
+    }
+
+    document.getElementById('modal-reset-pin')?.classList.remove('hidden');
+    setTimeout(() => {
+      pinInput?.focus();
+    }, 80);
+  };
+
+  function executeProtectedReset() {
+    const pinInput = document.getElementById('input-reset-pin');
+    const pinError = document.getElementById('reset-pin-error');
+    const enteredPin = (pinInput?.value || '').trim();
+
+    if (enteredPin !== RESET_SECURITY_PIN) {
+      playSound('undo');
+      triggerHaptic([60, 40, 80]);
+      if (pinError) pinError.classList.remove('hidden');
+      if (pinInput) {
+        pinInput.classList.remove('pin-shake');
+        void pinInput.offsetWidth;
+        pinInput.classList.add('pin-shake');
+        pinInput.select();
+      }
+      showToast('🔒 Senha incorreta! Digite a senha correta para zerar os jogos.', 'warn');
+      return;
+    }
+
+    const selectedRadio = document.querySelector('input[name="resetPinMode"]:checked');
+    const resetMode = selectedRadio ? selectedRadio.value : 'scores_only';
+
+    // Para o cronômetro se estiver rodando
+    if (timerRunning) {
+      timerRunning = false;
+      clearInterval(timerInterval);
+      const toggleBtn = document.getElementById('btn-timer-toggle');
+      if (toggleBtn) toggleBtn.textContent = '▶️';
+    }
+    timerSeconds = 0;
+    updateTimerDisplay();
+
+    // Sai do modo tela fixa caso esteja ativo
+    if (focusMatchActive) {
+      setFocusMatchMode(false);
+    }
+
+    if (resetMode === 'factory') {
+      const preservedName = state.tournamentName || 'VÔLEI INTERNO';
+      const preservedDate = state.tournamentDate || getTodayISO();
+      state = createDefaultState(preservedName, preservedDate);
+      state.sessionSetupConfirmed = true;
+      showToast('✅ Senha confirmada! Tudo foi reiniciado do zero no Jogo #1!', 'success');
+    } else {
+      state.matches = createMiniTorneioBlock(1, 1, state.teams);
+      state.liveMatchId = 1;
+      state.courtStreakCount = 0;
+      state.courtStreakTeamId = null;
+      syncWaitingQueueWithCurrentMatch();
+      showToast('✅ Senha confirmada! Todos os jogos foram zerados e recomeçaram do Jogo #1!', 'success');
+    }
+
+    playSound('whistle_short');
     saveState();
     renderAll();
-    document.getElementById('modal-settings').classList.add('hidden');
-    showToast('🔄 Histórico reiniciado no 1º Mini Torneio (Jogo 1, Jogo 2, Vencedores e Perdedores)!', 'info');
+    document.getElementById('modal-reset-pin')?.classList.add('hidden');
+    document.getElementById('modal-settings')?.classList.add('hidden');
+  }
+
+  document.querySelectorAll('input[name="resetPinMode"]').forEach((radio) => {
+    radio.addEventListener('change', (e) => {
+      syncResetModeRadioUI(e.target.value);
+    });
+  });
+
+  document.getElementById('btn-confirm-reset-pin')?.addEventListener('click', executeProtectedReset);
+
+  document.getElementById('input-reset-pin')?.addEventListener('keydown', (e) => {
+    document.getElementById('reset-pin-error')?.classList.add('hidden');
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeProtectedReset();
+    }
+  });
+
+  document.getElementById('btn-reset-scores-only').addEventListener('click', () => {
+    window.openResetGamesPinModal('scores_only');
   });
 
   document.getElementById('btn-reset-all-factory').addEventListener('click', () => {
-    state = createDefaultState();
-    saveState();
-    renderAll();
-    document.getElementById('modal-settings').classList.add('hidden');
-    showToast('✨ Sessão reiniciada do zero!', 'info');
+    window.openResetGamesPinModal('factory');
   });
 
   document.querySelectorAll('[data-close-modal]').forEach((btn) => {
