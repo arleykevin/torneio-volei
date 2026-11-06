@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=3.8.0" />
+  <link rel="stylesheet" href="./styles.css?v=3.9.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -373,17 +373,26 @@
             <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_narnia')">
               🤡 Mandou lá pra Nárnia!
             </button>
-            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_2')">
-              👑 Entregou tudo!
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_inimigas')">
+              🎁 Ponto de graça pras inimigas!
             </button>
-            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_2')">
-              👛 Que mão fofa!
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_aposenta')">
+              💀 Pede música e aposenta!
             </button>
-            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_3')">
-              🚧 A rede subiu?
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_close')">
+              📸 Muito close e pouco vôlei!
             </button>
-            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_4')">
-              💀 Aposenta logo!
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('deboche_lucinda')">
+              🗑️ Obrigado pelo toque, Lucinda!
+            </button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_maluca')">
+              🤪 Maluca! Hahaha!
+            </button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_doida')">
+              😂 Doida! Hahaha!
+            </button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_doida2')">
+              🤣 Doida! (2)
             </button>
           </div>
         </div>
@@ -584,6 +593,10 @@
               SORTEAR E MONTAR TIMES AGORA!
             </button>
 
+            <button id="btn-open-teams-image-left" class="btn-whatsapp-image full-width" type="button" style="margin-top:8px;">
+              🖼️ Gerar Imagem dos Times p/ Grupo do WhatsApp
+            </button>
+
             <div id="draw-audit-stamp" class="draw-audit-stamp hidden"></div>
           </div>
         </div>
@@ -606,8 +619,11 @@
                 <button id="btn-add-new-team" class="btn-primary" type="button">
                   + Novo Time
                 </button>
+                <button id="btn-open-teams-image-top" class="chip-btn whatsapp-img-chip" type="button">
+                  🖼️ Imagem p/ WhatsApp
+                </button>
                 <button id="btn-share-teams-whatsapp" class="chip-btn accent" type="button">
-                  📲 Copiar Times
+                  📲 Copiar Texto
                 </button>
               </div>
             </div>
@@ -1194,9 +1210,52 @@
     </div>
   </div>
 
+  <!-- ==========================================
+       MODAL 8: IMAGEM OFICIAL DOS TIMES P/ GRUPO DO WHATSAPP
+       ========================================== -->
+  <div id="modal-teams-image" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-teams-img-title">
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow-tag">CARD OFICIAL DOS TIMES • PRONTO PARA ENVIAR NO GRUPO</span>
+          <h3 id="modal-teams-img-title" class="modal-title">🖼️ Imagem da Escalação dos Times (WhatsApp)</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-teams-image" type="button" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="teams-image-actions-top">
+          <button id="btn-share-image-native" class="btn-whatsapp-share-main" type="button">
+            📲 Enviar Imagem Direto no WhatsApp
+          </button>
+          <button id="btn-copy-image-clipboard" class="chip-btn accent" type="button">
+            📋 Copiar Imagem (Colar c/ Ctrl+V)
+          </button>
+          <button id="btn-download-teams-image" class="chip-btn" type="button">
+            ⬇️ Baixar PNG
+          </button>
+        </div>
+
+        <p class="modal-hint" style="margin-top:8px;margin-bottom:10px;text-align:center;">
+          💡 No celular, toque em <strong>"Enviar Imagem Direto no WhatsApp"</strong> (ou segure o dedo sobre a imagem abaixo) para mandar no grupo!
+        </p>
+
+        <div class="teams-image-preview-wrap">
+          <canvas id="teams-share-canvas" hidden></canvas>
+          <img id="teams-share-preview-img" class="teams-share-preview-img" alt="Card de Escalação dos Times" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btn-share-teams-text-modal" class="chip-btn" type="button">📝 Copiar Também em Texto</button>
+        <button class="btn-primary" data-close-modal="modal-teams-image" type="button">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="./volei-ui.js?v=3.8.0"></script>
+  <script src="./volei-ui.js?v=3.9.0"></script>
 </body>
 </html>

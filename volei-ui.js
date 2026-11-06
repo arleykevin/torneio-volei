@@ -256,9 +256,20 @@ const customAudioMap = {
   slay_passada: './audio/deboche_passada.mp3',
   slay_milagre: './audio/deboche_milagre.mp3',
   flop_narnia: './audio/deboche_narnia.mp3',
+  flop_inimigas: './audio/deboche_inimigas.mp3',
+  flop_aposenta: './audio/deboche_aposenta.mp3',
+  flop_close: './audio/deboche_close.mp3',
+  deboche_lucinda: './audio/deboche_lucinda.mp3',
+  deboche_maluca: './audio/deboche_maluca.mp3',
+  deboche_doida: './audio/deboche_doida.mp3',
+  deboche_doida2: './audio/deboche_doida2.mp3',
   slay_1: './audio/deboche_passada.mp3',
+  slay_2: './audio/deboche_lucinda.mp3',
   slay_3: './audio/deboche_milagre.mp3',
-  flop_1: './audio/deboche_narnia.mp3'
+  flop_1: './audio/deboche_narnia.mp3',
+  flop_2: './audio/deboche_close.mp3',
+  flop_3: './audio/deboche_inimigas.mp3',
+  flop_4: './audio/deboche_aposenta.mp3'
 };
 const broadcastChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('volei_arena_sync_v3') : null;
 
@@ -607,16 +618,23 @@ const DEBOCHE_LINES = {
   victory_t2: 'Fim de jogo! O Time 2 ganhou a partida!',
   victory_t3: 'Fim de jogo! O Time 3 ganhou a partida!',
   victory_t4: 'Fim de jogo! O Time 4 ganhou a partida!',
-  slay_passada: 'Passada! Cravou na cara da inimiga e ainda saiu desfilando!',
-  slay_milagre: 'Milagre, senhor! Até que enfim a gata acertou uma bola dentro da quadra!',
-  flop_narnia: 'Minha filha, a quadra é aqui embaixo! Mandou a bola lá pra Nárnia!',
-  slay_1: 'Passada! Cravou na cara da inimiga e ainda saiu desfilando!',
-  slay_2: 'ENTREGOU TUDO, mona! Aceita ou surta, bebê!',
-  slay_3: 'Milagre, senhor! Até que enfim a gata acertou uma bola dentro da quadra!',
-  flop_1: 'Minha filha, a quadra é aqui embaixo! Mandou a bola lá pra Nárnia!',
-  flop_2: 'Aiiin, faltou força na munheca, querida? Bateu com a mão fofa!',
-  flop_3: 'Amor, a rede subiu sozinha ou foi você que tropeçou no salto?!',
-  flop_4: 'Que vergonha, gata! Pede música no Fantástico e APOSENTA logo!'
+  slay_passada: 'Passada! Ela não fez o ponto, ela saiu desfilando!',
+  slay_milagre: 'Milagre! Finalmente acertou uma bola, já pode chover!',
+  flop_narnia: 'Meu Deus, gata! Mandou essa bola lá pra Nárnia!',
+  flop_inimigas: 'Gata, você tá jogando pelo outro time, é? Só dá ponto de graça pras inimigas!',
+  flop_aposenta: 'Que vergonha, gata! Pede música no Fantástico e aposenta logo!',
+  flop_close: 'Muito close e pouco vôlei, hein amor? Tá na quadra só pra tirar foto?',
+  deboche_lucinda: 'Obrigado pelo toque, Lucinda! O que eu mais prezo na vida é conselho de mendiga!',
+  deboche_maluca: 'Hahaha! Maluca! Hahaha!',
+  deboche_doida: 'Hahaha! Doida! Hahaha!',
+  deboche_doida2: 'Hahaha! Doida! Hahaha! (2)',
+  slay_1: 'Passada! Ela não fez o ponto, ela saiu desfilando!',
+  slay_2: 'Obrigado pelo toque, Lucinda! O que eu mais prezo na vida é conselho de mendiga!',
+  slay_3: 'Milagre! Finalmente acertou uma bola, já pode chover!',
+  flop_1: 'Meu Deus, gata! Mandou essa bola lá pra Nárnia!',
+  flop_2: 'Muito close e pouco vôlei, hein amor? Tá na quadra só pra tirar foto?',
+  flop_3: 'Gata, você tá jogando pelo outro time, é? Só dá ponto de graça pras inimigas!',
+  flop_4: 'Que vergonha, gata! Pede música no Fantástico e aposenta logo!'
 };
 
 window.triggerDebocheAudio = function (slotKey) {
@@ -2190,10 +2208,354 @@ function executeTeamDraw() {
   launchConfetti();
   saveState();
   renderAll();
+  openTeamsImageModal();
   showToast(
-    `🎲 <strong>${targetTeamCount} Times sorteados com sucesso!</strong> Pronto para jogar.`,
+    `🎲 <strong>${targetTeamCount} Times sorteados!</strong> Imagem pronta para compartilhar no WhatsApp.`,
     'success'
   );
+}
+
+/* ==========================================
+   GERADOR DE IMAGEM (CARD HD) DOS TIMES P/ WHATSAPP
+   ========================================== */
+function hexToRgba(hex, alpha = 1) {
+  const clean = String(hex || '#38bdf8').replace('#', '');
+  const bigint = parseInt(clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function drawRoundedRectPath(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+
+function truncateCanvasText(ctx, text, maxWidth) {
+  const str = String(text || '');
+  if (ctx.measureText(str).width <= maxWidth) return str;
+  let clipped = str;
+  while (clipped.length > 1 && ctx.measureText(clipped + '…').width > maxWidth) {
+    clipped = clipped.slice(0, -1);
+  }
+  return clipped + '…';
+}
+
+function renderTeamsShareCanvas() {
+  const canvas = document.getElementById('teams-share-canvas');
+  if (!canvas) return null;
+
+  const teams = state.teams || [];
+  const cols = 2;
+  const rowsCount = Math.ceil(teams.length / cols);
+  const maxPlayersInTeam = Math.max(4, ...teams.map((t) => (t.players ? t.players.length : 0)));
+
+  const W = 1080;
+  const padX = 48;
+  const gap = 28;
+  const cardW = Math.floor((W - padX * 2 - gap) / cols);
+  const playerRowH = 54;
+  const cardHeaderH = 106;
+  const cardPadBottom = 24;
+  const cardH = cardHeaderH + maxPlayersInTeam * (playerRowH + 10) + cardPadBottom;
+
+  const headerSectionH = 230;
+  const matchesSectionH = 155;
+  const footerSectionH = 75;
+  const H = headerSectionH + rowsCount * cardH + (rowsCount - 1) * gap + matchesSectionH + footerSectionH;
+
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // 1. Background Stadium Gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+  bgGrad.addColorStop(0, '#050914');
+  bgGrad.addColorStop(0.5, '#0b1326');
+  bgGrad.addColorStop(1, '#060a17');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle ambient glow top-left and bottom-right
+  const glow1 = ctx.createRadialGradient(180, 110, 10, 180, 110, 460);
+  glow1.addColorStop(0, 'rgba(56, 189, 248, 0.18)');
+  glow1.addColorStop(1, 'rgba(56, 189, 248, 0)');
+  ctx.fillStyle = glow1;
+  ctx.fillRect(0, 0, W, H);
+
+  const glow2 = ctx.createRadialGradient(W - 160, H - 140, 10, W - 160, H - 140, 460);
+  glow2.addColorStop(0, 'rgba(250, 204, 21, 0.14)');
+  glow2.addColorStop(1, 'rgba(250, 204, 21, 0)');
+  ctx.fillStyle = glow2;
+  ctx.fillRect(0, 0, W, H);
+
+  // 2. Top Header Banner
+  ctx.save();
+  drawRoundedRectPath(ctx, padX, 34, W - padX * 2, 166, 24);
+  const headerGrad = ctx.createLinearGradient(padX, 34, W - padX, 200);
+  headerGrad.addColorStop(0, 'rgba(15, 23, 42, 0.95)');
+  headerGrad.addColorStop(1, 'rgba(30, 41, 59, 0.88)');
+  ctx.fillStyle = headerGrad;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+  ctx.stroke();
+
+  // Eyebrow pill
+  ctx.font = '800 18px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+  ctx.fillStyle = '#facc15';
+  ctx.fillText('🏐 ESCALAÇÃO OFICIAL DOS TIMES • VÔLEI PRO ARENA', padX + 30, 76);
+
+  // Main Tournament Name
+  ctx.font = '900 46px "Outfit", "Segoe UI", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  const titleStr = truncateCanvasText(ctx, (state.tournamentName || 'VÔLEI INTERNO').toUpperCase(), W - padX * 2 - 60);
+  ctx.fillText(titleStr, padX + 30, 132);
+
+  // Date & Summary line
+  const totalPlayers = teams.reduce((acc, t) => acc + (t.players ? t.players.length : 0), 0);
+  ctx.font = '700 21px "JetBrains Mono", "Segoe UI", monospace';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText(
+    `📅 Data: ${formatDateBr(state.tournamentDate)}   •   🛡️ ${teams.length} Equipes   •   👥 ${totalPlayers} Jogadores`,
+    padX + 30,
+    174
+  );
+  ctx.restore();
+
+  // 3. Draw Each Team Card
+  teams.forEach((team, idx) => {
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    const x = padX + col * (cardW + gap);
+    const y = headerSectionH + row * (cardH + gap);
+    const teamColor = team.color || '#38bdf8';
+
+    ctx.save();
+    drawRoundedRectPath(ctx, x, y, cardW, cardH, 22);
+    const cardGrad = ctx.createLinearGradient(x, y, x, y + cardH);
+    cardGrad.addColorStop(0, hexToRgba(teamColor, 0.28));
+    cardGrad.addColorStop(0.55, 'rgba(15, 23, 42, 0.94)');
+    cardGrad.addColorStop(1, 'rgba(9, 14, 28, 0.97)');
+    ctx.fillStyle = cardGrad;
+    ctx.fill();
+
+    // Top colored accent bar inside card
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle = teamColor;
+    ctx.fillRect(x, y, cardW, 8);
+    ctx.restore();
+
+    // Card subtle border
+    drawRoundedRectPath(ctx, x, y, cardW, cardH, 22);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.5);
+    ctx.stroke();
+
+    // Team Badge Circle
+    const badgeX = x + 24;
+    const badgeY = y + 26;
+    const badgeSize = 54;
+    drawRoundedRectPath(ctx, badgeX, badgeY, badgeSize, badgeSize, 16);
+    ctx.fillStyle = teamColor;
+    ctx.fill();
+
+    ctx.font = '900 24px "Outfit", "Segoe UI", sans-serif';
+    ctx.fillStyle = '#060913';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(idx + 1).padStart(2, '0'), badgeX + badgeSize / 2, badgeY + badgeSize / 2 + 1);
+
+    // Team Name
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = '900 31px "Outfit", "Segoe UI", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    const cleanTeamName = truncateCanvasText(ctx, team.name || `Time 0${idx + 1}`, cardW - 210);
+    ctx.fillText(cleanTeamName, badgeX + badgeSize + 16, y + 54);
+
+    // Team Sub-meta (Player count + Average stars)
+    const players = Array.isArray(team.players) ? team.players : [];
+    const avgSkill =
+      players.length > 0
+        ? (players.reduce((acc, p) => acc + (Number(p.skill) || 3), 0) / players.length).toFixed(1)
+        : '—';
+    ctx.font = '700 17px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText(`${players.length} integrantes  •  Média ⭐ ${avgSkill}`, badgeX + badgeSize + 16, y + 80);
+
+    // Players List inside Card
+    if (players.length === 0) {
+      drawRoundedRectPath(ctx, x + 20, y + cardHeaderH, cardW - 40, playerRowH, 12);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+      ctx.fill();
+      ctx.font = '600 19px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('Nenhum jogador escalado neste time', x + 36, y + cardHeaderH + 34);
+    } else {
+      players.forEach((p, pIdx) => {
+        const py = y + cardHeaderH + pIdx * (playerRowH + 10);
+        drawRoundedRectPath(ctx, x + 20, py, cardW - 40, playerRowH, 13);
+        ctx.fillStyle = 'rgba(9, 14, 28, 0.78)';
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+        ctx.stroke();
+
+        // Number index
+        ctx.font = '800 20px "JetBrains Mono", monospace';
+        ctx.fillStyle = teamColor;
+        ctx.fillText(`${pIdx + 1}.`, x + 34, py + 34);
+
+        // Player Name
+        ctx.font = '800 22px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+        ctx.fillStyle = '#f8fafc';
+        const pName = truncateCanvasText(ctx, p.name || 'Jogador', cardW - 245);
+        ctx.fillText(pName, x + 68, py + 34);
+
+        // Role Badge & Stars on the right
+        const roleShort = getRoleShortCode(p.role || 'Geral');
+        const starsCount = Math.max(1, Math.min(5, Number(p.skill) || 3));
+        const starsStr = '★'.repeat(starsCount);
+
+        ctx.textAlign = 'right';
+        ctx.font = '800 18px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#facc15';
+        ctx.fillText(starsStr, x + cardW - 34, py + 33);
+
+        const starsWidth = ctx.measureText(starsStr).width;
+        ctx.font = '700 15px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+        ctx.fillStyle = '#7dd3fc';
+        ctx.fillText(roleShort.toUpperCase(), x + cardW - 44 - starsWidth, py + 32);
+        ctx.textAlign = 'left';
+      });
+    }
+
+    ctx.restore();
+  });
+
+  // 4. Opening Matches Strip ("PRIMEIROS CONFRONTOS")
+  const matchesY = headerSectionH + rowsCount * cardH + (rowsCount - 1) * gap + 24;
+  ctx.save();
+  drawRoundedRectPath(ctx, padX, matchesY, W - padX * 2, 118, 20);
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(250, 204, 21, 0.35)';
+  ctx.stroke();
+
+  ctx.font = '800 17px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+  ctx.fillStyle = '#facc15';
+  ctx.fillText('⚡ PRIMEIROS CONFRONTOS DA TABELA (1º MINI TORNEIO)', padX + 26, matchesY + 36);
+
+  const t1Name = teams[0]?.name || 'Time 01';
+  const t2Name = teams[1]?.name || 'Time 02';
+  const t3Name = teams[2]?.name || 'Time 03';
+  const t4Name = teams[3]?.name || 'Time 04';
+
+  ctx.font = '800 24px "Outfit", "Segoe UI", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  if (teams.length >= 4) {
+    ctx.fillText(`🏐 Jogo 1:  ${t1Name}  ×  ${t2Name}`, padX + 26, matchesY + 80);
+    ctx.fillText(`🏐 Jogo 2:  ${t3Name}  ×  ${t4Name}`, padX + 510, matchesY + 80);
+  } else if (teams.length === 3) {
+    ctx.fillText(`🏐 Jogo 1:  ${t1Name}  ×  ${t2Name}   |   Espera: ${t3Name}`, padX + 26, matchesY + 80);
+  } else {
+    ctx.fillText(`🏐 Jogo 1:  ${t1Name}  ×  ${t2Name}`, padX + 26, matchesY + 80);
+  }
+  ctx.restore();
+
+  // 5. Footer Audit Stamp
+  const footerY = H - 28;
+  ctx.font = '600 17px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#64748b';
+  const stampText = state.lastDrawStamp || `Gerado em ${new Date().toLocaleString('pt-BR')}`;
+  ctx.fillText(`✅ ${stampText}  •  Sala #${(state.roomCode || 'VOLEI1').toUpperCase()}`, padX + 6, footerY);
+
+  const previewImg = document.getElementById('teams-share-preview-img');
+  if (previewImg) {
+    previewImg.src = canvas.toDataURL('image/png');
+  }
+  return canvas;
+}
+
+function openTeamsImageModal() {
+  renderTeamsShareCanvas();
+  document.getElementById('modal-teams-image')?.classList.remove('hidden');
+}
+
+function getTeamsShareCaptionText() {
+  let text = `🏐 *ESCALAÇÃO OFICIAL — ${state.tournamentName}* (${formatDateBr(state.tournamentDate)})\n\n`;
+  state.teams.forEach((t) => {
+    const names = t.players.map((p) => p.name).join(', ') || 'A definir';
+    text += `🛡️ *${t.name}*: ${names}\n`;
+  });
+  return text.trim();
+}
+
+async function shareTeamsImageNative() {
+  const canvas = renderTeamsShareCanvas();
+  if (!canvas) return;
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) return;
+    const fileName = `times-volei-${state.tournamentDate || 'hoje'}.png`;
+    const file = new File([blob], fileName, { type: 'image/png' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `Escalação — ${state.tournamentName}`,
+          text: getTeamsShareCaptionText()
+        });
+        showToast('📲 Imagem enviada para o compartilhamento do WhatsApp!', 'success');
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+
+    // Fallback for Desktop / browsers without file share: copy image to clipboard + download
+    await copyTeamsImageToClipboard();
+  }, 'image/png');
+}
+
+async function copyTeamsImageToClipboard() {
+  const canvas = renderTeamsShareCanvas();
+  if (!canvas) return;
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) return;
+    if (navigator.clipboard && window.ClipboardItem) {
+      try {
+        const item = new ClipboardItem({ 'image/png': blob });
+        await navigator.clipboard.write([item]);
+        showToast('✅ <strong>Imagem copiada!</strong> Agora é só dar <strong>Ctrl+V</strong> (ou Colar) no grupo do WhatsApp!', 'success');
+        return;
+      } catch (_) {}
+    }
+    downloadTeamsImagePng();
+  }, 'image/png');
+}
+
+function downloadTeamsImagePng() {
+  const canvas = renderTeamsShareCanvas();
+  if (!canvas) return;
+  const url = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `escalacao-times-${state.tournamentDate || 'hoje'}.png`;
+  a.click();
+  showToast('⬇️ Imagem PNG dos times baixada! Envie no grupo do WhatsApp.', 'success');
 }
 
 /* ==========================================
@@ -3905,6 +4267,15 @@ document.addEventListener('DOMContentLoaded', () => {
       text += `🛡️ *${t.name}* (${t.players.length}): ${names}\n`;
     });
     copyTextToClipboard(text, '📲 Escalação dos times copiada para o WhatsApp!');
+  });
+
+  document.getElementById('btn-open-teams-image-left')?.addEventListener('click', openTeamsImageModal);
+  document.getElementById('btn-open-teams-image-top')?.addEventListener('click', openTeamsImageModal);
+  document.getElementById('btn-share-image-native')?.addEventListener('click', shareTeamsImageNative);
+  document.getElementById('btn-copy-image-clipboard')?.addEventListener('click', copyTeamsImageToClipboard);
+  document.getElementById('btn-download-teams-image')?.addEventListener('click', downloadTeamsImagePng);
+  document.getElementById('btn-share-teams-text-modal')?.addEventListener('click', () => {
+    copyTextToClipboard(getTeamsShareCaptionText(), '📝 Texto da escalação copiado para o WhatsApp!');
   });
 
   document.getElementById('scoring-mode-select').addEventListener('change', (e) => {

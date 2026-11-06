@@ -1,9 +1,9 @@
-const CACHE_NAME = 'volei-arena-v3.8.0';
+const CACHE_NAME = 'volei-arena-v3.9.0';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=3.8.0',
-  './volei-ui.js?v=3.8.0',
+  './styles.css?v=3.9.0',
+  './volei-ui.js?v=3.9.0',
   './manifest.json',
   './icon.svg',
   './icon-192.png',
@@ -19,6 +19,13 @@ const ASSETS = [
   './audio/deboche_passada.mp3',
   './audio/deboche_milagre.mp3',
   './audio/deboche_narnia.mp3',
+  './audio/deboche_inimigas.mp3',
+  './audio/deboche_aposenta.mp3',
+  './audio/deboche_close.mp3',
+  './audio/deboche_lucinda.mp3',
+  './audio/deboche_maluca.mp3',
+  './audio/deboche_doida.mp3',
+  './audio/deboche_doida2.mp3',
   './beach-volleyball-svgrepo-com.svg',
   './man-playing-volleyball-svgrepo-com.svg',
   './volleyball-ball-svgrepo-com.svg',
