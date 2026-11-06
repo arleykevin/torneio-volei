@@ -311,6 +311,38 @@
         </div>
       </div>
 
+      <!-- Soundboard de Deboche Instantâneo (Acertou vs Errou) -->
+      <div class="glass-card deboche-soundboard-bar" style="padding:12px 16px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <span class="toolbar-label" style="color:#f472b6;display:flex;align-items:center;gap:6px;">
+            💅 SOUNDBOARD DEBOCHE NA HORA (TOQUE PARA SOLTAR O ÁUDIO):
+          </span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;justify-content:flex-end;">
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_1')">
+              💅 Pisou menos!
+            </button>
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_2')">
+              👑 Entregou tudo!
+            </button>
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_3')">
+              🔥 Até que enfim acertou!
+            </button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_1')">
+              🤡 Que mico na rede!
+            </button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_2')">
+              👛 Faltou força na munheca!
+            </button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_3')">
+              🚧 A rede subiu, querida?
+            </button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_4')">
+              💀 Aposenta logo!
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Anti-Desfeita Audit Log & Recent Games Feed -->
       <div class="live-bottom-grid">
         <!-- Audit Log Point-by-Point -->
@@ -880,6 +912,30 @@
             <label class="chip-btn file-label-btn">
               🏆 MP3 Vitória da Partida
               <input type="file" data-audio-slot="victory" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              💅 MP3 Deboche Acertou 1
+              <input type="file" data-audio-slot="slay_1" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              👑 MP3 Deboche Acertou 2
+              <input type="file" data-audio-slot="slay_2" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              🤡 MP3 Deboche Errou 1
+              <input type="file" data-audio-slot="flop_1" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              👛 MP3 Deboche Errou 2
+              <input type="file" data-audio-slot="flop_2" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              🚧 MP3 Deboche Errou 3
+              <input type="file" data-audio-slot="flop_3" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              💀 MP3 Deboche Errou 4
+              <input type="file" data-audio-slot="flop_4" accept="audio/*" hidden />
             </label>
           </div>
           <span id="custom-audio-status" style="font-size:0.74rem;color:#6ee7b7;"></span>

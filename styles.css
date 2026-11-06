@@ -2599,6 +2599,28 @@ body {
   gap: 8px;
 }
 
+.chip-btn.deboche-hit {
+  background: rgba(236, 72, 153, 0.16);
+  border-color: rgba(236, 72, 153, 0.45);
+  color: #fbcfe8;
+}
+
+.chip-btn.deboche-hit:hover {
+  background: rgba(236, 72, 153, 0.3);
+  transform: translateY(-1px);
+}
+
+.chip-btn.deboche-miss {
+  background: rgba(244, 63, 94, 0.16);
+  border-color: rgba(244, 63, 94, 0.45);
+  color: #fecdd3;
+}
+
+.chip-btn.deboche-miss:hover {
+  background: rgba(244, 63, 94, 0.3);
+  transform: translateY(-1px);
+}
+
 /* ==========================================
    RESPONSIVE BREAKPOINTS
    ========================================== */

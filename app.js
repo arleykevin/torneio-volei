@@ -470,6 +470,24 @@ function speakNarration(text) {
   } catch (_) {}
 }
 
+const DEBOCHE_LINES = {
+  slay_1: 'Aiiin, PISOU MENOS, querida! Nem precisei suar o glitter!',
+  slay_2: 'ENTREGOU TUDO, mona! Aceita ou surta, bebê!',
+  slay_3: 'Milagre! Até que enfim a gata acertou UMA bola dentro da quadra!',
+  flop_1: 'Mona do céu... QUE MICO foi esse na rede?! Chama o SAMU!',
+  flop_2: 'Aiiin, faltou força na munheca, querida? Bateu com a mão fofa!',
+  flop_3: 'Amor, a rede subiu sozinha ou foi você que tropeçou no salto?!',
+  flop_4: 'Que vergonha, gata! Pede música no Fantástico e APOSENTA logo!'
+};
+
+window.triggerDebocheAudio = function (slotKey) {
+  const phrase = DEBOCHE_LINES[slotKey] || DEBOCHE_LINES.flop_1;
+  state.voiceEnabled = true;
+  renderHeaderAndNav();
+  playCustomAudioOrSpeak(slotKey, phrase);
+  showToast(`💅 <strong>Deboche na quadra:</strong> "${escapeHtml(phrase)}"`, 'info');
+};
+
 function buildElevenLabsScript() {
   const t1 = (state.teams[0]?.name || 'Time 1').toUpperCase();
   const t2 = (state.teams[1]?.name || 'Time 2').toUpperCase();
@@ -477,20 +495,24 @@ function buildElevenLabsScript() {
   const t4 = (state.teams[3]?.name || 'Time 4').toUpperCase();
 
   return [
+    `=== 1. PONTOS, MATCH POINT E VITÓRIA ===`,
     `PONTO... para o ${t1}!`,
     `PONTO... para o ${t2}!`,
     `PONTO... para o ${t3}!`,
     `PONTO... para o ${t4}!`,
-    ``,
     `É MATCH POINT — para o ${t1}!`,
-    `É MATCH POINT — para o ${t2}!`,
-    `É MATCH POINT — para o ${t3}!`,
-    `É MATCH POINT — para o ${t4}!`,
-    ``,
     `FIM DE JOGO! ... ${t1} — GANHOU a partida!`,
-    `FIM DE JOGO! ... ${t2} — GANHOU a partida!`,
-    `FIM DE JOGO! ... ${t3} — GANHOU a partida!`,
-    `FIM DE JOGO! ... ${t4} — GANHOU a partida!`
+    ``,
+    `=== 2. DEBOCHE QUANDO ACERTA (PISOU!) ===`,
+    `Aiiin... PISOU MENOS, querida! ... Nem precisei suar o glitter!`,
+    `ENTREGOU TUDO, mona! ... Aceita — ou SURTA, bebê!`,
+    `MILAGRE! ... Até que enfim a gata acertou UMA bola na quadra!`,
+    ``,
+    `=== 3. DEBOCHE QUANDO ERRA (QUE MICO!) ===`,
+    `Mona do céu... QUE MICO foi esse na rede?! ... Chama o SAMU!`,
+    `Aiiin... faltou força na munheca, querida? ... Bateu com a mão FOFA!`,
+    `Amor... a rede subiu sozinha — ou foi você que tropeçou no salto?!`,
+    `Que vergonha, gata! ... Pede música no Fantástico — e APOSENTA logo!`
   ].join('\n');
 }
 
