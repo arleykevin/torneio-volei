@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.12.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.13.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -261,9 +261,14 @@
         <span class="nav-text">Jogos</span>
         <span id="nav-jogos-badge" class="nav-badge">Jogo #1</span>
       </button>
-      <button class="nav-tab" data-tab="times" type="button">
+      <button class="nav-tab" data-tab="sorteio" type="button">
         <img src="./volleyball-player-motion-svgrepo-com.svg" alt="" class="nav-svg-icon mono-svg" />
         <span class="nav-text">Sorteio</span>
+        <span id="nav-sorteio-badge" class="nav-badge subtle">Sortear</span>
+      </button>
+      <button class="nav-tab" data-tab="times" type="button">
+        <img src="./volleyball-svgrepo-com (2).svg" alt="" class="nav-svg-icon" />
+        <span class="nav-text">Times</span>
         <span id="nav-times-badge" class="nav-badge subtle">Times</span>
       </button>
       <button class="nav-tab" data-tab="elenco" type="button">
@@ -662,195 +667,155 @@
     <!-- ==========================================
          TAB 3: DEFINIÇÃO & SORTEIO DE TIMES (3 OU 4)
          ========================================== -->
-    <section id="tab-times" class="tab-panel" aria-label="Definição e Sorteio de Times">
-      <div class="teams-layout-grid">
-        <!-- Left Column: Smart Player Draw ("Sorteio Sem Desfeita") -->
-        <div class="glass-card draw-panel-card">
-          <div class="card-header-row">
-            <div style="display:flex;align-items:center;gap:14px;">
-              <img src="./volleyball-player-motion-svgrepo-com.svg" alt="" width="42" height="42" class="mono-svg-gold" />
-              <div>
-                <span class="eyebrow-tag">TIMES DE 3 OU DE 4 • ZERO PANELA</span>
-                <h2 class="section-heading">Sorteador Flexível de Times</h2>
-                <p class="section-desc">
-                  Escolha se hoje os times serão de <strong>3 ou 4 jogadores</strong> (ou 3 ou 4 equipes) e sorteie na hora!
-                </p>
-              </div>
+    <!-- ==========================================
+         TAB 3: SORTEIO DE TIMES (SORTEADOR LIMPO)
+         ========================================== -->
+    <section id="tab-sorteio" class="tab-panel" aria-label="Sorteio de Times">
+      <div class="glass-card draw-panel-card single-panel">
+        <div class="card-header-row">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <img src="./volleyball-player-motion-svgrepo-com.svg" alt="" width="42" height="42" class="mono-svg-gold" />
+            <div>
+              <span class="eyebrow-tag">TIMES DE 3 OU DE 4 • ZERO PANELA</span>
+              <h2 class="section-heading">Sorteador Flexível de Times</h2>
+              <p class="section-desc">
+                Escolha o formato dos times e toque nos jogadores do Elenco que vieram jogar hoje!
+              </p>
             </div>
-          </div>
-
-          <!-- Flexible Team Format Selector (3 or 4 players per team / 3 or 4 teams) -->
-          <div class="format-selector-box">
-            <span class="toolbar-label">COMO DIVIDIR A GALERA HOJE?</span>
-            <div class="format-pills-grid">
-              <button type="button" class="format-pill active" data-draw-format="size_3">
-                <strong>Times de 3 (Trios)</strong>
-                <small>3 jogadores por equipe</small>
-              </button>
-              <button type="button" class="format-pill" data-draw-format="size_4">
-                <strong>Times de 4 (Quartetos)</strong>
-                <small>4 jogadores por equipe</small>
-              </button>
-              <button type="button" class="format-pill" data-draw-format="count_3">
-                <strong>3 Equipes no Total</strong>
-                <small>Divide todos em 3 times</small>
-              </button>
-              <button type="button" class="format-pill" data-draw-format="count_4">
-                <strong>4 Equipes no Total</strong>
-                <small>Divide todos em 4 times</small>
-              </button>
-            </div>
-          </div>
-
-          <!-- Quick 1-Click Picker from Saved Master Roster ("Elenco Fixo") -->
-          <div class="quick-roster-box">
-            <div class="quick-roster-header">
-              <span class="toolbar-label" style="margin-bottom:0;color:#fde047;">
-                ⭐ ELENCO PRÉ-CADASTRADO (TOQUE NO NOME PARA COLOCAR/TIRAR DE HOJE):
-              </span>
-              <button id="btn-goto-elenco-tab" class="text-link-btn" type="button">
-                Editar Elenco →
-              </button>
-            </div>
-            <div id="quick-roster-chips" class="quick-roster-chips"></div>
-          </div>
-
-          <!-- Add Single Player Form -->
-          <form id="add-player-form" class="add-player-form">
-            <input
-              type="text"
-              id="player-name-input"
-              class="modern-input"
-              placeholder="Nome de novo jogador(a)..."
-              autocomplete="off"
-            />
-            <select id="player-role-select" class="modern-select compact" title="Posição / Função">
-              <option value="Geral">Geral / Passe</option>
-              <option value="Levantador">Levantador(a)</option>
-              <option value="Atacante">Atacante / Ponta</option>
-              <option value="Bloqueador">Central / Bloqueio</option>
-              <option value="Defensor">Líbero / Defesa</option>
-            </select>
-            <select id="player-skill-select" class="modern-select compact" title="Nível para equilíbrio do sorteio">
-              <option value="5">⭐⭐⭐⭐⭐ (5 Estrelas)</option>
-              <option value="4">⭐⭐⭐⭐ (4 Estrelas)</option>
-              <option value="3" selected>⭐⭐⭐ (3 Estrelas)</option>
-              <option value="2">⭐⭐ (2 Estrelas)</option>
-              <option value="1">⭐ (1 Estrela)</option>
-            </select>
-            <button type="submit" class="btn-primary">
-              + Adicionar
-            </button>
-          </form>
-
-          <!-- Bulk Tools -->
-          <div class="bulk-player-tools">
-            <button id="btn-paste-whatsapp-list" class="chip-btn accent" type="button">
-              Importar Lista
-            </button>
-            <button id="btn-load-demo-12" class="chip-btn" type="button">
-              Exemplo 12 Jogadores
-            </button>
-            <button id="btn-clear-pool" class="chip-btn danger-subtle" type="button">
-              Limpar Lista
-            </button>
-          </div>
-
-          <!-- Pool List -->
-          <div class="pool-header-row">
-            <span id="pool-count-label" class="toolbar-label">JOGADORES PRESENTES HOJE (0)</span>
-            <span id="pool-math-hint" class="pool-hint">Toque nas estrelas ★ abaixo para mudar o nível na hora</span>
-          </div>
-
-          <div id="player-pool-list" class="player-pool-list"></div>
-
-          <!-- Draw Execution Actions -->
-          <div class="draw-actions-box">
-            <div class="draw-mode-selector">
-              <label class="radio-card active" id="label-mode-balanced">
-                <input type="radio" name="drawMode" value="balanced" checked />
-                <div>
-                  <strong>⚖️ Sorteio Equilibrado</strong>
-                  <small>Distribui levantadores e estrelas de forma justa</small>
-                </div>
-              </label>
-              <label class="radio-card" id="label-mode-random">
-                <input type="radio" name="drawMode" value="random" />
-                <div>
-                  <strong>🎲 100% Aleatório Puro</strong>
-                  <small>Sorteio cego total sem filtro de nível</small>
-                </div>
-              </label>
-            </div>
-
-            <button id="btn-run-team-draw" class="btn-accent-glow full-width" type="button">
-              <img src="./volleyball-svgrepo-com (5).svg" alt="" width="22" height="22" style="vertical-align:middle;margin-right:6px;" />
-              SORTEAR E MONTAR TIMES AGORA!
-            </button>
-
-            <button id="btn-open-teams-image-left" class="btn-whatsapp-image full-width" type="button" style="margin-top:8px;">
-              Gerar Imagem dos Times para WhatsApp
-            </button>
-
-            <div id="draw-audit-stamp" class="draw-audit-stamp hidden"></div>
           </div>
         </div>
 
-        <!-- Right Column: Dynamic Teams Configuration & Rosters -->
-        <div class="teams-cards-column">
-          <div class="glass-card teams-header-card">
-            <div class="card-header-row" style="margin-bottom:0;">
-              <div style="display:flex;align-items:center;gap:12px;">
-                <img src="./volleyball-svgrepo-com (2).svg" alt="" width="38" height="38" />
-                <div>
-                  <span class="eyebrow-tag">3, 4 OU MAIS EQUIPES • FLEXÍVEL</span>
-                  <h2 id="teams-column-heading" class="section-heading">Equipes do Dia</h2>
-                  <p class="section-desc">
-                    Adicione ou remova equipes livremente (3 times, 4 times...) e personalize escudos SVG e integrantes.
-                  </p>
-                </div>
+        <!-- Flexible Team Format Selector (3 or 4 players per team / 3 or 4 teams) -->
+        <div class="format-selector-box">
+          <span class="toolbar-label">COMO DIVIDIR A GALERA HOJE?</span>
+          <div class="format-pills-grid">
+            <button type="button" class="format-pill active" data-draw-format="size_3">
+              <strong>Times de 3 (Trios)</strong>
+              <small>3 jogadores por equipe</small>
+            </button>
+            <button type="button" class="format-pill" data-draw-format="size_4">
+              <strong>Times de 4 (Quartetos)</strong>
+              <small>4 jogadores por equipe</small>
+            </button>
+            <button type="button" class="format-pill" data-draw-format="count_3">
+              <strong>3 Equipes no Total</strong>
+              <small>Divide todos em 3 times</small>
+            </button>
+            <button type="button" class="format-pill" data-draw-format="count_4">
+              <strong>4 Equipes no Total</strong>
+              <small>Divide todos em 4 times</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick 1-Click Picker from Saved Master Roster ("Elenco Fixo") -->
+        <div class="quick-roster-box">
+          <div class="quick-roster-header">
+            <span class="toolbar-label" style="margin-bottom:0;color:#fde047;">
+              ELENCO FIXO (TOQUE NO NOME PARA COLOCAR/TIRAR DE HOJE):
+            </span>
+            <button id="btn-goto-elenco-tab" class="text-link-btn" type="button">
+              + Cadastrar / Gerenciar Elenco Fixo →
+            </button>
+          </div>
+          <div id="quick-roster-chips" class="quick-roster-chips"></div>
+        </div>
+
+        <!-- Pool List (Confirmados hoje) -->
+        <div class="pool-header-row">
+          <span id="pool-count-label" class="toolbar-label">JOGADORES PRESENTES HOJE (0)</span>
+          <span id="pool-math-hint" class="pool-hint">Toque nos jogadores do Elenco acima para escalar ou no ✕ para tirar</span>
+        </div>
+
+        <div id="player-pool-list" class="player-pool-list"></div>
+
+        <!-- Draw Execution Actions -->
+        <div class="draw-actions-box">
+          <div class="draw-mode-selector">
+            <label class="radio-card active" id="label-mode-balanced">
+              <input type="radio" name="drawMode" value="balanced" checked />
+              <div>
+                <strong>Sorteio Equilibrado</strong>
+                <small>Distribui levantadores e estrelas de forma justa</small>
               </div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button id="btn-add-new-team" class="btn-primary" type="button">
-                  Novo Time
-                </button>
-                <button id="btn-open-teams-image-top" class="chip-btn whatsapp-img-chip" type="button">
-                  Imagem dos Times
-                </button>
-                <button id="btn-share-teams-whatsapp" class="chip-btn accent" type="button">
-                  Copiar Texto
-                </button>
+            </label>
+            <label class="radio-card" id="label-mode-random">
+              <input type="radio" name="drawMode" value="random" />
+              <div>
+                <strong>100% Aleatório Puro</strong>
+                <small>Sorteio cego total sem filtro de nível</small>
               </div>
-            </div>
+            </label>
           </div>
 
-          <!-- BANNER DE JOGADORES DISPONÍVEIS & RESERVAS -->
-          <div id="available-players-card" class="glass-card available-players-card">
-            <div class="available-header-row">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <span class="available-pulse-dot"></span>
-                <div>
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <strong class="available-title">JOGADORES DISPONÍVEIS</strong>
-                    <span id="available-count-badge" class="badge-pill" style="font-size:0.68rem;padding:2px 7px;">0</span>
-                  </div>
-                  <span class="available-subtitle">
-                    Jogadores que ainda não estão em quadra ou foram tirados de um time (toque no botão do time para escalar):
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div id="available-players-chips" class="available-chips-wrap"></div>
-          </div>
+          <button id="btn-run-team-draw" class="btn-accent-glow full-width" type="button">
+            <img src="./volleyball-svgrepo-com (5).svg" alt="" width="22" height="22" style="vertical-align:middle;margin-right:6px;" />
+            SORTEAR E MONTAR TIMES AGORA!
+          </button>
 
-          <div id="four-teams-grid" class="four-teams-grid"></div>
+          <button id="btn-open-teams-image-left" class="btn-whatsapp-image full-width" type="button" style="margin-top:8px;">
+            Gerar Imagem dos Times para WhatsApp
+          </button>
+
+          <div id="draw-audit-stamp" class="draw-audit-stamp hidden"></div>
         </div>
       </div>
     </section>
 
     <!-- ==========================================
-         TAB 4: ⭐ ELENCO FIXO & ESTRELAS (PRÉ-CADASTRO DA GALERA)
+         TAB 4: EQUIPES DO DIA (TIMES FORMADOS)
          ========================================== -->
+    <section id="tab-times" class="tab-panel" aria-label="Equipes e Escalação do Dia">
+      <div class="teams-cards-column full-width">
+        <div class="glass-card teams-header-card">
+          <div class="card-header-row" style="margin-bottom:0;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <img src="./volleyball-svgrepo-com (2).svg" alt="" width="38" height="38" />
+              <div>
+                <span class="eyebrow-tag">TIMES DO DIA • ESCALAÇÃO</span>
+                <h2 id="teams-column-heading" class="section-heading">Equipes da Partida</h2>
+                <p class="section-desc">
+                  Confira a escalação, personalize cores e escudos ou gerencie jogadores disponíveis.
+                </p>
+              </div>
+            </div>
+            <div class="teams-top-actions">
+              <button id="btn-add-new-team" class="btn-primary" type="button">
+                + Novo Time
+              </button>
+              <button id="btn-open-teams-image-top" class="chip-btn whatsapp-img-chip" type="button">
+                Imagem dos Times
+              </button>
+              <button id="btn-share-teams-whatsapp" class="chip-btn accent" type="button">
+                Copiar Texto
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BANNER DE JOGADORES DISPONÍVEIS & RESERVAS -->
+        <div id="available-players-card" class="glass-card available-players-card">
+          <div class="available-header-row">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="available-pulse-dot"></span>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <strong class="available-title">JOGADORES DISPONÍVEIS (RESERVAS)</strong>
+                  <span id="available-count-badge" class="badge-pill" style="font-size:0.68rem;padding:2px 7px;">0</span>
+                </div>
+                <span class="available-subtitle">
+                  Jogadores fora de quadra. Escolha o time no menu para escalá-lo:
+                </span>
+              </div>
+            </div>
+          </div>
+          <div id="available-players-chips" class="available-chips-wrap"></div>
+        </div>
+
+        <div id="four-teams-grid" class="four-teams-grid"></div>
+      </div>
+    </section>
+
     <section id="tab-elenco" class="tab-panel" aria-label="Elenco Fixo e Edição de Estrelas">
       <div class="glass-card elenco-header-card">
         <div class="filter-bar-top">
@@ -1517,6 +1482,6 @@
 
   <!-- Multi-Device Real-Time WebSocket MQTT Engine (Paho MQTT) -->
   <script src="./paho-mqtt.min.js"></script>
-  <script src="./volei-ui.js?v=4.12.0"></script>
+  <script src="./volei-ui.js?v=4.13.0"></script>
 </body>
 </html>

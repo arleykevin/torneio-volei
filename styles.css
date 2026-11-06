@@ -6232,6 +6232,116 @@ html[data-theme="light"] .pin-error-msg {
   }
 }
 
+
+/* ==========================================
+   SEPARAÇÃO LIMPA: ABA SORTEIO & ABA TIMES (SEM TRANSBORDAMENTO)
+   ========================================== */
+#tab-sorteio,
+#tab-times {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+.draw-panel-card.single-panel {
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.teams-cards-column.full-width {
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.teams-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  /* 6 Abas perfeitamente proporcionadas */
+  .main-nav {
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 2px !important;
+    padding: 0 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .nav-tab {
+    padding: 6px 1px !important;
+    font-size: 0.58rem !important;
+    min-width: 0 !important;
+  }
+
+  .nav-text {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+  }
+
+  .teams-top-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .teams-top-actions #btn-add-new-team {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    height: 42px !important;
+    font-size: 0.92rem !important;
+  }
+
+  .teams-top-actions .chip-btn {
+    width: 100% !important;
+    height: 38px !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .draw-mode-selector {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .four-teams-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .team-config-card {
+    padding: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .available-players-card {
+    padding: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .format-pills-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+}
+
 @media print {
   .app-header,
   .scoreboard-toolbar,

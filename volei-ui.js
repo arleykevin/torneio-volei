@@ -3037,6 +3037,8 @@ function executeTeamDraw() {
   launchConfetti();
   saveState();
   renderAll();
+  state.activeTab = 'times';
+  renderAll();
   openTeamsImageModal();
   showToast(
     `🎲 <strong>${targetTeamCount} Times sorteados!</strong> Imagem pronta para compartilhar no WhatsApp.`,
@@ -4993,7 +4995,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`🛡️ <strong>${newTeam.name}</strong> adicionado!`, 'success');
   });
 
-  document.getElementById('add-player-form').addEventListener('submit', (e) => {
+  document.getElementById('add-player-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const nameInput = document.getElementById('player-name-input');
     const roleSelect = document.getElementById('player-role-select');
@@ -5054,7 +5056,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  document.getElementById('btn-paste-whatsapp-list').addEventListener('click', () => {
+  document.getElementById('btn-paste-whatsapp-list')?.addEventListener('click', () => {
     document.getElementById('whatsapp-paste-textarea').value = '';
     document.getElementById('modal-paste-players').classList.remove('hidden');
   });
@@ -5231,7 +5233,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  document.getElementById('btn-load-demo-12').addEventListener('click', () => {
+  document.getElementById('btn-load-demo-12')?.addEventListener('click', () => {
     const demoPlayers = [
       { name: 'Lucas', role: 'Levantador', skill: 5 },
       { name: 'Gabriel', role: 'Levantador', skill: 4 },
@@ -5263,7 +5265,7 @@ document.addEventListener('DOMContentLoaded', () => {
     );
   });
 
-  document.getElementById('btn-clear-pool').addEventListener('click', () => {
+  document.getElementById('btn-clear-pool')?.addEventListener('click', () => {
     state.playerPool = [];
     saveState();
     renderAll();
