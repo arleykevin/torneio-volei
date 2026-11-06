@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volei-arena-v3.2.0';
+const CACHE_NAME = 'volei-arena-v3.3.0';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,14 @@ const ASSETS = [
   './icon.svg',
   './icon-192.png',
   './icon-512.png',
+  './audio/matchpoint_t1.mp3',
+  './audio/matchpoint_t2.mp3',
+  './audio/matchpoint_t3.mp3',
+  './audio/matchpoint_t4.mp3',
+  './audio/victory_t1.mp3',
+  './audio/victory_t2.mp3',
+  './audio/victory_t3.mp3',
+  './audio/victory_t4.mp3',
   './beach-volleyball-svgrepo-com.svg',
   './man-playing-volleyball-svgrepo-com.svg',
   './volleyball-ball-svgrepo-com.svg',

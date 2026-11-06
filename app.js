@@ -173,7 +173,19 @@ let deferredPwaPrompt = null;
 let syncPushTimeout = null;
 let ntfyEventSource = null;
 let localPollInterval = null;
-const customAudioMap = {}; // Custom ElevenLabs MP3 object URLs by slot
+// Pre-loaded official ElevenLabs MP3s from ./audio/ (plus any user-uploaded custom MP3s)
+const customAudioMap = {
+  matchpoint_t1: './audio/matchpoint_t1.mp3',
+  matchpoint_t2: './audio/matchpoint_t2.mp3',
+  matchpoint_t3: './audio/matchpoint_t3.mp3',
+  matchpoint_t4: './audio/matchpoint_t4.mp3',
+  matchpoint: './audio/matchpoint_t1.mp3',
+  victory_t1: './audio/victory_t1.mp3',
+  victory_t2: './audio/victory_t2.mp3',
+  victory_t3: './audio/victory_t3.mp3',
+  victory_t4: './audio/victory_t4.mp3',
+  victory: './audio/victory_t1.mp3'
+};
 const broadcastChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('volei_arena_sync_v3') : null;
 
 // Match Timer state
@@ -948,9 +960,11 @@ function addPointToSide(sideKey) {
     triggerHaptic([40, 40, 40]);
     const mpSide = isMatchPointState(match.scoreA, match.scoreB);
     const mpTeam = mpSide === 'A' ? teamA : teamB;
+    const mpTeamIdx = state.teams.findIndex((t) => t.id === mpTeam.id) + 1;
+    const mpSlot = customAudioMap[`matchpoint_t${mpTeamIdx}`] ? `matchpoint_t${mpTeamIdx}` : 'matchpoint';
     playCustomAudioOrSpeak(
-      'matchpoint',
-      `Ponto para ${scoringTeamObj.name}. Match point para ${mpTeam.name}.`
+      mpSlot,
+      `Atenção! É Match point para ${mpTeam.name}.`
     );
   } else {
     playSound('point');
@@ -1061,8 +1075,11 @@ function finalizeMatchFromLive(match) {
   const nextTeamA = getTeamById(nextCreated.teamAId);
   const nextTeamB = getTeamById(nextCreated.teamBId);
 
+  const winTeamIdx = state.teams.findIndex((t) => t.id === match.winnerId) + 1;
+  const winSlot = customAudioMap[`victory_t${winTeamIdx}`] ? `victory_t${winTeamIdx}` : 'victory';
+
   playCustomAudioOrSpeak(
-    'victory',
+    winSlot,
     `${winnerName} ganhou a partida.`
   );
 
