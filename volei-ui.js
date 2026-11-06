@@ -140,6 +140,50 @@ function createMiniTorneioBlock(miniIndex = 1, startId = 1, teams = []) {
 }
 
 const SAVED_SESSIONS_KEY = 'volei_saved_sessions_v1';
+const MASTER_ROSTER_KEY = 'volei_master_roster_v1';
+
+const DEFAULT_MASTER_ROSTER = [
+  { id: 'mr_1', name: 'Lucas', role: 'Levantador', skill: 5 },
+  { id: 'mr_2', name: 'Rafael', role: 'Atacante', skill: 5 },
+  { id: 'mr_3', name: 'Bruno', role: 'Atacante', skill: 5 },
+  { id: 'mr_4', name: 'Gabriel', role: 'Levantador', skill: 4 },
+  { id: 'mr_5', name: 'Mariana', role: 'Levantador', skill: 4 },
+  { id: 'mr_6', name: 'Pedro', role: 'Levantador', skill: 4 },
+  { id: 'mr_7', name: 'Thiago', role: 'Atacante', skill: 4 },
+  { id: 'mr_8', name: 'Diego', role: 'Atacante', skill: 4 },
+  { id: 'mr_9', name: 'Amanda', role: 'Bloqueador', skill: 4 },
+  { id: 'mr_10', name: 'Camila', role: 'Bloqueador', skill: 4 },
+  { id: 'mr_11', name: 'Juliana', role: 'Defensor', skill: 4 },
+  { id: 'mr_12', name: 'Matheus', role: 'Geral', skill: 3 }
+];
+
+function loadMasterRoster() {
+  try {
+    const raw = localStorage.getItem(MASTER_ROSTER_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_MASTER_ROSTER));
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    return JSON.parse(JSON.stringify(DEFAULT_MASTER_ROSTER));
+  } catch (_) {
+    return JSON.parse(JSON.stringify(DEFAULT_MASTER_ROSTER));
+  }
+}
+
+function saveMasterRoster() {
+  try {
+    if (state && Array.isArray(state.masterRoster)) {
+      localStorage.setItem(MASTER_ROSTER_KEY, JSON.stringify(state.masterRoster));
+    }
+  } catch (_) {}
+}
+
+function normalizePlayerKey(name) {
+  return String(name || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
 
 function getTodayDateIso() {
   const d = new Date();
@@ -181,6 +225,7 @@ function createDefaultState(customName = 'VÔLEI INTERNO', customDate = null) {
     waitingQueue: ['t3', 't4'],
     courtStreakTeamId: null,
     courtStreakCount: 0,
+    masterRoster: loadMasterRoster(),
     playerPool: [],
     matches: createMiniTorneioBlock(1, 1, teams),
     liveMatchId: 1
@@ -258,6 +303,9 @@ function loadState() {
       parsed.liveMatchId = 1;
     }
     const finalState = { ...def, ...parsed };
+    if (!Array.isArray(finalState.masterRoster) || finalState.masterRoster.length === 0) {
+      finalState.masterRoster = loadMasterRoster();
+    }
     if (!finalState.sessionId) {
       finalState.sessionId = `sess_${Date.now()}`;
     }
@@ -305,6 +353,7 @@ function saveState(shouldBroadcast = true) {
   try {
     state.lastSavedAt = new Date().toLocaleTimeString('pt-BR');
     state.updatedAtMs = Date.now();
+    saveMasterRoster();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     upsertCurrentSessionInArchive();
     updateSyncStatusUI();
@@ -361,6 +410,7 @@ function buildCompactSyncPayload() {
     waitingQueue: state.waitingQueue,
     courtStreakTeamId: state.courtStreakTeamId,
     courtStreakCount: state.courtStreakCount,
+    masterRoster: state.masterRoster,
     playerPool: state.playerPool,
     matches: state.matches,
     liveMatchId: state.liveMatchId
@@ -1398,6 +1448,7 @@ function renderAll() {
   renderLiveScoreboard();
   renderDynamicGamesTab();
   renderTeamsAndDrawTab();
+  renderElencoTab();
   renderStandingsTab();
 }
 
@@ -1417,6 +1468,11 @@ function renderHeaderAndNav() {
 
   document.getElementById('nav-jogos-badge').textContent = `Jogo #${currentMatch ? currentMatch.id : 1}`;
   document.getElementById('nav-times-badge').textContent = `${state.teams.length} Equipes`;
+  const navElencoBadge = document.getElementById('nav-elenco-badge');
+  if (navElencoBadge) {
+    const rosterCount = Array.isArray(state.masterRoster) ? state.masterRoster.length : 0;
+    navElencoBadge.textContent = `${rosterCount} Salvos`;
+  }
 
   const soundBtn = document.getElementById('btn-sound-toggle');
   const soundIcon = document.getElementById('sound-icon');
@@ -1825,6 +1881,36 @@ function renderTeamsAndDrawTab() {
     btn.classList.toggle('active', btn.dataset.drawFormat === state.drawFormat);
   });
 
+  // Render 1-Click Quick Roster Chips from Elenco Fixo
+  const quickChipsEl = document.getElementById('quick-roster-chips');
+  if (quickChipsEl) {
+    const roster = Array.isArray(state.masterRoster) ? state.masterRoster : [];
+    if (roster.length === 0) {
+      quickChipsEl.innerHTML = `<span style="font-size:0.78rem;color:var(--text-muted);">Nenhum jogador salvo no Elenco Fixo ainda. Clique em "Editar Estrelas & Elenco" para cadastrar!</span>`;
+    } else {
+      const sortedRoster = [...roster].sort((a, b) => (b.skill || 3) - (a.skill || 3) || a.name.localeCompare(b.name));
+      quickChipsEl.innerHTML = sortedRoster
+        .map((mp) => {
+          const isPresent = isMasterPlayerInPoolToday(mp);
+          const roleShort = getRoleShortCode(mp.role);
+          return `
+            <button
+              type="button"
+              class="roster-pick-chip ${isPresent ? 'present' : ''}"
+              onclick="togglePlayerPresenceToday('${mp.id}')"
+              title="${isPresent ? 'Clique para tirar da lista de hoje' : 'Clique para colocar no sorteio de hoje'}"
+            >
+              <span class="pick-status-icon">${isPresent ? '✅' : '➕'}</span>
+              <span class="pick-name">${escapeHtml(mp.name)}</span>
+              <span class="pick-stars">${mp.skill || 3}★</span>
+              <span class="pick-role">${roleShort}</span>
+            </button>
+          `;
+        })
+        .join('');
+    }
+  }
+
   const poolList = document.getElementById('player-pool-list');
   const poolLabel = document.getElementById('pool-count-label');
   const mathHint = document.getElementById('pool-math-hint');
@@ -1845,13 +1931,13 @@ function renderTeamsAndDrawTab() {
       mathHint.textContent = `Formará 4 times de ~${Math.ceil(nPlayers / 4)} jogadores`;
     }
   } else {
-    mathHint.textContent = 'Adicione a galera presente ou cole do WhatsApp';
+    mathHint.textContent = 'Toque nos jogadores do Elenco acima ou cole do WhatsApp';
   }
 
   if (nPlayers === 0) {
     poolList.innerHTML = `
       <div class="empty-state-mini" style="grid-column: 1 / -1;">
-        Adicione os jogadores acima, cole a lista do WhatsApp ou clique em <strong>"Exemplo 12 Jogadores"</strong> para testar!
+        Toque nos nomes do <strong>Elenco Fixo</strong> acima para escalar com 1 clique, cole do WhatsApp ou clique em <strong>"Exemplo 12 Jogadores"</strong>!
       </div>
     `;
   } else {
@@ -1859,11 +1945,32 @@ function renderTeamsAndDrawTab() {
       .map(
         (p) => `
         <div class="pool-player-chip">
-          <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">
             <img src="${getRoleSvg(p.role)}" alt="" width="20" height="20" class="mono-svg-accent" style="flex-shrink:0;" />
-            <div class="pool-player-info">
-              <span class="pool-player-name">${escapeHtml(p.name)}</span>
-              <span class="pool-player-meta">${p.role} • ${'⭐'.repeat(p.skill)}</span>
+            <div class="pool-player-info" style="min-width:0;flex:1;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span class="pool-player-name">${escapeHtml(p.name)}</span>
+                <button
+                  type="button"
+                  class="pool-role-cycle-btn"
+                  onclick="cyclePoolPlayerRole('${p.id}')"
+                  title="Clique para trocar a posição rapidamente"
+                >${escapeHtml(p.role || 'Geral')}</button>
+              </div>
+              <div class="pool-inline-stars" title="Clique na estrela para mudar o nível na hora">
+                ${[1, 2, 3, 4, 5]
+                  .map(
+                    (s) => `
+                  <button
+                    type="button"
+                    class="pool-star-btn ${s <= (p.skill || 3) ? 'lit' : ''}"
+                    onclick="setPoolPlayerStars('${p.id}', ${s})"
+                    aria-label="${s} estrelas"
+                  >★</button>
+                `
+                  )
+                  .join('')}
+              </div>
             </div>
           </div>
           <button type="button" class="pool-remove-btn" onclick="removePlayerFromPool('${p.id}')" title="Remover">✕</button>
@@ -2087,6 +2194,500 @@ function executeTeamDraw() {
     `🎲 <strong>${targetTeamCount} Times sorteados com sucesso!</strong> Pronto para jogar.`,
     'success'
   );
+}
+
+/* ==========================================
+   TAB 4: ELENCO FIXO (1-CLICK STARS & ROLES)
+   & SMART IMPORT COMMAND PARSER
+   ========================================== */
+let elencoFilterStar = 'all';
+let elencoSearchQuery = '';
+let elencoNewStars = 4;
+let elencoNewRole = 'Geral';
+
+const ALL_ROLES = ['Geral', 'Levantador', 'Atacante', 'Bloqueador', 'Defensor'];
+
+function getRoleShortCode(role) {
+  if (role === 'Levantador') return 'Lev';
+  if (role === 'Atacante') return 'Ata';
+  if (role === 'Bloqueador') return 'Bloq';
+  if (role === 'Defensor') return 'Def';
+  return 'Geral';
+}
+
+function findMasterPlayerByName(name) {
+  if (!Array.isArray(state.masterRoster)) state.masterRoster = loadMasterRoster();
+  const key = normalizePlayerKey(name);
+  if (!key) return null;
+  return state.masterRoster.find((mp) => normalizePlayerKey(mp.name) === key) || null;
+}
+
+function isMasterPlayerInPoolToday(masterPlayer) {
+  if (!masterPlayer || !Array.isArray(state.playerPool)) return false;
+  const key = normalizePlayerKey(masterPlayer.name);
+  return state.playerPool.some(
+    (p) => p.masterId === masterPlayer.id || normalizePlayerKey(p.name) === key
+  );
+}
+
+function upsertMasterPlayer(name, role = null, skill = null) {
+  if (!Array.isArray(state.masterRoster)) state.masterRoster = loadMasterRoster();
+  const trimmed = String(name || '').trim();
+  if (!trimmed) return null;
+
+  const existing = findMasterPlayerByName(trimmed);
+  if (existing) {
+    existing.name = trimmed;
+    if (role) existing.role = role;
+    if (skill !== null && skill !== undefined && !Number.isNaN(Number(skill))) {
+      existing.skill = Math.max(1, Math.min(5, Number(skill)));
+    }
+    saveMasterRoster();
+    return existing;
+  }
+
+  const created = {
+    id: `mr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    name: trimmed,
+    role: role || 'Geral',
+    skill: skill !== null && skill !== undefined ? Math.max(1, Math.min(5, Number(skill))) : 3
+  };
+  state.masterRoster.push(created);
+  saveMasterRoster();
+  return created;
+}
+
+function syncMasterPlayerChangesToPoolAndTeams(masterPlayer, oldNormalizedKey = null) {
+  if (!masterPlayer) return;
+  const targetKey = oldNormalizedKey || normalizePlayerKey(masterPlayer.name);
+
+  if (Array.isArray(state.playerPool)) {
+    state.playerPool.forEach((p) => {
+      if (p.masterId === masterPlayer.id || normalizePlayerKey(p.name) === targetKey) {
+        p.masterId = masterPlayer.id;
+        p.name = masterPlayer.name;
+        p.role = masterPlayer.role;
+        p.skill = masterPlayer.skill;
+      }
+    });
+  }
+
+  if (Array.isArray(state.teams)) {
+    state.teams.forEach((t) => {
+      if (!Array.isArray(t.players)) return;
+      t.players.forEach((p) => {
+        if (p.masterId === masterPlayer.id || normalizePlayerKey(p.name) === targetKey) {
+          p.masterId = masterPlayer.id;
+          p.name = masterPlayer.name;
+          p.role = masterPlayer.role;
+          p.skill = masterPlayer.skill;
+        }
+      });
+    });
+  }
+}
+
+function renderElencoTab() {
+  const gridEl = document.getElementById('master-roster-grid');
+  if (!gridEl) return;
+
+  if (!Array.isArray(state.masterRoster)) {
+    state.masterRoster = loadMasterRoster();
+  }
+
+  // Update New Player Stars & Role Picker UI
+  const newStarsPicker = document.getElementById('elenco-new-stars-picker');
+  if (newStarsPicker) {
+    newStarsPicker.querySelectorAll('.star-click-btn').forEach((btn) => {
+      const val = Number(btn.dataset.starVal || 1);
+      btn.classList.toggle('lit', val <= elencoNewStars);
+    });
+  }
+  const newRolePicker = document.getElementById('elenco-new-role-picker');
+  if (newRolePicker) {
+    newRolePicker.querySelectorAll('.role-pill-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.roleVal === elencoNewRole);
+    });
+  }
+
+  // Update Filter Buttons
+  const filterGroup = document.getElementById('elenco-star-filters');
+  if (filterGroup) {
+    filterGroup.querySelectorAll('.filter-pill').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.starFilter === elencoFilterStar);
+    });
+  }
+
+  // Filter & Sort Roster
+  const query = normalizePlayerKey(elencoSearchQuery);
+  const filtered = state.masterRoster
+    .filter((mp) => {
+      if (query && !normalizePlayerKey(mp.name).includes(query) && !normalizePlayerKey(mp.role).includes(query)) {
+        return false;
+      }
+      const s = Number(mp.skill) || 3;
+      if (elencoFilterStar === '5') return s === 5;
+      if (elencoFilterStar === '4') return s === 4;
+      if (elencoFilterStar === '3') return s === 3;
+      if (elencoFilterStar === '12') return s <= 2;
+      if (elencoFilterStar === 'present') return isMasterPlayerInPoolToday(mp);
+      return true;
+    })
+    .sort((a, b) => (b.skill || 3) - (a.skill || 3) || a.name.localeCompare(b.name));
+
+  if (filtered.length === 0) {
+    gridEl.innerHTML = `
+      <div class="empty-state-mini" style="grid-column: 1 / -1; padding: 24px;">
+        Nenhum jogador encontrado neste filtro. Adicione acima ou importe uma lista com comandos!
+      </div>
+    `;
+    return;
+  }
+
+  gridEl.innerHTML = filtered
+    .map((mp) => {
+      const isPresent = isMasterPlayerInPoolToday(mp);
+      const stars = Number(mp.skill) || 3;
+      const role = mp.role || 'Geral';
+
+      return `
+        <div class="master-player-card ${isPresent ? 'is-present' : ''}">
+          <div class="mp-card-top">
+            <button
+              type="button"
+              class="mp-presence-toggle-btn ${isPresent ? 'active' : ''}"
+              onclick="togglePlayerPresenceToday('${mp.id}')"
+              title="${isPresent ? 'Presente no sorteio de hoje (Clique para tirar)' : 'Clique para escalar no sorteio de hoje'}"
+            >
+              ${isPresent ? '✅ Vai Jogar Hoje' : '➕ Escalar Hoje'}
+            </button>
+            <button
+              type="button"
+              class="mp-delete-btn"
+              onclick="deleteMasterPlayer('${mp.id}')"
+              title="Excluir do Elenco Fixo"
+            >🗑️</button>
+          </div>
+
+          <div class="mp-name-row">
+            <img src="${getRoleSvg(role)}" alt="" width="22" height="22" class="mono-svg-accent" style="flex-shrink:0;" />
+            <input
+              type="text"
+              class="mp-name-input"
+              value="${escapeHtml(mp.name)}"
+              aria-label="Nome de ${escapeHtml(mp.name)}"
+              onchange="updateMasterPlayerName('${mp.id}', this.value)"
+            />
+          </div>
+
+          <div class="mp-stars-section">
+            <span class="mp-mini-label">NÍVEL (${stars}★):</span>
+            <div class="interactive-stars-bar" role="group" aria-label="Alterar estrelas com 1 clique">
+              ${[1, 2, 3, 4, 5]
+                .map(
+                  (s) => `
+                <button
+                  type="button"
+                  class="star-click-btn ${s <= stars ? 'lit' : ''}"
+                  onclick="setMasterPlayerStars('${mp.id}', ${s})"
+                  title="Definir ${s} estrela${s > 1 ? 's' : ''}"
+                >★</button>
+              `
+                )
+                .join('')}
+            </div>
+          </div>
+
+          <div class="mp-roles-section">
+            <div class="role-pills-bar">
+              ${ALL_ROLES.map(
+                (r) => `
+                <button
+                  type="button"
+                  class="role-pill-btn ${role === r ? 'active' : ''}"
+                  onclick="setMasterPlayerRole('${mp.id}', '${r}')"
+                  title="Posição: ${r}"
+                >${getRoleShortCode(r)}</button>
+              `
+              ).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+window.togglePlayerPresenceToday = function (masterId) {
+  if (!Array.isArray(state.masterRoster)) return;
+  const mp = state.masterRoster.find((item) => item.id === masterId);
+  if (!mp) return;
+
+  const key = normalizePlayerKey(mp.name);
+  const existingIdx = state.playerPool.findIndex(
+    (p) => p.masterId === mp.id || normalizePlayerKey(p.name) === key
+  );
+
+  if (existingIdx >= 0) {
+    state.playerPool.splice(existingIdx, 1);
+    playSound('undo');
+  } else {
+    state.playerPool.push({
+      id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      masterId: mp.id,
+      name: mp.name,
+      role: mp.role || 'Geral',
+      skill: Number(mp.skill) || 3
+    });
+    playSound('point');
+  }
+
+  saveState();
+  renderAll();
+};
+
+window.setMasterPlayerStars = function (masterId, stars) {
+  if (!Array.isArray(state.masterRoster)) return;
+  const mp = state.masterRoster.find((item) => item.id === masterId);
+  if (!mp) return;
+
+  mp.skill = Math.max(1, Math.min(5, Number(stars) || 3));
+  syncMasterPlayerChangesToPoolAndTeams(mp);
+  playSound('point');
+  saveState();
+  renderAll();
+};
+
+window.setMasterPlayerRole = function (masterId, role) {
+  if (!Array.isArray(state.masterRoster)) return;
+  const mp = state.masterRoster.find((item) => item.id === masterId);
+  if (!mp) return;
+
+  mp.role = role || 'Geral';
+  syncMasterPlayerChangesToPoolAndTeams(mp);
+  playSound('point');
+  saveState();
+  renderAll();
+};
+
+window.updateMasterPlayerName = function (masterId, newName) {
+  if (!Array.isArray(state.masterRoster)) return;
+  const mp = state.masterRoster.find((item) => item.id === masterId);
+  const trimmed = String(newName || '').trim();
+  if (!mp || !trimmed) {
+    renderElencoTab();
+    return;
+  }
+
+  const oldKey = normalizePlayerKey(mp.name);
+  mp.name = trimmed;
+  syncMasterPlayerChangesToPoolAndTeams(mp, oldKey);
+  saveState();
+  renderAll();
+  showToast(`✏️ Nome atualizado para <strong>${escapeHtml(trimmed)}</strong>!`, 'info');
+};
+
+window.deleteMasterPlayer = function (masterId) {
+  if (!Array.isArray(state.masterRoster)) return;
+  const mp = state.masterRoster.find((item) => item.id === masterId);
+  if (!mp) return;
+
+  state.masterRoster = state.masterRoster.filter((item) => item.id !== masterId);
+  saveState();
+  renderAll();
+  showToast(`🗑️ <strong>${escapeHtml(mp.name)}</strong> removido do Elenco Fixo.`, 'info');
+};
+
+window.setPoolPlayerStars = function (poolId, stars) {
+  const p = state.playerPool.find((item) => item.id === poolId);
+  if (!p) return;
+
+  const newStars = Math.max(1, Math.min(5, Number(stars) || 3));
+  p.skill = newStars;
+  upsertMasterPlayer(p.name, p.role, newStars);
+  playSound('point');
+  saveState();
+  renderAll();
+};
+
+window.cyclePoolPlayerRole = function (poolId) {
+  const p = state.playerPool.find((item) => item.id === poolId);
+  if (!p) return;
+
+  const currentIdx = ALL_ROLES.indexOf(p.role || 'Geral');
+  const nextRole = ALL_ROLES[(currentIdx + 1) % ALL_ROLES.length];
+  p.role = nextRole;
+  upsertMasterPlayer(p.name, nextRole, p.skill);
+  playSound('point');
+  saveState();
+  renderAll();
+};
+
+window.insertImportCmd = function (cmdText) {
+  const ta = document.getElementById('whatsapp-paste-textarea');
+  if (!ta) return;
+
+  const start = ta.selectionStart ?? ta.value.length;
+  const end = ta.selectionEnd ?? ta.value.length;
+  const before = ta.value.slice(0, start);
+  const after = ta.value.slice(end);
+  const isBlockHeader = cmdText.startsWith('#');
+  const insertion = isBlockHeader
+    ? `${before && !before.endsWith('\n') ? '\n' : ''}${cmdText}\n`
+    : `${before && !before.endsWith(' ') && !before.endsWith('\n') ? ' ' : ''}${cmdText} `;
+
+  ta.value = before + insertion + after;
+  ta.focus();
+  const newCursor = (before + insertion).length;
+  ta.setSelectionRange(newCursor, newCursor);
+};
+
+/**
+ * Interpreta listas do WhatsApp com Comandos Inteligentes de Estrelas e Posições:
+ * - Cabeçalhos de bloco: "#5*", "5 ESTRELAS:", "#4*" definem as estrelas dos próximos nomes
+ * - Comandos na linha: "Lucas 5* L", "Rafael 4*", "Bruno (5) Ata", "Juliana 4 estrelas Def", "Pedro ⭐⭐⭐⭐"
+ * - Busca automática no Elenco Fixo (masterRoster) quando a linha só tem o nome!
+ */
+function parsePlayersTextWithCommands(rawText) {
+  const rawLines = String(rawText || '').split(/\r?\n/);
+  const parsedPlayers = [];
+  let currentBlockStars = null;
+  let currentBlockRole = null;
+
+  const roleMap = {
+    l: 'Levantador',
+    lev: 'Levantador',
+    levantador: 'Levantador',
+    levantadora: 'Levantador',
+    a: 'Atacante',
+    ata: 'Atacante',
+    atacante: 'Atacante',
+    ponta: 'Atacante',
+    oposto: 'Atacante',
+    b: 'Bloqueador',
+    bloq: 'Bloqueador',
+    bloqueador: 'Bloqueador',
+    bloqueadora: 'Bloqueador',
+    central: 'Bloqueador',
+    meio: 'Bloqueador',
+    d: 'Defensor',
+    def: 'Defensor',
+    defensor: 'Defensor',
+    defensora: 'Defensor',
+    libero: 'Defensor',
+    g: 'Geral',
+    geral: 'Geral'
+  };
+
+  for (const rawLine of rawLines) {
+    let line = rawLine.trim();
+    if (!line) continue;
+
+    // 1. Check if the entire line is a Block Star Header (e.g. "#5*", "5*", "5 ESTRELAS:", "⭐⭐⭐⭐⭐")
+    const blockStarMatch =
+      line.match(/^#?\s*([1-5])\s*(?:\*|★|⭐|estrelas?)\s*:?\s*$/i) ||
+      line.match(/^(?:nivel|nível|bloco|time)?\s*#?\s*([1-5])\s*(?:estrelas?|\*|★)\s*:?\s*$/i);
+    if (blockStarMatch) {
+      currentBlockStars = Number(blockStarMatch[1]);
+      continue;
+    }
+    const onlyStarEmojis = line.match(/^#?\s*([⭐★]{1,5})\s*:?\s*$/);
+    if (onlyStarEmojis) {
+      currentBlockStars = Math.min(5, onlyStarEmojis[1].length);
+      continue;
+    }
+
+    // 2. Strip leading list numbering / bullets ("1.", "01 -", "1)", "✅", "🏐", "•")
+    line = line.replace(/^[\s\d\.\-\)\✅\☑️\🏐\*•➕]+/, '').trim();
+    if (!line) continue;
+
+    // Ignore common WhatsApp header titles like "LISTA DE HOJE:", "CONFIRMADOS:", "VÔLEI HOJE"
+    if (/^(lista|confirmados|jogadores|presenca|presença|volei|vôlei)\b.*:$/i.test(line)) {
+      continue;
+    }
+
+    let explicitStars = null;
+    let explicitRole = null;
+
+    // 3. Detect emoji stars anywhere in the line (⭐⭐⭐⭐⭐ or ★★★★★)
+    const emojiStarsMatch = line.match(/([⭐★]{1,5})/);
+    if (emojiStarsMatch) {
+      explicitStars = Math.min(5, emojiStarsMatch[1].length);
+      line = line.replace(emojiStarsMatch[0], ' ').trim();
+    }
+
+    // 4. Detect inline star commands: "5*", "*5", "5 estrelas", "nivel 5", "(5)", "[5]"
+    const inlineStarPatterns = [
+      /(?:^|[\s\-\/,(\[])([1-5])\s*(?:\*|★|estrelas?)(?=$|[\s\-\/,)\]])/i,
+      /(?:^|[\s\-\/,(\[])(?:\*|★)\s*([1-5])(?=$|[\s\-\/,)\]])/i,
+      /(?:^|[\s\-\/,(\[])(?:nivel|nível)\s*([1-5])(?=$|[\s\-\/,)\]])/i,
+      /[\(\[]\s*([1-5])\s*\*?\s*[\)\]]/
+    ];
+    for (const regex of inlineStarPatterns) {
+      const m = line.match(regex);
+      if (m) {
+        explicitStars = Number(m[1]);
+        line = line.replace(m[0], ' ').trim();
+        break;
+      }
+    }
+
+    // 5. Tokenize remaining line to inspect trailing role codes or trailing standalone digit (1..5)
+    // Clean up separators at edges
+    line = line.replace(/[\(\)\[\]]/g, ' ').replace(/\s+/g, ' ').trim();
+    let tokens = line.split(/[\s\-\/,|]+/).filter(Boolean);
+
+    // Check last 2 tokens for role codes or standalone star digit (1..5)
+    for (let pass = 0; pass < 2; pass++) {
+      if (tokens.length <= 1) break;
+      const lastTokenRaw = tokens[tokens.length - 1];
+      const lastTokenNorm = normalizePlayerKey(lastTokenRaw);
+
+      if (!explicitRole && roleMap[lastTokenNorm]) {
+        explicitRole = roleMap[lastTokenNorm];
+        tokens.pop();
+        continue;
+      }
+
+      if (explicitStars === null && /^[1-5]$/.test(lastTokenRaw)) {
+        explicitStars = Number(lastTokenRaw);
+        tokens.pop();
+        continue;
+      }
+    }
+
+    const cleanName = tokens.join(' ').replace(/^[\s\-\/,|:]+|[\s\-\/,|:]+$/g, '').trim();
+    if (cleanName.length < 2) continue;
+
+    // 6. Look up in Master Roster for saved stars & role if not explicitly typed
+    const savedMaster = findMasterPlayerByName(cleanName);
+    const finalStars =
+      explicitStars !== null
+        ? explicitStars
+        : currentBlockStars !== null
+        ? currentBlockStars
+        : savedMaster
+        ? Number(savedMaster.skill) || 3
+        : 3;
+
+    const finalRole =
+      explicitRole ||
+      currentBlockRole ||
+      (savedMaster ? savedMaster.role : 'Geral') ||
+      'Geral';
+
+    const displayPlayerName = savedMaster ? savedMaster.name : cleanName;
+
+    parsedPlayers.push({
+      name: displayPlayerName,
+      role: finalRole,
+      skill: Math.max(1, Math.min(5, finalStars)),
+      hadExplicitCommand: explicitStars !== null || explicitRole !== null || currentBlockStars !== null,
+      matchedFromMaster: Boolean(savedMaster)
+    });
+  }
+
+  return parsedPlayers;
 }
 
 /* ==========================================
@@ -2346,7 +2947,7 @@ window.deleteTeam = function (teamId) {
 window.removePlayerFromPool = function (playerId) {
   state.playerPool = state.playerPool.filter((p) => p.id !== playerId);
   saveState();
-  renderTeamsAndDrawTab();
+  renderAll();
 };
 
 window.removePlayerFromTeam = function (teamId, playerIdx) {
@@ -2360,11 +2961,22 @@ window.removePlayerFromTeam = function (teamId, playerIdx) {
 window.addDirectPlayerToTeam = function (teamId) {
   const input = document.getElementById(`quick-player-${teamId}`);
   if (!input) return;
-  const name = input.value.trim();
-  if (!name) return;
+  const raw = input.value.trim();
+  if (!raw) return;
   const team = getTeamById(teamId);
   if (team) {
-    team.players.push({ id: `p_${Date.now()}`, name, role: 'Geral', skill: 3 });
+    const parsed = parsePlayersTextWithCommands(raw)[0];
+    const pName = parsed ? parsed.name : raw;
+    const pRole = parsed ? parsed.role : 'Geral';
+    const pSkill = parsed ? parsed.skill : 3;
+    const masterObj = upsertMasterPlayer(pName, pRole, pSkill);
+    team.players.push({
+      id: `p_${Date.now()}`,
+      masterId: masterObj ? masterObj.id : undefined,
+      name: masterObj ? masterObj.name : pName,
+      role: pRole,
+      skill: pSkill
+    });
     input.value = '';
     saveState();
     renderAll();
@@ -3013,20 +3625,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const roleSelect = document.getElementById('player-role-select');
     const skillSelect = document.getElementById('player-skill-select');
 
-    const name = nameInput.value.trim();
-    if (!name) return;
+    const rawInput = nameInput.value.trim();
+    if (!rawInput) return;
 
-    state.playerPool.push({
-      id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      name,
-      role: roleSelect.value,
-      skill: Number(skillSelect.value)
-    });
+    // Even in the quick-add input, support inline commands like "Lucas 5* L" if typed!
+    const parsedList = parsePlayersTextWithCommands(rawInput);
+    const parsedOne = parsedList[0];
+    const finalName = parsedOne ? parsedOne.name : rawInput;
+    const finalRole = parsedOne && parsedOne.hadExplicitCommand ? parsedOne.role : roleSelect.value;
+    const finalSkill = parsedOne && parsedOne.hadExplicitCommand ? parsedOne.skill : Number(skillSelect.value);
+
+    const masterObj = upsertMasterPlayer(finalName, finalRole, finalSkill);
+
+    const existingInPool = state.playerPool.find(
+      (p) => normalizePlayerKey(p.name) === normalizePlayerKey(finalName)
+    );
+    if (existingInPool) {
+      existingInPool.role = finalRole;
+      existingInPool.skill = finalSkill;
+      if (masterObj) existingInPool.masterId = masterObj.id;
+    } else {
+      state.playerPool.push({
+        id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        masterId: masterObj ? masterObj.id : undefined,
+        name: finalName,
+        role: finalRole,
+        skill: finalSkill
+      });
+    }
 
     nameInput.value = '';
     nameInput.focus();
     saveState();
-    renderTeamsAndDrawTab();
+    renderAll();
   });
 
   document.querySelectorAll('input[name="drawMode"]').forEach((radio) => {
@@ -3042,36 +3673,188 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-run-team-draw').addEventListener('click', executeTeamDraw);
 
+  document.getElementById('btn-goto-elenco-tab')?.addEventListener('click', () => {
+    state.activeTab = 'elenco';
+    saveState();
+    renderAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
   document.getElementById('btn-paste-whatsapp-list').addEventListener('click', () => {
+    document.getElementById('whatsapp-paste-textarea').value = '';
+    document.getElementById('modal-paste-players').classList.remove('hidden');
+  });
+
+  document.getElementById('btn-elenco-open-import')?.addEventListener('click', () => {
     document.getElementById('whatsapp-paste-textarea').value = '';
     document.getElementById('modal-paste-players').classList.remove('hidden');
   });
 
   document.getElementById('btn-confirm-paste-players').addEventListener('click', () => {
     const raw = document.getElementById('whatsapp-paste-textarea').value;
-    const lines = raw
-      .split(/\r?\n/)
-      .map((line) => line.replace(/^[\s\d\.\-\)\✅\☑️\🏐\*•]+/, '').trim())
-      .filter((line) => line.length >= 2);
+    const parsedItems = parsePlayersTextWithCommands(raw);
 
-    if (lines.length === 0) {
+    if (parsedItems.length === 0) {
       showToast('⚠️ Nenhum nome encontrado na lista.', 'warn');
       return;
     }
 
-    lines.forEach((name, idx) => {
-      state.playerPool.push({
-        id: `p_${Date.now()}_${idx}`,
-        name,
-        role: 'Geral',
-        skill: 3
-      });
+    let commandsCount = 0;
+    let matchedCount = 0;
+
+    parsedItems.forEach((item, idx) => {
+      if (item.hadExplicitCommand) commandsCount++;
+      else if (item.matchedFromMaster) matchedCount++;
+
+      const masterObj = upsertMasterPlayer(item.name, item.role, item.skill);
+
+      const existingPool = state.playerPool.find(
+        (p) => normalizePlayerKey(p.name) === normalizePlayerKey(item.name)
+      );
+      if (existingPool) {
+        existingPool.name = masterObj ? masterObj.name : item.name;
+        existingPool.role = item.role;
+        existingPool.skill = item.skill;
+        if (masterObj) existingPool.masterId = masterObj.id;
+      } else {
+        state.playerPool.push({
+          id: `p_${Date.now()}_${idx}`,
+          masterId: masterObj ? masterObj.id : undefined,
+          name: masterObj ? masterObj.name : item.name,
+          role: item.role,
+          skill: item.skill
+        });
+      }
     });
 
     document.getElementById('modal-paste-players').classList.add('hidden');
+    playSound('victory');
     saveState();
-    renderTeamsAndDrawTab();
-    showToast(`✅ <strong>${lines.length} jogadores</strong> importados para o sorteio!`, 'success');
+    renderAll();
+
+    const extraInfo =
+      commandsCount > 0
+        ? ` (${commandsCount} com comandos de estrelas/posição lidos na hora!)`
+        : matchedCount > 0
+        ? ` (${matchedCount} puxaram as estrelas salvas do Elenco Fixo!)`
+        : '';
+    showToast(
+      `✅ <strong>${parsedItems.length} jogadores</strong> importados e salvos no Elenco Fixo${extraInfo}`,
+      'success'
+    );
+  });
+
+  // Elenco Fixo Tab Controls
+  document.getElementById('elenco-new-stars-picker')?.querySelectorAll('.star-click-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      elencoNewStars = Number(btn.dataset.starVal || 4);
+      playSound('point');
+      renderElencoTab();
+    });
+  });
+
+  document.getElementById('elenco-new-role-picker')?.querySelectorAll('.role-pill-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      elencoNewRole = btn.dataset.roleVal || 'Geral';
+      playSound('point');
+      renderElencoTab();
+    });
+  });
+
+  function addNewPlayerFromElencoBar() {
+    const input = document.getElementById('elenco-new-name');
+    if (!input) return;
+    const raw = input.value.trim();
+    if (!raw) {
+      showToast('⚠️ Digite o nome do jogador para salvar no Elenco Fixo!', 'warn');
+      input.focus();
+      return;
+    }
+
+    // Also allow inline command in the Elenco add input if user types "Pedro 5* L"
+    const parsed = parsePlayersTextWithCommands(raw)[0];
+    const nameToSave = parsed ? parsed.name : raw;
+    const roleToSave = parsed && parsed.hadExplicitCommand ? parsed.role : elencoNewRole;
+    const starsToSave = parsed && parsed.hadExplicitCommand ? parsed.skill : elencoNewStars;
+
+    const masterObj = upsertMasterPlayer(nameToSave, roleToSave, starsToSave);
+    if (masterObj && !isMasterPlayerInPoolToday(masterObj)) {
+      state.playerPool.push({
+        id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        masterId: masterObj.id,
+        name: masterObj.name,
+        role: masterObj.role,
+        skill: masterObj.skill
+      });
+    } else if (masterObj) {
+      syncMasterPlayerChangesToPoolAndTeams(masterObj);
+    }
+
+    input.value = '';
+    input.focus();
+    playSound('point');
+    saveState();
+    renderAll();
+    showToast(
+      `⭐ <strong>${escapeHtml(nameToSave)}</strong> (${starsToSave}★ • ${roleToSave}) salvo no Elenco e escalado para hoje!`,
+      'success'
+    );
+  }
+
+  document.getElementById('btn-elenco-add-player')?.addEventListener('click', addNewPlayerFromElencoBar);
+  document.getElementById('elenco-new-name')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addNewPlayerFromElencoBar();
+    }
+  });
+
+  document.getElementById('elenco-star-filters')?.querySelectorAll('.filter-pill').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      elencoFilterStar = btn.dataset.starFilter || 'all';
+      renderElencoTab();
+    });
+  });
+
+  document.getElementById('elenco-search-input')?.addEventListener('input', (e) => {
+    elencoSearchQuery = e.target.value || '';
+    renderElencoTab();
+  });
+
+  document.getElementById('btn-elenco-select-all-today')?.addEventListener('click', () => {
+    if (!Array.isArray(state.masterRoster) || state.masterRoster.length === 0) {
+      showToast('⚠️ Nenhum jogador no Elenco Fixo ainda.', 'warn');
+      return;
+    }
+    const allPresent = state.masterRoster.every((mp) => isMasterPlayerInPoolToday(mp));
+    if (allPresent) {
+      state.playerPool = [];
+      playSound('undo');
+      showToast('🧹 Seleção de presença de hoje desmarcada.', 'info');
+    } else {
+      state.masterRoster.forEach((mp) => {
+        if (!isMasterPlayerInPoolToday(mp)) {
+          state.playerPool.push({
+            id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            masterId: mp.id,
+            name: mp.name,
+            role: mp.role || 'Geral',
+            skill: Number(mp.skill) || 3
+          });
+        }
+      });
+      playSound('victory');
+      showToast(`✅ Todos os <strong>${state.masterRoster.length} jogadores</strong> do Elenco foram escalados para hoje!`, 'success');
+    }
+    saveState();
+    renderAll();
+  });
+
+  document.getElementById('btn-elenco-goto-sorteio')?.addEventListener('click', () => {
+    state.activeTab = 'times';
+    saveState();
+    renderAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   document.getElementById('btn-load-demo-12').addEventListener('click', () => {
@@ -3090,12 +3873,16 @@ document.addEventListener('DOMContentLoaded', () => {
       { name: 'Matheus', role: 'Geral', skill: 3 }
     ];
 
-    state.playerPool = demoPlayers.map((p, i) => ({
-      id: `demo_${Date.now()}_${i}`,
-      ...p
-    }));
+    state.playerPool = demoPlayers.map((p, i) => {
+      const mp = upsertMasterPlayer(p.name, p.role, p.skill);
+      return {
+        id: `demo_${Date.now()}_${i}`,
+        masterId: mp ? mp.id : undefined,
+        ...p
+      };
+    });
     saveState();
-    renderTeamsAndDrawTab();
+    renderAll();
     showToast(
       '⚡ 12 jogadores carregados (Dá 4 Trios de 3 ou 3 Quartetos de 4)! Clique em "SORTEAR E MONTAR TIMES".',
       'info'
@@ -3105,8 +3892,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-clear-pool').addEventListener('click', () => {
     state.playerPool = [];
     saveState();
-    renderTeamsAndDrawTab();
-    showToast('🗑️ Lista de sorteio limpa.', 'info');
+    renderAll();
+    showToast('🗑️ Lista de sorteio de hoje limpa (seu Elenco Fixo continua salvo!).', 'info');
   });
 
   document.getElementById('btn-share-teams-whatsapp').addEventListener('click', () => {

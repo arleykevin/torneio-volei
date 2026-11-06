@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=3.7.0" />
+  <link rel="stylesheet" href="./styles.css?v=3.8.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -115,6 +115,11 @@
         <img src="./volleyball-player-motion-svgrepo-com.svg" alt="" class="nav-svg-icon mono-svg" />
         <span class="nav-text">Times & Sorteio</span>
         <span id="nav-times-badge" class="nav-badge subtle">Times</span>
+      </button>
+      <button class="nav-tab" data-tab="elenco" type="button">
+        <img src="./man-playing-volleyball-svgrepo-com.svg" alt="" class="nav-svg-icon mono-svg" />
+        <span class="nav-text">⭐ Elenco Fixo</span>
+        <span id="nav-elenco-badge" class="nav-badge gold">0</span>
       </button>
       <button class="nav-tab" data-tab="classificacao" type="button">
         <img src="./beach-volleyball-svgrepo-com.svg" alt="" class="nav-svg-icon" />
@@ -493,13 +498,26 @@
             </div>
           </div>
 
+          <!-- Quick 1-Click Picker from Saved Master Roster ("Elenco Fixo") -->
+          <div class="quick-roster-box">
+            <div class="quick-roster-header">
+              <span class="toolbar-label" style="margin-bottom:0;color:#fde047;">
+                ⭐ ELENCO PRÉ-CADASTRADO (TOQUE NO NOME PARA COLOCAR/TIRAR DE HOJE):
+              </span>
+              <button id="btn-goto-elenco-tab" class="text-link-btn" type="button">
+                ✏️ Editar Estrelas / Elenco →
+              </button>
+            </div>
+            <div id="quick-roster-chips" class="quick-roster-chips"></div>
+          </div>
+
           <!-- Add Single Player Form -->
           <form id="add-player-form" class="add-player-form">
             <input
               type="text"
               id="player-name-input"
               class="modern-input"
-              placeholder="Nome do jogador(a)..."
+              placeholder="Nome de novo jogador(a)..."
               autocomplete="off"
             />
             <select id="player-role-select" class="modern-select compact" title="Posição / Função">
@@ -510,11 +528,11 @@
               <option value="Defensor">Líbero / Defesa</option>
             </select>
             <select id="player-skill-select" class="modern-select compact" title="Nível para equilíbrio do sorteio">
-              <option value="5">⭐⭐⭐⭐⭐ (Nível 5)</option>
-              <option value="4">⭐⭐⭐⭐ (Nível 4)</option>
-              <option value="3" selected>⭐⭐⭐ (Nível 3)</option>
-              <option value="2">⭐⭐ (Nível 2)</option>
-              <option value="1">⭐ (Nível 1)</option>
+              <option value="5">⭐⭐⭐⭐⭐ (5 Estrelas)</option>
+              <option value="4">⭐⭐⭐⭐ (4 Estrelas)</option>
+              <option value="3" selected>⭐⭐⭐ (3 Estrelas)</option>
+              <option value="2">⭐⭐ (2 Estrelas)</option>
+              <option value="1">⭐ (1 Estrela)</option>
             </select>
             <button type="submit" class="btn-primary">
               + Adicionar
@@ -523,21 +541,21 @@
 
           <!-- Bulk Tools -->
           <div class="bulk-player-tools">
-            <button id="btn-paste-whatsapp-list" class="chip-btn" type="button">
-              📋 Colar Lista do WhatsApp
+            <button id="btn-paste-whatsapp-list" class="chip-btn accent" type="button">
+              📋 Importar c/ Comandos (Ex: Nome 5*)
             </button>
             <button id="btn-load-demo-12" class="chip-btn" type="button">
               ⚡ Exemplo 12 Jogadores (Trios/Quartetos)
             </button>
             <button id="btn-clear-pool" class="chip-btn danger-subtle" type="button">
-              🗑️ Limpar Lista
+              🗑️ Limpar Lista de Hoje
             </button>
           </div>
 
           <!-- Pool List -->
           <div class="pool-header-row">
-            <span id="pool-count-label" class="toolbar-label">JOGADORES PRESENTES (0)</span>
-            <span id="pool-math-hint" class="pool-hint">Adicione os nomes para calcular os times</span>
+            <span id="pool-count-label" class="toolbar-label">JOGADORES PRESENTES HOJE (0)</span>
+            <span id="pool-math-hint" class="pool-hint">Toque nas estrelas ★ abaixo para mudar o nível na hora</span>
           </div>
 
           <div id="player-pool-list" class="player-pool-list"></div>
@@ -549,7 +567,7 @@
                 <input type="radio" name="drawMode" value="balanced" checked />
                 <div>
                   <strong>⚖️ Sorteio Equilibrado</strong>
-                  <small>Distribui levantadores e níveis de forma justa</small>
+                  <small>Distribui levantadores e estrelas de forma justa</small>
                 </div>
               </label>
               <label class="radio-card" id="label-mode-random">
@@ -598,6 +616,104 @@
           <div id="four-teams-grid" class="four-teams-grid"></div>
         </div>
       </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 4: ⭐ ELENCO FIXO & ESTRELAS (PRÉ-CADASTRO DA GALERA)
+         ========================================== -->
+    <section id="tab-elenco" class="tab-panel" aria-label="Elenco Fixo e Edição de Estrelas">
+      <div class="glass-card elenco-header-card">
+        <div class="filter-bar-top">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <img src="./man-playing-volleyball-svgrepo-com.svg" alt="" width="44" height="44" class="mono-svg-gold" />
+            <div>
+              <span class="eyebrow-tag">PRÉ-CADASTRO PERMANENTE • EDITE SÓ CLICANDO NAS ESTRELAS ★</span>
+              <h2 class="section-heading">⭐ Elenco Fixo da Galera & Níveis</h2>
+              <p class="section-desc">
+                Deixe toda a galera já cadastrada com suas estrelas e posição. No dia do jogo, basta <strong>tocar em quem veio hoje</strong> ou importar a lista!
+              </p>
+            </div>
+          </div>
+
+          <div class="dynamic-games-actions">
+            <button id="btn-elenco-open-import" class="chip-btn accent" type="button">
+              📋 Importar Lista c/ Comandos (Ex: Nome 5*)
+            </button>
+            <button id="btn-elenco-select-all-today" class="chip-btn" type="button">
+              ☑️ Colocar Todos no Jogo de Hoje
+            </button>
+            <button id="btn-elenco-goto-sorteio" class="btn-accent-glow" type="button" style="padding:10px 16px;font-size:0.86rem;">
+              🎲 Ir para o Sorteio (<span id="elenco-present-count">0</span> presentes)
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Add to Permanent Elenco with 1-Click Stars & Role Pills -->
+        <div class="elenco-quick-create-bar">
+          <div class="elenco-input-wrap">
+            <label for="elenco-new-name" class="toolbar-label">CADASTRAR NOVO JOGADOR FIXO</label>
+            <input
+              type="text"
+              id="elenco-new-name"
+              class="modern-input"
+              placeholder="Digite o nome (ex: Lucas, Mariana)..."
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="elenco-stars-wrap">
+            <span class="toolbar-label">ESTRELAS (CLIQUE NA ★)</span>
+            <div id="elenco-new-stars-picker" class="interactive-stars-bar large" data-selected-stars="3">
+              <button type="button" class="star-click-btn active" data-star="1" aria-label="1 estrela">★</button>
+              <button type="button" class="star-click-btn active" data-star="2" aria-label="2 estrelas">★</button>
+              <button type="button" class="star-click-btn active" data-star="3" aria-label="3 estrelas">★</button>
+              <button type="button" class="star-click-btn" data-star="4" aria-label="4 estrelas">★</button>
+              <button type="button" class="star-click-btn" data-star="5" aria-label="5 estrelas">★</button>
+              <span id="elenco-new-stars-label" class="star-count-tag">3★</span>
+            </div>
+          </div>
+
+          <div class="elenco-role-wrap">
+            <span class="toolbar-label">POSIÇÃO (1 CLIQUE)</span>
+            <div id="elenco-new-role-picker" class="role-pills-bar" data-selected-role="Geral">
+              <button type="button" class="role-pill-btn active" data-role="Geral">Geral</button>
+              <button type="button" class="role-pill-btn" data-role="Levantador">Lev</button>
+              <button type="button" class="role-pill-btn" data-role="Atacante">Ata</button>
+              <button type="button" class="role-pill-btn" data-role="Bloqueador">Bloq</button>
+              <button type="button" class="role-pill-btn" data-role="Defensor">Def</button>
+            </div>
+          </div>
+
+          <div class="elenco-submit-wrap">
+            <button id="btn-elenco-add-player" class="btn-primary full-width" type="button" style="height:42px;">
+              ➕ Salvar no Elenco
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="elenco-filter-row">
+          <div class="status-filter-pills" id="elenco-star-filters">
+            <button type="button" class="status-pill active" data-elenco-filter="all">Todos</button>
+            <button type="button" class="status-pill" data-elenco-filter="present">✅ Jogam Hoje</button>
+            <button type="button" class="status-pill" data-elenco-filter="5">5★</button>
+            <button type="button" class="status-pill" data-elenco-filter="4">4★</button>
+            <button type="button" class="status-pill" data-elenco-filter="3">3★</button>
+            <button type="button" class="status-pill" data-elenco-filter="2">2★</button>
+            <button type="button" class="status-pill" data-elenco-filter="1">1★</button>
+          </div>
+          <input
+            type="search"
+            id="elenco-search-input"
+            class="modern-input"
+            style="max-width:260px;padding:7px 12px;font-size:0.82rem;"
+            placeholder="🔍 Buscar jogador no elenco..."
+          />
+        </div>
+      </div>
+
+      <!-- Grid of Registered Players with 1-Click Stars & Presence Toggle -->
+      <div id="master-roster-grid" class="master-roster-grid"></div>
     </section>
 
     <!-- ==========================================
@@ -715,31 +831,54 @@
   </div>
 
   <!-- ==========================================
-       MODAL 2: COLAR LISTA DO WHATSAPP
+       MODAL 2: COLAR LISTA DO WHATSAPP COM COMANDOS DE ESTRELAS
        ========================================== -->
   <div id="modal-paste-players" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-paste-title">
-    <div class="modal-card">
+    <div class="modal-card modal-wide">
       <div class="modal-header">
         <div>
-          <span class="eyebrow-tag">IMPORTAÇÃO RÁPIDA</span>
-          <h3 id="modal-paste-title" class="modal-title">📋 Colar Lista de Jogadores do WhatsApp</h3>
+          <span class="eyebrow-tag">IMPORTADOR INTELIGENTE • RECONHECE ESTRELAS E PRÉ-CADASTRO</span>
+          <h3 id="modal-paste-title" class="modal-title">📋 Importar Lista com Comandos de Estrelas</h3>
         </div>
         <button class="modal-close-btn" data-close-modal="modal-paste-players" type="button" aria-label="Fechar">✕</button>
       </div>
       <div class="modal-body">
-        <p class="modal-hint">
-          Cole abaixo a lista da resenha/grupo (um nome por linha; números como "1. João", "✅ Maria" são limpos automaticamente):
-        </p>
+        <div class="import-commands-guide">
+          <strong style="color:#fde047;font-size:0.8rem;display:block;margin-bottom:4px;">
+            💡 COMANDOS RÁPIDOS QUE VOCÊ PODE USAR NO TEXTO:
+          </strong>
+          <div class="cmd-examples-grid">
+            <span>• <code>Lucas 5*</code> ou <code>Lucas *5</code> ➔ <strong>5★</strong></span>
+            <span>• <code>Rafael 4* A</code> ➔ <strong>4★ Atacante</strong></span>
+            <span>• <code>Mariana 5* L</code> ➔ <strong>5★ Levantadora</strong></span>
+            <span>• <code>Amanda 4* B</code> ➔ <strong>4★ Bloqueio</strong></span>
+            <span>• <code>#5*</code> em uma linha ➔ Todos abaixo ficam <strong>5★</strong></span>
+            <span>• Só o nome (<code>Lucas</code>) ➔ Puxa automático do <strong>⭐ Elenco</strong>!</span>
+          </div>
+        </div>
+
+        <div class="cmd-insert-bar">
+          <span style="font-size:0.7rem;color:var(--text-secondary);font-weight:700;">Inserir comando:</span>
+          <button type="button" class="mini-action-btn" onclick="insertImportCmd(' 5*')">+ 5*</button>
+          <button type="button" class="mini-action-btn" onclick="insertImportCmd(' 4*')">+ 4*</button>
+          <button type="button" class="mini-action-btn" onclick="insertImportCmd(' 3*')">+ 3*</button>
+          <button type="button" class="mini-action-btn" onclick="insertImportCmd(' 2*')">+ 2*</button>
+          <button type="button" class="mini-action-btn" onclick="insertImportCmd(' L')">+ L (Lev)</button>
+          <button type="button" class="mini-action-btn" onclick="insertImportCmd(' A')">+ A (Ata)</button>
+          <button type="button" class="mini-action-btn" onclick="insertImportCmd('\n#5*\n')">Bloco #5*</button>
+          <button type="button" class="mini-action-btn" onclick="insertImportCmd('\n#4*\n')">Bloco #4*</button>
+        </div>
+
         <textarea
           id="whatsapp-paste-textarea"
           class="modern-textarea"
           rows="8"
-          placeholder="1. Lucas&#10;2. Rafael&#10;3. Amanda&#10;4. Bruno..."
+          placeholder="Exemplos que você pode colar:&#10;1. Lucas 5* L&#10;2. Rafael 5* A&#10;3. Mariana 4* L&#10;4. Bruno 4*&#10;&#10;Ou por blocos:&#10;#5*&#10;Lucas&#10;Rafael"
         ></textarea>
       </div>
       <div class="modal-footer">
         <button class="chip-btn" data-close-modal="modal-paste-players" type="button">Cancelar</button>
-        <button id="btn-confirm-paste-players" class="btn-primary" type="button">➕ Importar Jogadores</button>
+        <button id="btn-confirm-paste-players" class="btn-primary" type="button">➕ Importar p/ Hoje & Salvar no Elenco</button>
       </div>
     </div>
   </div>
@@ -1058,6 +1197,6 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="./volei-ui.js?v=3.7.0"></script>
+  <script src="./volei-ui.js?v=3.8.0"></script>
 </body>
 </html>
