@@ -201,12 +201,14 @@ function formatDateBr(isoStr) {
 }
 
 function createDefaultState(customName = 'VÔLEI INTERNO', customDate = null) {
+  const savedTheme = localStorage.getItem('volei_theme_pref') || 'dark';
   const teams = createDefaultTeams(4);
   return {
     sessionId: `sess_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     tournamentName: customName || 'VÔLEI INTERNO',
     tournamentDate: customDate || getTodayDateIso(),
     sessionSetupConfirmed: false,
+    theme: savedTheme,
     roomCode: 'VOLEI1',
     soundEnabled: true,
     voiceEnabled: true,
@@ -230,6 +232,13 @@ function createDefaultState(customName = 'VÔLEI INTERNO', customDate = null) {
     matches: createMiniTorneioBlock(1, 1, teams),
     liveMatchId: 1
   };
+}
+
+function getTeamCardGradient(teamColor) {
+  const isLight = state && state.theme === 'light';
+  return isLight
+    ? `linear-gradient(160deg, ${teamColor}28 0%, rgba(255, 255, 255, 0.96) 72%)`
+    : `linear-gradient(160deg, ${teamColor}26 0%, rgba(15, 23, 42, 0.88) 68%)`;
 }
 
 let state = loadState();
@@ -573,40 +582,20 @@ function subscribeToRoomRealtimeStream(roomCode) {
 }
 
 /* ==========================================
-   VOICE NARRATOR (PT-BR) & ELEVENLABS STUDIO
+   REAL MP3 AUDIO PLAYER (SEM VOZ ROBÓTICA)
    ========================================== */
-function playCustomAudioOrSpeak(slotKey, fallbackText) {
+function playCustomAudioOrSpeak(slotKey) {
+  if (!state.soundEnabled) return;
   if (customAudioMap[slotKey]) {
     try {
       const audio = new Audio(customAudioMap[slotKey]);
       audio.play().catch(() => {});
-      return;
     } catch (_) {}
   }
-  speakNarration(fallbackText);
 }
 
-function speakNarration(text) {
-  if (!state.voiceEnabled || !text) return;
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
-  try {
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'pt-BR';
-    utter.rate = 1.12;
-    utter.pitch = 1.05;
-    utter.volume = 1.0;
-
-    const voices = window.speechSynthesis.getVoices() || [];
-    const ptVoice =
-      voices.find((v) => v.lang && v.lang.toLowerCase().includes('pt-br') && v.name.toLowerCase().includes('google')) ||
-      voices.find((v) => v.lang && v.lang.toLowerCase().includes('pt-br')) ||
-      voices.find((v) => v.lang && v.lang.toLowerCase().startsWith('pt'));
-
-    if (ptVoice) utter.voice = ptVoice;
-    window.speechSynthesis.speak(utter);
-  } catch (_) {}
+function speakNarration() {
+  // Locutor robótico desativado conforme solicitado (apenas MP3s reais tocam)
 }
 
 const DEBOCHE_LINES = {
@@ -1506,6 +1495,16 @@ function renderHeaderAndNav() {
     voiceIcon.textContent = state.voiceEnabled !== false ? '🎙️' : '🙊';
   }
 
+  const isLight = state.theme === 'light';
+  document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
+  const themeBtn = document.getElementById('btn-theme-toggle');
+  const themeIcon = document.getElementById('theme-icon');
+  if (themeBtn && themeIcon) {
+    themeBtn.classList.toggle('active', isLight);
+    themeIcon.textContent = isLight ? '🌙' : '☀️';
+    themeBtn.title = isLight ? 'Mudar para Modo Escuro' : 'Mudar para Modo Claro';
+  }
+
   updateSyncStatusUI();
 
   document.querySelectorAll('.nav-tab').forEach((btn) => {
@@ -2018,7 +2017,7 @@ function renderTeamsAndDrawTab() {
       const currentSvgMeta = getSvgMeta(team.icon);
 
       return `
-        <div class="team-config-card" style="background: linear-gradient(160deg, ${team.color}26 0%, rgba(15, 23, 42, 0.88) 68%);">
+        <div class="team-config-card" style="background: ${getTeamCardGradient(team.color)};">
           <div class="team-config-top">
             <div class="team-crest-badge" style="background:${team.color};box-shadow:0 4px 14px ${team.color}55;width:44px;height:44px;">
               <img src="${team.icon}" alt="" class="team-crest-img ${currentSvgMeta.mono ? 'mono-svg' : ''}" style="width:24px;height:24px;" />
@@ -2037,36 +2036,41 @@ function renderTeamsAndDrawTab() {
             }
           </div>
 
-          <div class="color-swatches-row">
-            <span style="font-size:0.72rem;color:var(--text-secondary);margin-right:4px;">Cor:</span>
-            ${TEAM_COLORS.map(
-              (c) => `
-              <button
-                type="button"
-                class="color-swatch-btn ${team.color === c ? 'active' : ''}"
-                style="background:${c}"
-                onclick="updateTeamColor('${team.id}', '${c}')"
-                aria-label="Escolher cor ${c}"
-              ></button>
-            `
-            ).join('')}
-          </div>
+          <details class="team-customize-drawer">
+            <summary class="team-customize-summary">🎨 Trocar Cor e Escudo ▾</summary>
+            <div class="team-customize-body">
+              <div class="color-swatches-row">
+                <span style="font-size:0.72rem;color:var(--text-secondary);margin-right:4px;">Cor:</span>
+                ${TEAM_COLORS.map(
+                  (c) => `
+                  <button
+                    type="button"
+                    class="color-swatch-btn ${team.color === c ? 'active' : ''}"
+                    style="background:${c}"
+                    onclick="updateTeamColor('${team.id}', '${c}')"
+                    aria-label="Escolher cor ${c}"
+                  ></button>
+                `
+                ).join('')}
+              </div>
 
-          <div class="svg-crest-picker" title="Escolha o escudo SVG do time">
-            <span style="font-size:0.68rem;color:var(--text-secondary);font-weight:700;margin-right:2px;">Escudo:</span>
-            ${TEAM_SVGS.map(
-              (svgItem) => `
-              <button
-                type="button"
-                class="crest-option-btn ${team.icon === svgItem.src ? 'active' : ''}"
-                title="${svgItem.label}"
-                onclick="updateTeamIcon('${team.id}', '${svgItem.src}')"
-              >
-                <img src="${svgItem.src}" alt="${svgItem.label}" class="${svgItem.mono ? 'mono-svg' : ''}" />
-              </button>
-            `
-            ).join('')}
-          </div>
+              <div class="svg-crest-picker" title="Escolha o escudo SVG do time">
+                <span style="font-size:0.68rem;color:var(--text-secondary);font-weight:700;margin-right:2px;">Escudo:</span>
+                ${TEAM_SVGS.map(
+                  (svgItem) => `
+                  <button
+                    type="button"
+                    class="crest-option-btn ${team.icon === svgItem.src ? 'active' : ''}"
+                    title="${svgItem.label}"
+                    onclick="updateTeamIcon('${team.id}', '${svgItem.src}')"
+                  >
+                    <img src="${svgItem.src}" alt="${svgItem.label}" class="${svgItem.mono ? 'mono-svg' : ''}" />
+                  </button>
+                `
+                ).join('')}
+              </div>
+            </div>
+          </details>
 
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:var(--text-secondary);">
             <span><strong>${team.players.length}</strong> jogadores (${team.players.length === 3 ? 'Trio' : team.players.length === 4 ? 'Quarteto' : 'Equipe'})</span>
@@ -3153,7 +3157,7 @@ function renderStandingsTab() {
       .slice(0, 4)
       .map(
         (r, idx) => `
-        <div class="podium-card rank-${idx + 1}" style="background: linear-gradient(160deg, ${r.color}28 0%, rgba(15, 23, 42, 0.9) 70%);">
+        <div class="podium-card rank-${idx + 1}" style="background: ${getTeamCardGradient(r.color)};">
           <div class="podium-rank-badge">${medals[idx] || `${idx + 1}º LUGAR`}</div>
           <div class="podium-team-name">
             ${buildTeamMiniBadge(r)}
@@ -3475,12 +3479,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  document.getElementById('btn-sound-toggle').addEventListener('click', () => {
+  document.getElementById('btn-sound-toggle')?.addEventListener('click', () => {
     state.soundEnabled = !state.soundEnabled;
     if (state.soundEnabled) playSound('point');
     saveState();
     renderHeaderAndNav();
-    showToast(state.soundEnabled ? '🔊 Sons de quadra ativados' : '🔇 Sons silenciados', 'info');
+    showToast(state.soundEnabled ? '🔊 Sons e áudios ativados' : '🔇 Sons silenciados', 'info');
+  });
+
+  document.getElementById('btn-theme-toggle')?.addEventListener('click', () => {
+    state.theme = state.theme === 'light' ? 'dark' : 'light';
+    try {
+      localStorage.setItem('volei_theme_pref', state.theme);
+    } catch (_) {}
+    saveState(false);
+    renderAll();
+    showToast(
+      state.theme === 'light' ? '☀️ Modo Claro ativado!' : '🌙 Modo Escuro ativado!',
+      'info'
+    );
   });
 
   // Voice Narration Toggle & ElevenLabs Studio
@@ -3613,20 +3630,20 @@ document.addEventListener('DOMContentLoaded', () => {
     pullRoomStateOnce(urlParams.get('sala'), true);
   }
 
-  document.getElementById('btn-whatsapp-share').addEventListener('click', () => {
+  document.getElementById('btn-whatsapp-share')?.addEventListener('click', () => {
     copyTextToClipboard(
       generateWhatsAppSummary(),
       '📲 Resumo do dia copiado! Agora é só colar no grupo do WhatsApp.'
     );
   });
 
-  document.getElementById('btn-install-pwa').addEventListener('click', async () => {
+  document.getElementById('btn-install-pwa')?.addEventListener('click', async () => {
     if (deferredPwaPrompt) {
       deferredPwaPrompt.prompt();
       await deferredPwaPrompt.userChoice;
       deferredPwaPrompt = null;
     } else {
-      document.getElementById('modal-install-help').classList.remove('hidden');
+      document.getElementById('modal-install-help')?.classList.remove('hidden');
     }
   });
 

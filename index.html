@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=3.9.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.0.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -36,94 +36,76 @@
   <!-- Confetti Canvas -->
   <canvas id="confetti-canvas" aria-hidden="true"></canvas>
 
-  <!-- Top App Header -->
+  <!-- Top App Header (Limpo e Organizado) -->
   <header class="app-header">
     <div class="header-inner">
       <div class="brand-group">
         <div class="brand-logo" aria-hidden="true">
-          <img src="./volleyball-svgrepo-com (5).svg" alt="" width="34" height="34" class="brand-ball-svg" />
+          <img src="./volleyball-svgrepo-com (5).svg" alt="" width="32" height="32" class="brand-ball-svg" />
           <span class="live-dot"></span>
         </div>
         <div class="brand-text">
           <div class="brand-title-row">
             <h1 id="tournament-title-display" title="Clique para editar o nome e a data do torneio">VÔLEI INTERNO</h1>
             <button id="btn-open-sessions" class="badge-pill date-session-pill" type="button" title="Definir Nome/Data ou abrir Torneios Guardados">
-              📅 <span id="header-date-display">Hoje</span> • Torneios
+              📅 <span id="header-date-display">Hoje</span>
             </button>
-            <span id="header-teams-badge" class="badge-pill">DINÂMICO</span>
+            <span id="header-teams-badge" class="badge-pill subtle">4 TIMES</span>
           </div>
-          <p class="brand-subtitle">Times de 3 ou 4 • Jogos criados na hora • Placar sem desfeita</p>
+          <p class="brand-subtitle">
+            <span id="header-games-count">0 concluídos</span> • Tempo: <span id="session-clock-display">00h 00m</span>
+          </p>
         </div>
       </div>
 
-      <!-- Session Stats & Quick Actions -->
+      <!-- Quick Actions Bar (Clean & Minimal) -->
       <div class="header-actions">
-        <div class="session-stats-pills">
-          <div class="stat-mini-box" title="Jogos concluídos hoje">
-            <span class="stat-mini-label">JOGOS HOJE</span>
-            <strong id="header-games-count" class="stat-mini-value">0 concluídos</strong>
-          </div>
-          <div class="stat-mini-box" title="Tempo total de quadra / sessão">
-            <span class="stat-mini-label">TEMPO DE QUADRA</span>
-            <strong id="session-clock-display" class="stat-mini-value cyan">00h 00m</strong>
-          </div>
-        </div>
-
         <div class="action-buttons-row">
-          <button id="btn-room-sync" class="action-btn btn-sync-live" type="button" title="Salvamento Automático e Código da Partida para vários celulares assistirem ao vivo">
+          <button id="btn-room-sync" class="action-btn btn-sync-live" type="button" title="Código da Sala Ao Vivo">
             <span class="sync-pulse-dot"></span>
-            <span id="room-sync-label">Salvo Auto • #VOLEI1</span>
+            <span id="room-sync-label">#VOLEI1</span>
           </button>
-          <button id="btn-voice-toggle" class="icon-btn active" type="button" title="Ativar/Desativar Narração em Voz (Locutor da Quadra)" aria-label="Alternar narração de voz">
-            <span id="voice-icon">🎙️</span>
+          <button id="btn-theme-toggle" class="icon-btn" type="button" title="Alternar Modo Escuro / Modo Claro" aria-label="Alternar tema claro ou escuro">
+            <span id="theme-icon">☀️</span>
           </button>
-          <button id="btn-elevenlabs-studio" class="action-btn btn-voice-studio" type="button" title="Textos prontos para ElevenLabs e Áudios de Narração">
-            <span>🗣️</span>
-            <span class="btn-label">ElevenLabs</span>
-          </button>
-          <button id="btn-sound-toggle" class="icon-btn active" type="button" title="Ativar/Desativar sons de apito e placar" aria-label="Alternar som">
+          <button id="btn-sound-toggle" class="icon-btn active" type="button" title="Ativar/Desativar Sons e Áudios" aria-label="Alternar som">
             <span id="sound-icon">🔊</span>
           </button>
-          <button id="btn-whatsapp-share" class="action-btn btn-whatsapp" type="button" title="Copiar resumo completo para WhatsApp">
+          <button id="btn-whatsapp-share" class="icon-btn" type="button" title="Copiar Resumo para WhatsApp">
             <span>📲</span>
-            <span class="btn-label">WhatsApp</span>
           </button>
-          <button id="btn-install-pwa" class="action-btn btn-install" type="button" title="Instalar aplicativo no celular ou PC">
-            <span>⬇️</span>
-            <span class="btn-label">Instalar App</span>
-          </button>
-          <button id="btn-settings-menu" class="icon-btn" type="button" title="Opções, Backup e Reiniciar Sessão" aria-label="Menu de opções">
+          <button id="btn-settings-menu" class="icon-btn" type="button" title="Configurações e Backup" aria-label="Menu de opções">
             <span>⚙️</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Main Navigation Tabs with Custom SVGs -->
+    <!-- Main Navigation Tabs -->
     <nav class="main-nav" aria-label="Navegação Principal">
       <button class="nav-tab active" data-tab="placar" type="button">
         <img src="./volleyball-svgrepo-com (1).svg" alt="" class="nav-svg-icon mono-svg" />
-        <span class="nav-text">Placar na Hora</span>
-        <span id="nav-live-badge" class="nav-badge live">QUADRA</span>
+        <span class="nav-text">Placar</span>
+        <span id="nav-live-badge" class="nav-badge live">AO VIVO</span>
       </button>
       <button class="nav-tab" data-tab="jogos" type="button">
         <img src="./volleyball-svgrepo-com (5).svg" alt="" class="nav-svg-icon" />
-        <span class="nav-text">Jogos & Fila</span>
+        <span class="nav-text">Jogos</span>
         <span id="nav-jogos-badge" class="nav-badge">Jogo #1</span>
       </button>
       <button class="nav-tab" data-tab="times" type="button">
         <img src="./volleyball-player-motion-svgrepo-com.svg" alt="" class="nav-svg-icon mono-svg" />
-        <span class="nav-text">Times & Sorteio</span>
+        <span class="nav-text">Sorteio</span>
         <span id="nav-times-badge" class="nav-badge subtle">Times</span>
       </button>
       <button class="nav-tab" data-tab="elenco" type="button">
         <img src="./man-playing-volleyball-svgrepo-com.svg" alt="" class="nav-svg-icon mono-svg" />
-        <span class="nav-text">⭐ Elenco Fixo</span>
+        <span class="nav-text">Elenco ★</span>
         <span id="nav-elenco-badge" class="nav-badge gold">0</span>
       </button>
       <button class="nav-tab" data-tab="classificacao" type="button">
         <img src="./beach-volleyball-svgrepo-com.svg" alt="" class="nav-svg-icon" />
-        <span class="nav-text">Ranking do Dia</span>
+        <span class="nav-text">Ranking</span>
         <span id="nav-leader-badge" class="nav-badge gold">Geral</span>
       </button>
     </nav>
@@ -133,86 +115,27 @@
   <main class="app-main">
 
     <!-- ==========================================
-         TAB 1: PLACAR NA HORA (LIVE SCOREBOARD)
+         TAB 1: PLACAR NA HORA (LIVE SCOREBOARD LIMPO)
          ========================================== -->
     <section id="tab-placar" class="tab-panel active" aria-label="Placar na Hora">
-      <!-- Dynamic Mode & Match Rules Control Bar -->
-      <div class="glass-card scoreboard-toolbar">
-        <div class="toolbar-left">
-          <label for="rotation-mode-select" class="toolbar-label">DINÂMICA DE CRIAÇÃO DE JOGOS (VAI GANHANDO / VAI PERDENDO)</label>
-          <div class="match-selector-row">
-            <select id="rotation-mode-select" class="modern-select" title="Como o próximo jogo é gerado quando uma partida acaba">
-              <option value="king">👑 Quem Ganha Fica (Vencedor continua × Próximo da fila)</option>
-              <option value="king_2max">🔄 Quem Ganha Fica (Máx. 2 vitórias seguidas, depois reveza)</option>
-              <option value="winners_losers">⚡ Chave Dinâmica (Vencedor × Vencedor e Perdedor × Perdedor)</option>
-              <option value="free">🎯 Livre na Hora (Você escolhe quem joga a cada partida)</option>
-            </select>
-            <button id="btn-create-custom-match" class="chip-btn accent" type="button" title="Criar ou trocar o confronto agora">
-              ➕ Novo Confronto
-            </button>
-          </div>
-        </div>
 
-        <div class="toolbar-right">
-          <div class="rule-group">
-            <span class="toolbar-label">META DE PONTOS</span>
-            <div class="target-points-pills" role="group" aria-label="Meta de pontos da partida">
-              <button type="button" class="pt-pill" data-pts="12">12</button>
-              <button type="button" class="pt-pill active" data-pts="15">15</button>
-              <button type="button" class="pt-pill" data-pts="18">18</button>
-              <button type="button" class="pt-pill" data-pts="21">21</button>
-              <button type="button" class="pt-pill" data-pts="25">25</button>
-            </div>
-          </div>
-
-          <div class="rule-group">
-            <span class="toolbar-label">REGRA</span>
-            <button id="btn-toggle-deuce" class="chip-btn active" type="button" title="Exigir 2 pontos de vantagem em caso de empate no ponto final">
-              ✅ Vai a 2
-            </button>
-          </div>
-
-          <div class="rule-group">
-            <span class="toolbar-label">QUADRA</span>
-            <div class="court-tools-row">
-              <button id="btn-swap-sides" class="chip-btn" type="button" title="Inverter o lado dos times na tela">
-                🔄 Virar Lado
-              </button>
-              <button id="btn-fullscreen-score" class="chip-btn" type="button" title="Expandir placar em tela cheia">
-                📺 Tela Cheia
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Queue / Waiting Teams Strip ("Próximos da Fila") -->
-      <div id="waiting-queue-bar" class="waiting-queue-bar">
-        <div class="queue-left">
-          <span class="queue-title">⏳ FILA DE ESPERA (PRÓXIMOS):</span>
-          <div id="waiting-teams-chips" class="waiting-teams-chips"></div>
-        </div>
-        <div class="queue-right">
-          <span id="streak-info-pill" class="streak-pill">🔥 Sequência na quadra: 0V</span>
-        </div>
-      </div>
-
-      <!-- Active Match Context Banner -->
+      <!-- Barra Compacta da Partida Atual (Fica logo acima do placar, sem poluição) -->
       <div id="live-match-banner" class="match-status-banner">
         <div class="banner-info">
-          <img src="./beach-volleyball-svgrepo-com.svg" alt="" width="26" height="26" />
           <span id="live-game-number" class="mini-tag">JOGO #1</span>
           <span id="live-stage-desc" class="game-tag">EM QUADRA AGORA</span>
-          <span id="live-status-pill" class="status-indicator in-progress">⚡ PLACAR AUDITADO • SEM DESFEITA</span>
+          <span id="live-status-pill" class="status-indicator in-progress">⚡ AO VIVO</span>
         </div>
         <div class="banner-timer">
-          <button id="btn-start-focus-match" class="btn-start-focus-match" type="button" title="Travar tela no placar gigante para ninguém mexer nas configurações até o final da partida">
-            ▶️ INICIAR PARTIDA (TELA FIXA)
+          <button id="btn-start-focus-match" class="btn-start-focus-match" type="button" title="Travar tela no placar gigante até o final da partida">
+            ▶️ Iniciar Partida (Tela Fixa)
           </button>
-          <span class="timer-icon">⏱️</span>
-          <span id="match-timer-display" class="mono-time">00:00</span>
-          <button id="btn-timer-toggle" class="mini-icon-btn" type="button" title="Iniciar/Pausar cronômetro da partida">▶️</button>
-          <button id="btn-timeout-30s" class="timeout-btn" type="button" title="Pedir tempo técnico de 30 segundos">✋ Tempo 30s</button>
+          <div class="timer-pill-box">
+            <span class="timer-icon">⏱️</span>
+            <span id="match-timer-display" class="mono-time">00:00</span>
+            <button id="btn-timer-toggle" class="mini-icon-btn" type="button" title="Iniciar/Pausar cronômetro">▶️</button>
+            <button id="btn-timeout-30s" class="timeout-btn" type="button" title="Tempo técnico de 30s">30s</button>
+          </div>
         </div>
       </div>
 
@@ -242,7 +165,7 @@
         <div id="match-alert-actions" class="match-alert-actions"></div>
       </div>
 
-      <!-- Main Dual Scoreboard Arena -->
+      <!-- PLACAR PRINCIPAL GIGANTE (Em 1º lugar na tela!) -->
       <div id="scoreboard-arena" class="scoreboard-arena">
         <!-- Side A (Left) -->
         <div id="score-card-left" class="score-team-card" data-side="left">
@@ -256,12 +179,12 @@
                 <div class="team-select-inline-row">
                   <select id="select-team-left" class="team-inline-switcher" aria-label="Trocar time do lado esquerdo"></select>
                 </div>
-                <p id="left-team-players" class="score-team-roster">Toque em Times & Sorteio para escalar</p>
+                <p id="left-team-players" class="score-team-roster">Sem jogadores escalados</p>
               </div>
             </div>
             <button id="btn-serve-left" class="serve-badge active" type="button" title="Clique para definir quem está sacando">
-              <img src="./volleyball-svgrepo-com (5).svg" alt="" width="20" height="20" class="ball-spin" />
-              <span>SACANDO</span>
+              <img src="./volleyball-svgrepo-com (5).svg" alt="" width="18" height="18" class="ball-spin" />
+              <span>SAQUE</span>
             </button>
           </div>
 
@@ -290,7 +213,12 @@
 
           <button id="btn-undo-point" class="center-action-btn" type="button" disabled title="Desfazer o último ponto marcado">
             <span>↩️</span>
-            <span>Desfazer</span>
+            <span>Voltar</span>
+          </button>
+
+          <button id="btn-swap-sides" class="center-action-btn subtle" type="button" title="Inverter o lado dos times na tela">
+            <span>🔄</span>
+            <span>Lado</span>
           </button>
 
           <button id="btn-reset-live-score" class="center-action-btn subtle" type="button" title="Zerar placar desta partida">
@@ -300,7 +228,7 @@
 
           <button id="btn-finish-match" class="center-action-btn finish" type="button" title="Encerrar partida atual e já gerar o próximo jogo automaticamente">
             <span>🏁</span>
-            <span>Fechar Jogo</span>
+            <span>Fechar</span>
           </button>
         </div>
 
@@ -316,12 +244,12 @@
                 <div class="team-select-inline-row">
                   <select id="select-team-right" class="team-inline-switcher" aria-label="Trocar time do lado direito"></select>
                 </div>
-                <p id="right-team-players" class="score-team-roster">Toque em Times & Sorteio para escalar</p>
+                <p id="right-team-players" class="score-team-roster">Sem jogadores escalados</p>
               </div>
             </div>
             <button id="btn-serve-right" class="serve-badge" type="button" title="Clique para definir quem está sacando">
-              <img src="./volleyball-svgrepo-com (5).svg" alt="" width="20" height="20" class="ball-spin" />
-              <span>SACANDO</span>
+              <img src="./volleyball-svgrepo-com (5).svg" alt="" width="18" height="18" class="ball-spin" />
+              <span>SAQUE</span>
             </button>
           </div>
 
@@ -342,94 +270,123 @@
         </div>
       </div>
 
-      <!-- Soundboard de Locução Oficial ElevenLabs & Deboche Instantâneo -->
-      <div class="glass-card deboche-soundboard-bar">
-        <div class="soundboard-section">
-          <span class="toolbar-label soundboard-title cyan-title">
-            🎙️ LOCUÇÃO OFICIAL ELEVENLABS (TOCA SOZINHO NO JOGO OU TOQUE PARA SOLTAR):
-          </span>
-          <div class="soundboard-buttons-grid official-grid">
-            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t1')">🔥 Match Point T1</button>
-            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t2')">🔥 Match Point T2</button>
-            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t3')">🔥 Match Point T3</button>
-            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t4')">🔥 Match Point T4</button>
+      <!-- Fila de Espera Compacta logo abaixo do placar -->
+      <div id="waiting-queue-bar" class="waiting-queue-bar">
+        <div class="queue-left">
+          <span class="queue-title">⏳ PRÓXIMOS NA FILA:</span>
+          <div id="waiting-teams-chips" class="waiting-teams-chips"></div>
+        </div>
+        <div class="queue-right">
+          <span id="streak-info-pill" class="streak-pill">🏐 Quadra aberta</span>
+        </div>
+      </div>
+
+      <!-- GAVETA 1: SOUNDBOARD DE DEBOCHE E VOZES (Retrátil para não poluir) -->
+      <details class="clean-drawer deboche-soundboard-bar" open>
+        <summary class="clean-drawer-summary">
+          <span>💅 <strong>Áudios de Deboche & Vozes da Partida</strong> <small>(Toque para recolher/abrir)</small></span>
+          <span class="drawer-chevron">▾</span>
+        </summary>
+        <div class="clean-drawer-body">
+          <div class="soundboard-buttons-grid deboche-grid">
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_passada')">💅 Passada!</button>
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_milagre')">😂 Milagre!</button>
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('deboche_lucinda')">🗑️ Toque Lucinda!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_narnia')">🤡 Pra Nárnia!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_inimigas')">🎁 Ponto p/ Inimigas!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_aposenta')">💀 Pede Música / Aposenta!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_close')">📸 Muito Close, Pouco Vôlei!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_maluca')">🤪 Maluca!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_doida')">😂 Doida!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_doida2')">🤣 Doida! (2)</button>
+          </div>
+          <div class="soundboard-buttons-grid official-grid" style="margin-top:8px;">
+            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t1')">🔥 Match Pt T1</button>
+            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t2')">🔥 Match Pt T2</button>
+            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t3')">🔥 Match Pt T3</button>
+            <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t4')">🔥 Match Pt T4</button>
             <button type="button" class="chip-btn" onclick="triggerDebocheAudio('victory_t1')">🏆 Vitória T1</button>
             <button type="button" class="chip-btn" onclick="triggerDebocheAudio('victory_t2')">🏆 Vitória T2</button>
             <button type="button" class="chip-btn" onclick="triggerDebocheAudio('victory_t3')">🏆 Vitória T3</button>
             <button type="button" class="chip-btn" onclick="triggerDebocheAudio('victory_t4')">🏆 Vitória T4</button>
           </div>
         </div>
-        <div class="soundboard-section soundboard-divider">
-          <span class="toolbar-label soundboard-title pink-title">
-            💅 SOUNDBOARD DEBOCHE ELEVENLABS (TOQUE PARA SOLTAR NA HORA):
-          </span>
-          <div class="soundboard-buttons-grid deboche-grid">
-            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_passada')">
-              💅 Passada! Saiu desfilando!
-            </button>
-            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_milagre')">
-              😂 Milagre acertou uma!
-            </button>
-            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_narnia')">
-              🤡 Mandou lá pra Nárnia!
-            </button>
-            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_inimigas')">
-              🎁 Ponto de graça pras inimigas!
-            </button>
-            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_aposenta')">
-              💀 Pede música e aposenta!
-            </button>
-            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_close')">
-              📸 Muito close e pouco vôlei!
-            </button>
-            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('deboche_lucinda')">
-              🗑️ Obrigado pelo toque, Lucinda!
-            </button>
-            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_maluca')">
-              🤪 Maluca! Hahaha!
-            </button>
-            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_doida')">
-              😂 Doida! Hahaha!
-            </button>
-            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_doida2')">
-              🤣 Doida! (2)
-            </button>
-          </div>
-        </div>
-      </div>
+      </details>
 
-      <!-- Anti-Desfeita Audit Log & Recent Games Feed -->
-      <div class="live-bottom-grid">
-        <!-- Audit Log Point-by-Point -->
-        <div class="glass-card audit-log-card">
-          <div class="card-header-row">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <img src="./volleyball-motion-svgrepo-com.svg" alt="" width="28" height="28" class="mono-svg-accent" />
-              <div>
-                <h3 class="card-title">Histórico Ponto a Ponto (Anti-Desfeita)</h3>
-                <p class="card-subtitle">Registro exato com horário e transição de saque para ninguém reclamar do placar</p>
+      <!-- GAVETA 2: CONFIGURAÇÕES RÁPIDAS DE PONTOS E REGRA DA QUADRA (Recolhida por padrão) -->
+      <details class="clean-drawer scoreboard-toolbar">
+        <summary class="clean-drawer-summary">
+          <span>⚙️ <strong>Ajustar Meta de Pontos (12/15/21/25) e Sistema de Jogos</strong></span>
+          <span class="drawer-chevron">▾</span>
+        </summary>
+        <div class="clean-drawer-body toolbar-drawer-grid">
+          <div class="toolbar-left">
+            <label for="rotation-mode-select" class="toolbar-label">DINÂMICA DOS JOGOS</label>
+            <div class="match-selector-row">
+              <select id="rotation-mode-select" class="modern-select">
+                <option value="winners_losers">🏆 Mini Torneio (J1, J2, Vencedores e Perdedores)</option>
+                <option value="king">👑 Quem Ganha Fica (Rei da Quadra)</option>
+                <option value="king_2max">🔄 Quem Ganha Fica (Máx. 2 vitórias seguidas)</option>
+                <option value="free">🎯 Livre na Hora</option>
+              </select>
+              <button id="btn-create-custom-match" class="chip-btn accent" type="button">
+                ➕ Novo Jogo
+              </button>
+            </div>
+          </div>
+
+          <div class="toolbar-right">
+            <div class="rule-group">
+              <span class="toolbar-label">META DE PONTOS</span>
+              <div class="target-points-pills" role="group">
+                <button type="button" class="pt-pill" data-pts="12">12</button>
+                <button type="button" class="pt-pill active" data-pts="15">15</button>
+                <button type="button" class="pt-pill" data-pts="18">18</button>
+                <button type="button" class="pt-pill" data-pts="21">21</button>
+                <button type="button" class="pt-pill" data-pts="25">25</button>
               </div>
             </div>
-            <span id="audit-count-badge" class="badge-pill subtle">0 lances</span>
-          </div>
-          <div id="point-history-list" class="point-history-list"></div>
-        </div>
 
-        <!-- Dynamic Next & Recent Matches Feed -->
-        <div class="glass-card mini-context-card">
-          <div class="card-header-row">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <img src="./volleyball-svgrepo-com (1).svg" alt="" width="26" height="26" class="mono-svg-accent" />
-              <div>
-                <h3 class="card-title">Sequência de Jogos do Dia</h3>
-                <p class="card-subtitle">Vai ganhando, vai perdendo e criando na hora sem limite fixo</p>
-              </div>
+            <div class="rule-group">
+              <span class="toolbar-label">VANTAGEM</span>
+              <button id="btn-toggle-deuce" class="chip-btn active" type="button">
+                ✅ Vai a 2
+              </button>
             </div>
-            <button id="btn-goto-all-games" class="text-link-btn" type="button">Ver todos →</button>
+
+            <div class="rule-group">
+              <span class="toolbar-label">TELA</span>
+              <button id="btn-fullscreen-score" class="chip-btn" type="button">
+                📺 Tela Cheia
+              </button>
+            </div>
           </div>
-          <div id="live-recent-matches-preview" class="mini-matches-preview"></div>
         </div>
-      </div>
+      </details>
+
+      <!-- GAVETA 3: HISTÓRICO PONTO A PONTO E SEQUÊNCIA DE JOGOS (Recolhida por padrão) -->
+      <details class="clean-drawer live-bottom-drawer">
+        <summary class="clean-drawer-summary">
+          <span>📋 <strong>Histórico Ponto a Ponto & Próximos Jogos</strong> <span id="audit-count-badge" class="badge-pill subtle" style="margin-left:6px;">0 lances</span></span>
+          <span class="drawer-chevron">▾</span>
+        </summary>
+        <div class="clean-drawer-body live-bottom-grid">
+          <div class="glass-card audit-log-card">
+            <div class="card-header-row">
+              <h3 class="card-title">Lances desta Partida</h3>
+            </div>
+            <div id="point-history-list" class="point-history-list"></div>
+          </div>
+
+          <div class="glass-card mini-context-card">
+            <div class="card-header-row">
+              <h3 class="card-title">Sequência de Jogos</h3>
+              <button id="btn-goto-all-games" class="text-link-btn" type="button">Ver todos →</button>
+            </div>
+            <div id="live-recent-matches-preview" class="mini-matches-preview"></div>
+          </div>
+        </div>
+      </details>
     </section>
 
     <!-- ==========================================
@@ -1256,6 +1213,6 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="./volei-ui.js?v=3.9.0"></script>
+  <script src="./volei-ui.js?v=4.0.0"></script>
 </body>
 </html>
