@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=3.7.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -46,7 +46,10 @@
         </div>
         <div class="brand-text">
           <div class="brand-title-row">
-            <h1 id="tournament-title-display" title="Clique para editar o nome da resenha/torneio">VÔLEI INTERNO</h1>
+            <h1 id="tournament-title-display" title="Clique para editar o nome e a data do torneio">VÔLEI INTERNO</h1>
+            <button id="btn-open-sessions" class="badge-pill date-session-pill" type="button" title="Definir Nome/Data ou abrir Torneios Guardados">
+              📅 <span id="header-date-display">Hoje</span> • Torneios
+            </button>
             <span id="header-teams-badge" class="badge-pill">DINÂMICO</span>
           </div>
           <p class="brand-subtitle">Times de 3 ou 4 • Jogos criados na hora • Placar sem desfeita</p>
@@ -198,10 +201,33 @@
           <span id="live-status-pill" class="status-indicator in-progress">⚡ PLACAR AUDITADO • SEM DESFEITA</span>
         </div>
         <div class="banner-timer">
+          <button id="btn-start-focus-match" class="btn-start-focus-match" type="button" title="Travar tela no placar gigante para ninguém mexer nas configurações até o final da partida">
+            ▶️ INICIAR PARTIDA (TELA FIXA)
+          </button>
           <span class="timer-icon">⏱️</span>
           <span id="match-timer-display" class="mono-time">00:00</span>
           <button id="btn-timer-toggle" class="mini-icon-btn" type="button" title="Iniciar/Pausar cronômetro da partida">▶️</button>
           <button id="btn-timeout-30s" class="timeout-btn" type="button" title="Pedir tempo técnico de 30 segundos">✋ Tempo 30s</button>
+        </div>
+      </div>
+
+      <!-- Barra de Controle do Modo Partida Fixa (Aparece somente quando "Iniciar Partida" está ativo) -->
+      <div id="focus-mode-bar" class="focus-mode-bar hidden">
+        <div class="focus-bar-left">
+          <span class="focus-live-badge">🔴 EM PARTIDA</span>
+          <strong id="focus-match-title">JOGO #1</strong>
+          <span id="focus-timer-mirror" class="mono-time">00:00</span>
+        </div>
+        <div class="focus-bar-actions">
+          <button id="btn-toggle-court-lock" class="focus-ctrl-btn" type="button" title="Bloqueia até os botões de ponto para ninguém esbarrar na tela">
+            🔒 Travar Toques
+          </button>
+          <button id="btn-focus-swap-sides" class="focus-ctrl-btn" type="button" title="Inverter lado dos times">
+            🔄 Lado
+          </button>
+          <button id="btn-exit-focus-match" class="focus-ctrl-btn exit-btn" type="button" title="Sair da tela fixa e voltar ao painel completo">
+            🔓 Sair da Tela Fixa
+          </button>
         </div>
       </div>
 
@@ -312,12 +338,12 @@
       </div>
 
       <!-- Soundboard de Locução Oficial ElevenLabs & Deboche Instantâneo -->
-      <div class="glass-card deboche-soundboard-bar" style="padding:12px 16px;margin-bottom:16px;display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-          <span class="toolbar-label" style="color:#38bdf8;display:flex;align-items:center;gap:6px;">
-            🎙️ LOCUÇÃO OFICIAL ELEVENLABS (TOCA SOZINHO NO JOGO OU CLIQUE PARA SOLTAR):
+      <div class="glass-card deboche-soundboard-bar">
+        <div class="soundboard-section">
+          <span class="toolbar-label soundboard-title cyan-title">
+            🎙️ LOCUÇÃO OFICIAL ELEVENLABS (TOCA SOZINHO NO JOGO OU TOQUE PARA SOLTAR):
           </span>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;justify-content:flex-end;">
+          <div class="soundboard-buttons-grid official-grid">
             <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t1')">🔥 Match Point T1</button>
             <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t2')">🔥 Match Point T2</button>
             <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t3')">🔥 Match Point T3</button>
@@ -328,25 +354,25 @@
             <button type="button" class="chip-btn" onclick="triggerDebocheAudio('victory_t4')">🏆 Vitória T4</button>
           </div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid rgba(148,163,184,0.12);padding-top:8px;">
-          <span class="toolbar-label" style="color:#f472b6;display:flex;align-items:center;gap:6px;">
-            💅 SOUNDBOARD DEBOCHE ELEVENLABS (TOQUE PARA SOLTAR O ÁUDIO NA HORA):
+        <div class="soundboard-section soundboard-divider">
+          <span class="toolbar-label soundboard-title pink-title">
+            💅 SOUNDBOARD DEBOCHE ELEVENLABS (TOQUE PARA SOLTAR NA HORA):
           </span>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;justify-content:flex-end;">
+          <div class="soundboard-buttons-grid deboche-grid">
             <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_passada')">
-              💅 Passada! Saiu desfilando! (MP3)
+              💅 Passada! Saiu desfilando!
             </button>
             <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_milagre')">
-              😂 Milagre acertou uma! (MP3)
+              😂 Milagre acertou uma!
             </button>
             <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_narnia')">
-              🤡 Mandou lá pra Nárnia! (MP3)
+              🤡 Mandou lá pra Nárnia!
             </button>
             <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('slay_2')">
               👑 Entregou tudo!
             </button>
             <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_2')">
-              👛 Mão fofa!
+              👛 Que mão fofa!
             </button>
             <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('flop_3')">
               🚧 A rede subiu?
@@ -963,9 +989,75 @@
     </div>
   </div>
 
+  <!-- ==========================================
+       MODAL 7: NOME E DATA DO TORNEIO + HISTÓRICO DE SESSÕES GUARDADAS
+       ========================================== -->
+  <div id="modal-sessions" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-sessions-title">
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow-tag">ORGANIZAÇÃO POR NOME & DATA • HISTÓRICO SALVO</span>
+          <h3 id="modal-sessions-title" class="modal-title">📅 Identificar Torneio do Dia & Torneios Salvos</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-sessions" type="button" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body settings-modal-body">
+        <div class="session-setup-box">
+          <div class="session-inputs-grid">
+            <div class="setting-field">
+              <label for="input-session-title" class="toolbar-label">NOME DO TORNEIO / RESENHA</label>
+              <input
+                type="text"
+                id="input-session-title"
+                class="modern-input"
+                placeholder="Ex: Vôlei de Sexta, Torneio da Galera..."
+                value="VÔLEI INTERNO"
+              />
+            </div>
+            <div class="setting-field">
+              <label for="input-session-date" class="toolbar-label">DATA DO JOGO</label>
+              <input
+                type="date"
+                id="input-session-date"
+                class="modern-input"
+              />
+            </div>
+          </div>
+
+          <div class="session-setup-actions">
+            <button id="btn-save-session-meta" class="btn-accent-glow full-width" type="button">
+              🏐 Confirmar Nome e Data e Abrir Placar
+            </button>
+            <button id="btn-create-new-session-archive" class="chip-btn accent full-width" type="button">
+              ➕ Guardar Torneio Atual no Histórico e Começar um NOVO do Zero
+            </button>
+          </div>
+        </div>
+
+        <hr class="modal-divider" style="margin: 16px 0;" />
+
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+            <span class="toolbar-label" style="margin-bottom:0;">📚 TORNEIOS GUARDADOS (SEPARADOS POR NOME E DATA)</span>
+            <span id="saved-sessions-count" class="badge-pill subtle">0 salvos</span>
+          </div>
+          <p class="modal-hint" style="margin-bottom:10px;">
+            Todos os seus torneios ficam guardados abaixo. Você pode abrir qualquer dia anterior para consultar o ranking ou continuar jogando:
+          </p>
+          <div id="saved-sessions-list" class="saved-sessions-list"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-primary" data-close-modal="modal-sessions" type="button">Pronto • Ir para a Quadra</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="./volei-ui.js"></script>
+  <script src="./volei-ui.js?v=3.7.0"></script>
 </body>
 </html>

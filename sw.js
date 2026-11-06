@@ -1,9 +1,9 @@
-const CACHE_NAME = 'volei-arena-v3.5.0';
+const CACHE_NAME = 'volei-arena-v3.7.0';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css',
-  './volei-ui.js',
+  './styles.css?v=3.7.0',
+  './volei-ui.js?v=3.7.0',
   './manifest.json',
   './icon.svg',
   './icon-192.png',
@@ -58,6 +58,31 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/api/')) return;
+
+  const isCodeOrDoc =
+    event.request.mode === 'navigate' ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname === '/';
+
+  if (isCodeOrDoc) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {

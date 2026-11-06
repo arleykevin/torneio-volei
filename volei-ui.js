@@ -139,10 +139,30 @@ function createMiniTorneioBlock(miniIndex = 1, startId = 1, teams = []) {
   ];
 }
 
-function createDefaultState() {
+const SAVED_SESSIONS_KEY = 'volei_saved_sessions_v1';
+
+function getTodayDateIso() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatDateBr(isoStr) {
+  if (!isoStr || typeof isoStr !== 'string') return 'Hoje';
+  const parts = isoStr.split('-');
+  if (parts.length !== 3) return isoStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function createDefaultState(customName = 'VÔLEI INTERNO', customDate = null) {
   const teams = createDefaultTeams(4);
   return {
-    tournamentName: 'VÔLEI INTERNO',
+    sessionId: `sess_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    tournamentName: customName || 'VÔLEI INTERNO',
+    tournamentDate: customDate || getTodayDateIso(),
+    sessionSetupConfirmed: false,
     roomCode: 'VOLEI1',
     soundEnabled: true,
     voiceEnabled: true,
@@ -173,6 +193,9 @@ let deferredPwaPrompt = null;
 let syncPushTimeout = null;
 let ntfyEventSource = null;
 let localPollInterval = null;
+let courtFocusMode = false;
+let courtTouchLocked = false;
+let wakeLockSentinel = null;
 // Pre-loaded official ElevenLabs MP3s from ./audio/ (plus any user-uploaded custom MP3s)
 const customAudioMap = {
   matchpoint_t1: './audio/matchpoint_t1.mp3',
@@ -211,7 +234,7 @@ function loadState() {
         const decoded = JSON.parse(decodeURIComponent(escape(atob(urlSnap))));
         if (decoded && Array.isArray(decoded.teams)) {
           const def = createDefaultState();
-          const merged = { ...def, ...decoded };
+          const merged = { ...def, ...decoded, sessionSetupConfirmed: true };
           if (urlRoom) merged.roomCode = urlRoom.toUpperCase();
           localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
           return merged;
@@ -235,6 +258,12 @@ function loadState() {
       parsed.liveMatchId = 1;
     }
     const finalState = { ...def, ...parsed };
+    if (!finalState.sessionId) {
+      finalState.sessionId = `sess_${Date.now()}`;
+    }
+    if (!finalState.tournamentDate) {
+      finalState.tournamentDate = getTodayDateIso();
+    }
     if (urlRoom) finalState.roomCode = urlRoom.toUpperCase();
     return finalState;
   } catch (e) {
@@ -242,11 +271,42 @@ function loadState() {
   }
 }
 
+function getSavedSessionsList() {
+  try {
+    const raw = localStorage.getItem(SAVED_SESSIONS_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function upsertCurrentSessionInArchive() {
+  try {
+    if (!state.sessionId) {
+      state.sessionId = `sess_${Date.now()}`;
+    }
+    const list = getSavedSessionsList();
+    const snapshot = JSON.parse(JSON.stringify(state));
+    const idx = list.findIndex((item) => item.sessionId === state.sessionId);
+    if (idx >= 0) {
+      list[idx] = snapshot;
+    } else {
+      list.unshift(snapshot);
+    }
+    // Keep up to 35 saved sessions sorted newest updated first
+    list.sort((a, b) => (b.updatedAtMs || 0) - (a.updatedAtMs || 0));
+    localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(list.slice(0, 35)));
+  } catch (_) {}
+}
+
 function saveState(shouldBroadcast = true) {
   try {
     state.lastSavedAt = new Date().toLocaleTimeString('pt-BR');
     state.updatedAtMs = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    upsertCurrentSessionInArchive();
     updateSyncStatusUI();
 
     if (shouldBroadcast) {
@@ -264,7 +324,7 @@ function updateSyncStatusUI() {
   const code = (state.roomCode || 'VOLEI1').toUpperCase();
   const labelEl = document.getElementById('room-sync-label');
   if (labelEl) {
-    labelEl.textContent = `Salvo Auto (${state.lastSavedAt || 'agora'}) • #${code}`;
+    labelEl.innerHTML = `<span class="btn-label">Salvo (${state.lastSavedAt || 'agora'}) • </span>#${escapeHtml(code)}`;
   }
   const pillEl = document.getElementById('sync-code-pill');
   if (pillEl) {
@@ -890,9 +950,213 @@ function generateNextMatchesAfterFinish(finishedMatch) {
 }
 
 /* ==========================================
+   MODO PARTIDA FIXA (TELA TRAVADA) & HISTÓRICO DE SESSÕES
+   ========================================== */
+function isCourtTouchBlocked() {
+  if (courtTouchLocked) {
+    showToast('🔒 <strong>Placar Travado!</strong> Toque em "🔓 Destravar" no topo para alterar os pontos.', 'warn');
+    return true;
+  }
+  return false;
+}
+
+async function requestScreenWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLockSentinel = await navigator.wakeLock.request('screen');
+    }
+  } catch (_) {}
+}
+
+function releaseScreenWakeLock() {
+  try {
+    if (wakeLockSentinel) {
+      wakeLockSentinel.release();
+      wakeLockSentinel = null;
+    }
+  } catch (_) {}
+}
+
+window.enterCourtFocusMode = function () {
+  courtFocusMode = true;
+  courtTouchLocked = false;
+  document.body.classList.add('court-focus-mode');
+  document.body.classList.remove('court-locked');
+  document.getElementById('focus-mode-bar')?.classList.remove('hidden');
+
+  const lockBtn = document.getElementById('btn-toggle-court-lock');
+  if (lockBtn) {
+    lockBtn.classList.remove('locked-active');
+    lockBtn.innerHTML = '🔒 Travar Toques';
+  }
+
+  // Start timer automatically if not running
+  if (!timerRunning) {
+    document.getElementById('btn-timer-toggle')?.click();
+  }
+
+  requestScreenWakeLock();
+  renderLiveScoreboard();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  showToast('🏐 <strong>Modo Partida Iniciado!</strong> Tela fixa no placar gigante.', 'success');
+};
+
+window.exitCourtFocusMode = function () {
+  courtFocusMode = false;
+  courtTouchLocked = false;
+  document.body.classList.remove('court-focus-mode', 'court-locked');
+  document.getElementById('focus-mode-bar')?.classList.add('hidden');
+  releaseScreenWakeLock();
+  renderLiveScoreboard();
+  showToast('🔓 Saiu do Modo Tela Fixa. Painel completo liberado!', 'info');
+};
+
+window.toggleCourtTouchLock = function () {
+  courtTouchLocked = !courtTouchLocked;
+  document.body.classList.toggle('court-locked', courtTouchLocked);
+  const lockBtn = document.getElementById('btn-toggle-court-lock');
+  if (lockBtn) {
+    lockBtn.classList.toggle('locked-active', courtTouchLocked);
+    lockBtn.innerHTML = courtTouchLocked ? '🔓 Destravar Placar' : '🔒 Travar Toques';
+  }
+  renderLiveScoreboard();
+  if (courtTouchLocked) {
+    showToast('🔒 <strong>Toques Travados!</strong> Ninguém consegue mexer nos pontos até destravar.', 'warn');
+  } else {
+    showToast('🔓 <strong>Placar Destravado!</strong> Pode marcar os pontos.', 'success');
+  }
+};
+
+function openSessionsModal() {
+  const nameInput = document.getElementById('input-session-title');
+  const dateInput = document.getElementById('input-session-date');
+  if (nameInput) nameInput.value = state.tournamentName || 'VÔLEI INTERNO';
+  if (dateInput) dateInput.value = state.tournamentDate || getTodayDateIso();
+  renderSavedSessionsModal();
+  document.getElementById('modal-sessions')?.classList.remove('hidden');
+}
+
+function renderSavedSessionsModal() {
+  upsertCurrentSessionInArchive();
+  const listEl = document.getElementById('saved-sessions-list');
+  const countEl = document.getElementById('saved-sessions-count');
+  if (!listEl) return;
+
+  const list = getSavedSessionsList();
+  if (countEl) {
+    countEl.textContent = `${list.length} ${list.length === 1 ? 'salvo' : 'salvos'}`;
+  }
+
+  if (list.length === 0) {
+    listEl.innerHTML = `<div class="empty-state-mini">Nenhum torneio salvo ainda.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = list
+    .map((sess) => {
+      const isCurrent = sess.sessionId === state.sessionId;
+      const doneGames = (sess.matches || []).filter((m) => m.status === 'done').length;
+      const totalGames = (sess.matches || []).length;
+      const dateFormatted = formatDateBr(sess.tournamentDate);
+      const nTeams = (sess.teams || []).length;
+
+      // Quick leader calculation
+      const winsMap = {};
+      (sess.teams || []).forEach((t) => (winsMap[t.id] = { name: t.name, w: 0 }));
+      (sess.matches || []).forEach((m) => {
+        if (m.status === 'done' && m.winnerId && winsMap[m.winnerId]) {
+          winsMap[m.winnerId].w += 1;
+        }
+      });
+      const sortedTeams = Object.values(winsMap).sort((a, b) => b.w - a.w);
+      const leaderStr =
+        doneGames > 0 && sortedTeams[0]
+          ? `🏆 Líder: ${escapeHtml(sortedTeams[0].name)} (${sortedTeams[0].w}V)`
+          : '⏳ Em andamento';
+
+      return `
+        <div class="saved-session-item ${isCurrent ? 'active-session' : ''}">
+          <div class="saved-session-info">
+            <div class="saved-session-top">
+              <strong>${escapeHtml(sess.tournamentName || 'VÔLEI INTERNO')}</strong>
+              <span class="session-date-chip">📅 ${escapeHtml(dateFormatted)}</span>
+              ${isCurrent ? `<span class="badge-pill">ABERTO AGORA</span>` : ''}
+            </div>
+            <div class="saved-session-meta">
+              <span>🛡️ ${nTeams} Times</span>
+              <span>•</span>
+              <span>🏐 ${doneGames}/${totalGames} jogos concluídos</span>
+              <span>•</span>
+              <span>${leaderStr}</span>
+            </div>
+          </div>
+          <div class="saved-session-actions">
+            ${
+              !isCurrent
+                ? `<button type="button" class="mini-action-btn accent" onclick="loadSavedSessionById('${sess.sessionId}')">📂 Abrir</button>`
+                : ''
+            }
+            <button type="button" class="mini-action-btn" onclick="copySavedSessionSummary('${sess.sessionId}')" title="Copiar resumo deste dia para WhatsApp">📲 Resumo</button>
+            ${
+              list.length > 1
+                ? `<button type="button" class="mini-action-btn" onclick="deleteSavedSessionById('${sess.sessionId}')" title="Excluir do histórico">🗑️</button>`
+                : ''
+            }
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+window.loadSavedSessionById = function (sessionId) {
+  upsertCurrentSessionInArchive();
+  const list = getSavedSessionsList();
+  const target = list.find((s) => s.sessionId === sessionId);
+  if (!target) return;
+
+  state = { ...createDefaultState(), ...target, sessionSetupConfirmed: true };
+  saveState(true);
+  renderAll();
+  renderSavedSessionsModal();
+  document.getElementById('modal-sessions')?.classList.add('hidden');
+  showToast(
+    `📂 Torneio <strong>${escapeHtml(state.tournamentName)} (${formatDateBr(state.tournamentDate)})</strong> carregado!`,
+    'success'
+  );
+};
+
+window.deleteSavedSessionById = function (sessionId) {
+  let list = getSavedSessionsList().filter((s) => s.sessionId !== sessionId);
+  localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(list));
+  if (state.sessionId === sessionId && list.length > 0) {
+    state = { ...createDefaultState(), ...list[0], sessionSetupConfirmed: true };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    renderAll();
+  }
+  renderSavedSessionsModal();
+  showToast('🗑️ Torneio removido do histórico.', 'info');
+};
+
+window.copySavedSessionSummary = function (sessionId) {
+  const list = getSavedSessionsList();
+  const target = list.find((s) => s.sessionId === sessionId);
+  if (!target) return;
+  const backupCurrent = state;
+  state = target;
+  const summaryText = generateWhatsAppSummary();
+  state = backupCurrent;
+  copyTextToClipboard(
+    summaryText,
+    `📲 Resumo de "${target.tournamentName} (${formatDateBr(target.tournamentDate)})" copiado!`
+  );
+};
+
+/* ==========================================
    LIVE SCOREBOARD ACTIONS
    ========================================== */
 function addPointToSide(sideKey) {
+  if (isCourtTouchBlocked()) return;
   const match = getCurrentLiveMatch();
   if (!match) return;
 
@@ -997,6 +1261,7 @@ function addPointToSide(sideKey) {
 }
 
 function subtractPointFromSide(sideKey) {
+  if (isCourtTouchBlocked()) return;
   const match = getCurrentLiveMatch();
   if (!match) return;
 
@@ -1046,6 +1311,7 @@ function subtractPointFromSide(sideKey) {
 }
 
 function undoLastPoint() {
+  if (isCourtTouchBlocked()) return;
   const match = getCurrentLiveMatch();
   if (!match || !match.history || match.history.length === 0) return;
 
@@ -1071,6 +1337,7 @@ function undoLastPoint() {
 }
 
 function finalizeMatchFromLive(match) {
+  if (isCourtTouchBlocked()) return;
   if (match.scoreA === match.scoreB) {
     showToast('⚠️ O jogo está empatado! Desempate antes de encerrar.', 'warn');
     return;
@@ -1139,6 +1406,10 @@ function renderHeaderAndNav() {
   const currentMatch = getCurrentLiveMatch();
 
   document.getElementById('tournament-title-display').textContent = state.tournamentName;
+  const dateBadgeEl = document.getElementById('header-date-display');
+  if (dateBadgeEl) {
+    dateBadgeEl.textContent = formatDateBr(state.tournamentDate);
+  }
   document.getElementById('header-teams-badge').textContent = `${state.teams.length} TIMES`;
   document.getElementById('header-games-count').textContent = `${doneCount} ${
     doneCount === 1 ? 'concluído' : 'concluídos'
@@ -1239,6 +1510,10 @@ function renderLiveScoreboard() {
 
   document.getElementById('live-game-number').textContent = `JOGO #${match.id}`;
   document.getElementById('live-stage-desc').textContent = match.stageLabel || 'Partida em Quadra';
+  const focusTitleEl = document.getElementById('focus-match-title');
+  if (focusTitleEl) {
+    focusTitleEl.textContent = `JOGO #${match.id} • ${leftTeam.name} × ${rightTeam.name}`;
+  }
 
   const statusPill = document.getElementById('live-status-pill');
   if (match.status === 'done') {
@@ -1278,7 +1553,7 @@ function renderLiveScoreboard() {
   }
   if (rightWatermark) rightWatermark.src = rightTeam.icon;
 
-  // Populate inline team switchers on scoreboard
+  // Populate inline team switchers on scoreboard (disabled during Focus Mode so nobody changes teams by accident)
   const selectLeft = document.getElementById('select-team-left');
   const selectRight = document.getElementById('select-team-right');
   if (selectLeft && selectRight) {
@@ -1292,6 +1567,8 @@ function renderLiveScoreboard() {
         (t) => `<option value="${t.id}" ${t.id === rightTeam.id ? 'selected' : ''}>${escapeHtml(t.name)}</option>`
       )
       .join('');
+    selectLeft.disabled = courtFocusMode || courtTouchLocked;
+    selectRight.disabled = courtFocusMode || courtTouchLocked;
   }
 
   document.getElementById('left-team-players').textContent =
@@ -1345,6 +1622,9 @@ function renderLiveScoreboard() {
 
     const winnerTeam = leftWon ? leftTeam : rightTeam;
     const nextPending = state.matches.find((m) => m.status !== 'done' && m.id !== match.id);
+    const exitFocusBtnHtml = courtFocusMode
+      ? `<button type="button" class="chip-btn" onclick="exitCourtFocusMode()">🔓 Sair da Tela Fixa</button>`
+      : '';
 
     alertBar.className = 'match-alert-bar victory';
     if (nextPending) {
@@ -1352,11 +1632,14 @@ function renderLiveScoreboard() {
       const nB = getTeamById(nextPending.teamBId);
       alertText.innerHTML = `🏆 <strong>${escapeHtml(winnerTeam.name)}</strong> venceu (${match.scoreA}×${
         match.scoreB
-      })! Próximo Jogo #${nextPending.id}: <strong>${escapeHtml(nA.name)} × ${escapeHtml(nB.name)}</strong>`;
+      })! Próximo Jogo #${nextPending.id}: <strong>${escapeHtml(nA ? nA.name : 'A definir')} × ${escapeHtml(
+        nB ? nB.name : 'A definir'
+      )}</strong>`;
       alertActions.innerHTML = `
         <button type="button" class="btn-primary" onclick="startMatchById(${nextPending.id})">
           ▶️ Iniciar Jogo #${nextPending.id} Agora
         </button>
+        ${exitFocusBtnHtml}
       `;
     } else {
       alertText.innerHTML = `🏆 <strong>${escapeHtml(winnerTeam.name)}</strong> venceu por <strong>${
@@ -1366,6 +1649,7 @@ function renderLiveScoreboard() {
         <button type="button" class="btn-primary" onclick="createAndStartNextMatchManual()">
           ➕ Criar Próximo Jogo
         </button>
+        ${exitFocusBtnHtml}
       `;
     }
   } else if (mpLogical) {
@@ -1517,12 +1801,12 @@ function renderDynamicGamesTab() {
     const j3Id = games[2]?.id || 3;
     const j4Id = games[3]?.id || 4;
     htmlBlocks.push(`
-      <div class="glass-card" style="padding:16px;margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(148,163,184,0.16);flex-wrap:wrap;gap:6px;">
+      <div class="glass-card mini-torneio-group-card">
+        <div class="mini-torneio-group-header">
           <strong style="font-size:0.95rem;color:#38bdf8;letter-spacing:0.05em;">🏆 ${miniIdx}º MINI TORNEIO</strong>
           <span style="font-size:0.75rem;color:var(--text-secondary);">J3: vencedores dos dois primeiros jogos | J4: perdedores dos dois primeiros jogos</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px;">
+        <div class="mini-torneio-games-grid">
           ${games.map((m) => buildMatchRowHtml(m)).join('')}
         </div>
       </div>
@@ -2095,7 +2379,7 @@ function generateWhatsAppSummary() {
   const doneMatches = state.matches.filter((m) => m.status === 'done');
 
   let text = `🏐 *${state.tournamentName}* 🏐\n`;
-  text += `_${state.teams.length} Equipes • ${doneMatches.length} Jogos realizados hoje_\n\n`;
+  text += `📅 _Data: ${formatDateBr(state.tournamentDate)} • ${state.teams.length} Equipes • ${doneMatches.length} Jogos realizados_\n\n`;
 
   text += `🏆 *RANKING DO DIA:*\n`;
   rows.forEach((r, idx) => {
@@ -2378,8 +2662,64 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('tournament-title-display').addEventListener('click', () => {
-    document.getElementById('input-tournament-name').value = state.tournamentName;
-    document.getElementById('modal-settings').classList.remove('hidden');
+    openSessionsModal();
+  });
+
+  document.getElementById('btn-open-sessions')?.addEventListener('click', () => {
+    openSessionsModal();
+  });
+
+  document.getElementById('btn-save-session-meta')?.addEventListener('click', () => {
+    const newName = (document.getElementById('input-session-title')?.value || '').trim() || 'VÔLEI INTERNO';
+    const newDate = document.getElementById('input-session-date')?.value || getTodayDateIso();
+    state.tournamentName = newName;
+    state.tournamentDate = newDate;
+    state.sessionSetupConfirmed = true;
+    saveState();
+    renderAll();
+    document.getElementById('modal-sessions')?.classList.add('hidden');
+    showToast(`🏐 Torneio <strong>${escapeHtml(newName)} (${formatDateBr(newDate)})</strong> confirmado!`, 'success');
+  });
+
+  document.getElementById('btn-create-new-session-archive')?.addEventListener('click', () => {
+    upsertCurrentSessionInArchive();
+    const newName = (document.getElementById('input-session-title')?.value || '').trim() || 'VÔLEI INTERNO';
+    const newDate = document.getElementById('input-session-date')?.value || getTodayDateIso();
+    const prevRoom = state.roomCode || 'VOLEI1';
+
+    state = createDefaultState(newName, newDate);
+    state.roomCode = prevRoom;
+    state.sessionSetupConfirmed = true;
+    saveState();
+    renderAll();
+    renderSavedSessionsModal();
+    document.getElementById('modal-sessions')?.classList.add('hidden');
+    showToast(
+      `✨ Torneio anterior guardado! Novo torneio <strong>${escapeHtml(newName)} (${formatDateBr(newDate)})</strong> criado do zero!`,
+      'success'
+    );
+  });
+
+  // Focus Match Mode ("Iniciar Partida" / Tela Fixa / Travar Toques)
+  document.getElementById('btn-start-focus-match')?.addEventListener('click', () => {
+    window.enterCourtFocusMode();
+  });
+
+  document.getElementById('btn-exit-focus-match')?.addEventListener('click', () => {
+    window.exitCourtFocusMode();
+  });
+
+  document.getElementById('btn-toggle-court-lock')?.addEventListener('click', () => {
+    window.toggleCourtTouchLock();
+  });
+
+  document.getElementById('btn-focus-swap-sides')?.addEventListener('click', () => {
+    if (isCourtTouchBlocked()) return;
+    state.swappedSides = !state.swappedSides;
+    playSound('point');
+    saveState();
+    renderLiveScoreboard();
+    showToast('🔄 Lados invertidos!', 'info');
   });
 
   // Rotation Mode & New Match Creation
@@ -2485,6 +2825,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-minus-right').addEventListener('click', () => subtractPointFromSide('right'));
 
   document.getElementById('btn-serve-left').addEventListener('click', () => {
+    if (isCourtTouchBlocked()) return;
     const match = getCurrentLiveMatch();
     match.serving = state.swappedSides ? 'B' : 'A';
     saveState();
@@ -2492,6 +2833,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-serve-right').addEventListener('click', () => {
+    if (isCourtTouchBlocked()) return;
     const match = getCurrentLiveMatch();
     match.serving = state.swappedSides ? 'A' : 'B';
     saveState();
@@ -2501,6 +2843,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-undo-point').addEventListener('click', undoLastPoint);
 
   document.getElementById('btn-reset-live-score').addEventListener('click', () => {
+    if (isCourtTouchBlocked()) return;
     const match = getCurrentLiveMatch();
     match.scoreA = 0;
     match.scoreB = 0;
@@ -2529,7 +2872,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateTimerDisplay() {
     const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
     const s = String(timerSeconds % 60).padStart(2, '0');
-    document.getElementById('match-timer-display').textContent = `${m}:${s}`;
+    const formatted = `${m}:${s}`;
+    document.getElementById('match-timer-display').textContent = formatted;
+    const focusMirror = document.getElementById('focus-timer-mirror');
+    if (focusMirror) focusMirror.textContent = formatted;
   }
 
   document.getElementById('btn-timer-toggle').addEventListener('click', () => {
@@ -2851,15 +3197,29 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-close-modal]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const targetId = btn.dataset.closeModal;
+      if (targetId === 'modal-sessions') {
+        state.sessionSetupConfirmed = true;
+        saveState(false);
+      }
       document.getElementById(targetId)?.classList.add('hidden');
     });
   });
 
   document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
     backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) backdrop.classList.add('hidden');
+      if (e.target === backdrop) {
+        if (backdrop.id === 'modal-sessions') {
+          state.sessionSetupConfirmed = true;
+          saveState(false);
+        }
+        backdrop.classList.add('hidden');
+      }
     });
   });
 
   renderAll();
+
+  if (!state.sessionSetupConfirmed && !urlParams.get('sala') && !urlParams.get('s')) {
+    openSessionsModal();
+  }
 });
