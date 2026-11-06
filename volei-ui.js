@@ -211,6 +211,7 @@ function createDefaultState(customName = 'VÔLEI INTERNO', customDate = null) {
     theme: savedTheme,
     roomCode: 'VOLEI1',
     soundEnabled: true,
+    whistlesEnabled: false, // Apitos automáticos nos pontos desativados por padrão (ativáveis com 1 clique)
     voiceEnabled: true,
     lastSavedAt: new Date().toLocaleTimeString('pt-BR'),
     updatedAtMs: Date.now(),
@@ -691,17 +692,26 @@ function getAudioContext() {
 function playSound(type) {
   if (!state.soundEnabled) return;
   try {
-    const mp3Map = {
-      point: './audio/apito_curto.mp3',
-      setpoint: './audio/apito_duplo.mp3',
-      victory: './audio/apito_fim.mp3',
-      buzzer: './audio/apito_forte.mp3'
-    };
-    if (mp3Map[type]) {
-      const whistleAudio = new Audio(mp3Map[type]);
-      whistleAudio.volume = type === 'point' ? 0.65 : 0.9;
-      whistleAudio.play().catch(() => {});
-      return;
+    const isExplicitWhistle = ['whistle_short', 'whistle_double', 'whistle_strong', 'whistle_end'].includes(type);
+    const useWhistleForMatch = state.whistlesEnabled === true && ['point', 'setpoint', 'victory', 'buzzer'].includes(type);
+
+    if (isExplicitWhistle || useWhistleForMatch) {
+      const mp3Map = {
+        point: './audio/apito_curto.mp3',
+        setpoint: './audio/apito_duplo.mp3',
+        victory: './audio/apito_fim.mp3',
+        buzzer: './audio/apito_forte.mp3',
+        whistle_short: './audio/apito_curto.mp3',
+        whistle_double: './audio/apito_duplo.mp3',
+        whistle_strong: './audio/apito_forte.mp3',
+        whistle_end: './audio/apito_fim.mp3'
+      };
+      if (mp3Map[type]) {
+        const whistleAudio = new Audio(mp3Map[type]);
+        whistleAudio.volume = type === 'point' ? 0.65 : 0.9;
+        whistleAudio.play().catch(() => {});
+        return;
+      }
     }
 
     const ctx = getAudioContext();
@@ -774,6 +784,27 @@ function playSound(type) {
     }
   } catch (_) {}
 }
+
+window.toggleWhistles = function (forceVal = null) {
+  if (typeof forceVal === 'boolean') {
+    state.whistlesEnabled = forceVal;
+  } else {
+    state.whistlesEnabled = !(state.whistlesEnabled === true);
+  }
+
+  if (state.whistlesEnabled) {
+    state.soundEnabled = true;
+    playSound('whistle_short');
+    showToast('📣 <strong>Apitos do Juiz LIGADOS!</strong> Apito real a cada ponto e lance.', 'success');
+  } else {
+    playSound('point'); // will play soft sine beep
+    showToast('🔕 <strong>Apitos do Juiz DESLIGADOS!</strong> Som suave sem apito repetitivo.', 'info');
+  }
+
+  saveState();
+  renderHeaderAndNav();
+  renderLiveScoreboard();
+};
 
 function triggerHaptic(pattern = 25) {
   if (navigator.vibrate) {
@@ -1504,6 +1535,17 @@ function renderHeaderAndNav() {
     navElencoBadge.textContent = `${rosterCount} Salvos`;
   }
 
+  const whistleHeaderBtn = document.getElementById('btn-whistle-toggle');
+  const whistleHeaderIcon = document.getElementById('whistle-header-icon');
+  const whistlesOn = state.whistlesEnabled === true;
+  if (whistleHeaderBtn && whistleHeaderIcon) {
+    whistleHeaderBtn.classList.toggle('active', whistlesOn);
+    whistleHeaderIcon.textContent = whistlesOn ? '📣' : '🔕';
+    whistleHeaderBtn.title = whistlesOn
+      ? 'Apitos do Juiz: LIGADOS (Toque para desligar)'
+      : 'Apitos do Juiz: DESLIGADOS (Toque para ligar)';
+  }
+
   const soundBtn = document.getElementById('btn-sound-toggle');
   const soundIcon = document.getElementById('sound-icon');
   if (soundBtn && soundIcon) {
@@ -1559,6 +1601,38 @@ function renderLiveScoreboard() {
   if (deuceBtn) {
     deuceBtn.classList.toggle('active', state.winByTwo);
     deuceBtn.textContent = state.winByTwo ? '✅ Vai a 2' : '⚡ Ponto Direto';
+  }
+
+  const whistlesOn = state.whistlesEnabled === true;
+
+  // Center Court Whistle Button
+  const courtWhistleBtn = document.getElementById('btn-toggle-whistle-court');
+  const courtWhistleIcon = document.getElementById('court-whistle-icon');
+  const courtWhistleLabel = document.getElementById('court-whistle-label');
+  if (courtWhistleBtn) {
+    courtWhistleBtn.classList.toggle('active', whistlesOn);
+    courtWhistleBtn.classList.toggle('subtle', !whistlesOn);
+    if (courtWhistleIcon) courtWhistleIcon.textContent = whistlesOn ? '📣' : '🔕';
+    if (courtWhistleLabel) courtWhistleLabel.textContent = whistlesOn ? 'Apito ON' : 'Apito OFF';
+    courtWhistleBtn.title = whistlesOn
+      ? 'Apitos do Juiz: LIGADOS (Toque para desligar)'
+      : 'Apitos do Juiz: DESLIGADOS (Toque para ligar)';
+  }
+
+  // Rules Drawer Whistle Button
+  const ruleWhistleBtn = document.getElementById('btn-rule-whistle-toggle');
+  if (ruleWhistleBtn) {
+    ruleWhistleBtn.classList.toggle('active', whistlesOn);
+    ruleWhistleBtn.innerHTML = whistlesOn ? '📣 Apitos: Ligados' : '🔕 Apitos: Desligados';
+  }
+
+  // Soundboard Whistle Toggle Chip
+  const soundboardWhistleBtn = document.getElementById('btn-soundboard-whistle-toggle');
+  if (soundboardWhistleBtn) {
+    soundboardWhistleBtn.classList.toggle('active', whistlesOn);
+    soundboardWhistleBtn.innerHTML = whistlesOn
+      ? '📣 Apitos Automáticos nos Pontos: ATIVADOS (Toque p/ Desativar)'
+      : '🔕 Apitos Automáticos nos Pontos: DESLIGADOS (Toque p/ Ativar)';
   }
 
   // Render Waiting Queue Bar
@@ -3500,6 +3574,22 @@ document.addEventListener('DOMContentLoaded', () => {
       saveState();
       renderAll();
     });
+  });
+
+  document.getElementById('btn-whistle-toggle')?.addEventListener('click', () => {
+    window.toggleWhistles();
+  });
+
+  document.getElementById('btn-toggle-whistle-court')?.addEventListener('click', () => {
+    window.toggleWhistles();
+  });
+
+  document.getElementById('btn-rule-whistle-toggle')?.addEventListener('click', () => {
+    window.toggleWhistles();
+  });
+
+  document.getElementById('btn-soundboard-whistle-toggle')?.addEventListener('click', () => {
+    window.toggleWhistles();
   });
 
   document.getElementById('btn-sound-toggle')?.addEventListener('click', () => {

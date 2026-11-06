@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.2.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.3.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -67,6 +67,9 @@
           </button>
           <button id="btn-theme-toggle" class="icon-btn" type="button" title="Alternar Modo Escuro / Modo Claro" aria-label="Alternar tema claro ou escuro">
             <span id="theme-icon">☀️</span>
+          </button>
+          <button id="btn-whistle-toggle" class="icon-btn" type="button" title="Ligar ou Desligar Apitos do Juiz" aria-label="Alternar apitos">
+            <span id="whistle-header-icon">🔕</span>
           </button>
           <button id="btn-sound-toggle" class="icon-btn active" type="button" title="Ativar/Desativar Sons e Áudios" aria-label="Alternar som">
             <span id="sound-icon">🔊</span>
@@ -209,9 +212,9 @@
 
         <!-- Center Court Net / Controls -->
         <div class="score-center-column">
-          <button type="button" class="center-action-btn whistle-center-btn" onclick="triggerDebocheAudio('apito_forte')" title="Tocar Apito do Juiz agora">
-            <span>📣</span>
-            <span>Apito</span>
+          <button id="btn-toggle-whistle-court" class="center-action-btn whistle-center-btn subtle" type="button" title="Ligar ou Desligar os Apitos do Juiz">
+            <span id="court-whistle-icon">🔕</span>
+            <span id="court-whistle-label">Apito OFF</span>
           </button>
 
           <button id="btn-undo-point" class="center-action-btn" type="button" disabled title="Desfazer o último ponto marcado">
@@ -305,6 +308,9 @@
             <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('efeito_grito')">😱 Grito / Surto!</button>
           </div>
           <div class="soundboard-buttons-grid official-grid" style="margin-top:8px;">
+            <button id="btn-soundboard-whistle-toggle" type="button" class="chip-btn" style="grid-column: 1 / -1; font-weight:800;" title="Ligar ou desligar apito automático nos pontos">
+              🔕 Apitos Automáticos nos Pontos: DESLIGADOS
+            </button>
             <button type="button" class="chip-btn" onclick="triggerDebocheAudio('apito_curto')">📣 Apito Saque</button>
             <button type="button" class="chip-btn" onclick="triggerDebocheAudio('apito_duplo')">📣 Apito Duplo</button>
             <button type="button" class="chip-btn" onclick="triggerDebocheAudio('apito_forte')">📣 Apito Falta</button>
@@ -359,6 +365,13 @@
               <span class="toolbar-label">VANTAGEM</span>
               <button id="btn-toggle-deuce" class="chip-btn active" type="button">
                 ✅ Vai a 2
+              </button>
+            </div>
+
+            <div class="rule-group">
+              <span class="toolbar-label">APITOS</span>
+              <button id="btn-rule-whistle-toggle" class="chip-btn" type="button" title="Ligar ou desligar apitos automáticos nos pontos">
+                🔕 Apitos: Desligados
               </button>
             </div>
 
@@ -1294,6 +1307,6 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="./volei-ui.js?v=4.2.0"></script>
+  <script src="./volei-ui.js?v=4.3.0"></script>
 </body>
 </html>
