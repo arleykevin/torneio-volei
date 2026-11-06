@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volei-arena-v3.3.0';
+const CACHE_NAME = 'volei-arena-v3.4.0';
 const ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,9 @@ const ASSETS = [
   './audio/victory_t2.mp3',
   './audio/victory_t3.mp3',
   './audio/victory_t4.mp3',
+  './audio/deboche_passada.mp3',
+  './audio/deboche_milagre.mp3',
+  './audio/deboche_narnia.mp3',
   './beach-volleyball-svgrepo-com.svg',
   './man-playing-volleyball-svgrepo-com.svg',
   './volleyball-ball-svgrepo-com.svg',

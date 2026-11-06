@@ -184,7 +184,13 @@ const customAudioMap = {
   victory_t2: './audio/victory_t2.mp3',
   victory_t3: './audio/victory_t3.mp3',
   victory_t4: './audio/victory_t4.mp3',
-  victory: './audio/victory_t1.mp3'
+  victory: './audio/victory_t1.mp3',
+  slay_passada: './audio/deboche_passada.mp3',
+  slay_milagre: './audio/deboche_milagre.mp3',
+  flop_narnia: './audio/deboche_narnia.mp3',
+  slay_1: './audio/deboche_passada.mp3',
+  slay_3: './audio/deboche_milagre.mp3',
+  flop_1: './audio/deboche_narnia.mp3'
 };
 const broadcastChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('volei_arena_sync_v3') : null;
 
@@ -491,10 +497,13 @@ const DEBOCHE_LINES = {
   victory_t2: 'Fim de jogo! O Time 2 ganhou a partida!',
   victory_t3: 'Fim de jogo! O Time 3 ganhou a partida!',
   victory_t4: 'Fim de jogo! O Time 4 ganhou a partida!',
-  slay_1: 'Aiiin, PISOU MENOS, querida! Nem precisei suar o glitter!',
+  slay_passada: 'Passada! Cravou na cara da inimiga e ainda saiu desfilando!',
+  slay_milagre: 'Milagre, senhor! Até que enfim a gata acertou uma bola dentro da quadra!',
+  flop_narnia: 'Minha filha, a quadra é aqui embaixo! Mandou a bola lá pra Nárnia!',
+  slay_1: 'Passada! Cravou na cara da inimiga e ainda saiu desfilando!',
   slay_2: 'ENTREGOU TUDO, mona! Aceita ou surta, bebê!',
-  slay_3: 'Milagre! Até que enfim a gata acertou UMA bola dentro da quadra!',
-  flop_1: 'Mona do céu... QUE MICO foi esse na rede?! Chama o SAMU!',
+  slay_3: 'Milagre, senhor! Até que enfim a gata acertou uma bola dentro da quadra!',
+  flop_1: 'Minha filha, a quadra é aqui embaixo! Mandou a bola lá pra Nárnia!',
   flop_2: 'Aiiin, faltou força na munheca, querida? Bateu com a mão fofa!',
   flop_3: 'Amor, a rede subiu sozinha ou foi você que tropeçou no salto?!',
   flop_4: 'Que vergonha, gata! Pede música no Fantástico e APOSENTA logo!'
