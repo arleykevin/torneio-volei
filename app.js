@@ -79,11 +79,12 @@ function createMatchObject(id, teamAId, teamBId, stageLabel = 'Partida Oficial',
 }
 
 /**
- * Cria o bloco padrão de 4 jogos de um Mini Torneio igual à planilha:
- * Jogo 1: Time 01 x Time 02
- * Jogo 2: Time 03 x Time 04
- * Jogo 3: Vencedor J1 x Vencedor J2
- * Jogo 4: Perdedor J1 x Perdedor J2
+ * Cria o bloco padrão de 4 jogos de cada Mini Torneio seguindo exatamente a lógica da planilha:
+ * - Os 2 primeiros jogos são os confrontos de abertura do Mini Torneio (seguindo a rotação da tabela:
+ *   1º: T01×T02 e T03×T04 | 2º: T01×T03 e T02×T04 | 3º: T01×T04 e T02×T03 |
+ *   4º: T02×T04 e T01×T03 | 5º: T02×T03 e T01×T04 | 6º: T03×T04 e T01×T02)
+ * - 3º jogo do Mini Torneio: Vencedor J1 × Vencedor J2 (vencedores dos dois primeiros jogos)
+ * - 4º jogo do Mini Torneio: Perdedor J1 × Perdedor J2 (perdedores dos dois primeiros jogos)
  */
 function createMiniTorneioBlock(miniIndex = 1, startId = 1, teams = []) {
   const t1 = teams[0]?.id || 't1';
@@ -91,17 +92,19 @@ function createMiniTorneioBlock(miniIndex = 1, startId = 1, teams = []) {
   const t3 = teams[2]?.id || t1;
   const t4 = teams[3]?.id || t2;
 
-  // Alternate opening matchups slightly on subsequent mini-tournaments if desired,
-  // while keeping Mini Torneio #1 strictly Time 01 x Time 02 and Time 03 x Time 04
-  let openA1 = t1, openB1 = t2, openA2 = t3, openB2 = t4;
-  if (miniIndex > 1 && teams.length >= 4) {
-    const rot = (miniIndex - 1) % 3;
-    if (rot === 1) {
-      openA1 = t1; openB1 = t3; openA2 = t2; openB2 = t4;
-    } else if (rot === 2) {
-      openA1 = t1; openB1 = t4; openA2 = t2; openB2 = t3;
-    }
-  }
+  const pairingsCycle = [
+    [t1, t2, t3, t4], // 1º Mini Torneio: Time 01 x Time 02 | Time 03 x Time 04
+    [t1, t3, t2, t4], // 2º Mini Torneio: Time 01 x Time 03 | Time 02 x Time 04
+    [t1, t4, t2, t3], // 3º Mini Torneio: Time 01 x Time 04 | Time 02 x Time 03
+    [t2, t4, t1, t3], // 4º Mini Torneio: Time 02 x Time 04 | Time 01 x Time 03
+    [t2, t3, t1, t4], // 5º Mini Torneio: Time 02 x Time 03 | Time 01 x Time 04
+    [t3, t4, t1, t2]  // 6º Mini Torneio: Time 03 x Time 04 | Time 01 x Time 02
+  ];
+
+  const [openA1, openB1, openA2, openB2] =
+    teams.length >= 4
+      ? pairingsCycle[(miniIndex - 1) % pairingsCycle.length]
+      : [t1, t2, t3, t1];
 
   const j1Id = startId;
   const j2Id = startId + 1;
@@ -117,21 +120,21 @@ function createMiniTorneioBlock(miniIndex = 1, startId = 1, teams = []) {
       miniIndex,
       slotInMini: 2
     }),
-    createMatchObject(j3Id, null, null, `${miniIndex}º Mini Torneio • Vencedores (J${j1Id} × J${j2Id})`, {
+    createMatchObject(j3Id, null, null, `${miniIndex}º Mini Torneio • Vencedor J1 × Vencedor J2`, {
       miniIndex,
       slotInMini: 3,
       sourceJ1: j1Id,
       sourceJ2: j2Id,
-      placeholderA: `Vencedor J${j1Id}`,
-      placeholderB: `Vencedor J${j2Id}`
+      placeholderA: `Vencedor J1`,
+      placeholderB: `Vencedor J2`
     }),
-    createMatchObject(j4Id, null, null, `${miniIndex}º Mini Torneio • Perdedores (J${j1Id} × J${j2Id})`, {
+    createMatchObject(j4Id, null, null, `${miniIndex}º Mini Torneio • Perdedor J1 × Perdedor J2`, {
       miniIndex,
       slotInMini: 4,
       sourceJ1: j1Id,
       sourceJ2: j2Id,
-      placeholderA: `Perdedor J${j1Id}`,
-      placeholderB: `Perdedor J${j2Id}`
+      placeholderA: `Perdedor J1`,
+      placeholderB: `Perdedor J2`
     })
   ];
 }
@@ -1459,9 +1462,9 @@ function renderDynamicGamesTab() {
     const j4Id = games[3]?.id || 4;
     htmlBlocks.push(`
       <div class="glass-card" style="padding:16px;margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(148,163,184,0.16);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(148,163,184,0.16);flex-wrap:wrap;gap:6px;">
           <strong style="font-size:0.95rem;color:#38bdf8;letter-spacing:0.05em;">🏆 ${miniIdx}º MINI TORNEIO</strong>
-          <span style="font-size:0.75rem;color:var(--text-secondary);">J${j3Id}: Vencedor J${j1Id} × Vencedor J${j2Id} | J${j4Id}: Perdedor J${j1Id} × Perdedor J${j2Id}</span>
+          <span style="font-size:0.75rem;color:var(--text-secondary);">J3: vencedores dos dois primeiros jogos | J4: perdedores dos dois primeiros jogos</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px;">
           ${games.map((m) => buildMatchRowHtml(m)).join('')}
