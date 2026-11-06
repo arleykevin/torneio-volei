@@ -1,9 +1,9 @@
-const CACHE_NAME = 'volei-arena-v4.3.0';
+const CACHE_NAME = 'volei-arena-v4.4.0';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=4.3.0',
-  './volei-ui.js?v=4.3.0',
+  './styles.css?v=4.4.0',
+  './volei-ui.js?v=4.4.0',
   './manifest.json',
   './logo.png',
   './icon.svg',
@@ -27,6 +27,8 @@ const ASSETS = [
   './audio/deboche_maluca.mp3',
   './audio/deboche_doida.mp3',
   './audio/deboche_doida2.mp3',
+  './audio/deboche_ficacalado.mp3',
+  './audio/deboche_risadakiko.mp3',
   './audio/efeito_grito.mp3',
   './audio/apito_curto.mp3',
   './audio/apito_duplo.mp3',
