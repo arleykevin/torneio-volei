@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.7.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.8.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -115,7 +115,12 @@
               <p class="lobby-card-desc">Histórico dos jogos salvos neste aparelho. Toque para entrar direto na quadra:</p>
             </div>
           </div>
-          <span id="lobby-saved-count-pill" class="badge-pill subtle">0 jogos</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span id="lobby-saved-count-pill" class="badge-pill subtle">0 jogos</span>
+            <button type="button" id="btn-clear-all-tournaments" class="mini-tag-btn danger-tag" onclick="clearAllSavedTournaments()" title="Excluir todos os torneios salvos e começar do zero">
+              🗑️ Excluir Todos
+            </button>
+          </div>
         </div>
 
         <div id="lobby-tournaments-feed" class="lobby-tournaments-feed">
@@ -1433,6 +1438,6 @@
 
   <!-- Multi-Device Real-Time WebSocket MQTT Engine (Paho MQTT) -->
   <script src="./paho-mqtt.min.js"></script>
-  <script src="./volei-ui.js?v=4.7.0"></script>
+  <script src="./volei-ui.js?v=4.8.0"></script>
 </body>
 </html>

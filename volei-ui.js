@@ -1350,11 +1350,20 @@ function renderLobbyFeed() {
     countPill.textContent = `${list.length} ${list.length === 1 ? 'jogo salvo' : 'jogos salvos'}`;
   }
 
+  const clearBtn = document.getElementById('btn-clear-all-tournaments');
+  if (clearBtn) {
+    clearBtn.style.display = list.length > 0 ? 'inline-flex' : 'none';
+  }
+
   if (list.length === 0) {
     feedEl.innerHTML = `
-      <div style="padding:22px;text-align:center;background:rgba(23,33,53,0.5);border-radius:14px;border:1px dashed rgba(148,163,184,0.25);">
-        <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:6px;">Nenhum torneio guardado ainda neste aparelho.</p>
-        <p style="font-size:0.78rem;color:var(--text-secondary);margin:0;">Digite um código de sala acima para entrar em uma partida em andamento ou crie seu torneio abaixo!</p>
+      <div class="feed-empty-state">
+        <div class="empty-icon-circle">🏐</div>
+        <h3>Nenhum torneio ativo no momento</h3>
+        <p>Você pode digitar o código de uma sala acima para entrar em um jogo ao vivo ou criar seu próprio torneio abaixo!</p>
+        <button type="button" class="btn-accent-glow" style="margin-top:6px;padding:10px 20px;font-size:0.85rem;" onclick="document.getElementById('input-lobby-new-title')?.focus()">
+          ➕ Criar Meu Primeiro Torneio
+        </button>
       </div>
     `;
     return;
@@ -1367,6 +1376,7 @@ function renderLobbyFeed() {
       const totalGames = (sess.matches || []).length;
       const dateFormatted = formatDateBr(sess.tournamentDate);
       const nTeams = (sess.teams || []).length;
+      const percentDone = totalGames > 0 ? Math.round((doneGames / totalGames) * 100) : 0;
 
       // Quick leader calculation
       const winsMap = {};
@@ -1380,41 +1390,59 @@ function renderLobbyFeed() {
       const leaderStr =
         doneGames > 0 && sortedTeams[0]
           ? `🏆 Líder: ${escapeHtml(sortedTeams[0].name)} (${sortedTeams[0].w}V)`
-          : '⏳ Em andamento';
+          : (totalGames > 0 ? '⏳ Em andamento' : '🏐 Pronto para iniciar');
 
       const roomTag = (sess.roomCode || 'VOLEI1').toUpperCase();
 
+      const teamsChips = (sess.teams || [])
+        .map((t) => `
+          <span class="feed-team-chip" style="border-left: 3px solid ${t.color || '#38bdf8'};">
+            <span class="team-mini-dot" style="background:${t.color || '#38bdf8'};"></span>
+            ${escapeHtml(t.name)}
+          </span>
+        `)
+        .join('');
+
       return `
-        <div class="tournament-feed-card ${isCurrent ? 'active-feed-card' : ''}">
+        <article class="tournament-feed-card ${isCurrent ? 'active-feed-card' : ''}">
           <div class="feed-card-header">
-            <div class="feed-card-title-row">
-              <h3 class="feed-card-name">${escapeHtml(sess.tournamentName || 'VÔLEI INTERNO')}</h3>
-              <span class="session-date-chip">📅 ${escapeHtml(dateFormatted)}</span>
-              <span class="badge-pill" style="font-family:var(--font-mono);font-size:0.72rem;background:#38bdf820;color:#7dd3fc;border-color:#38bdf840;">#${escapeHtml(roomTag)}</span>
-              ${isCurrent ? `<span class="badge-pill" style="background:#10b98125;color:#6ee7b7;border-color:#10b98150;font-size:0.68rem;">ABERTO AGORA</span>` : ''}
+            <div class="feed-card-eyebrow">
+              <span class="feed-live-dot ${isCurrent ? 'pulse' : ''}"></span>
+              <span class="feed-status-text">${isCurrent ? 'EM ANDAMENTO AGORA' : (doneGames === totalGames && totalGames > 0 ? 'CONCLUÍDO' : 'GUARDADO')}</span>
+              <span class="feed-room-badge">#${escapeHtml(roomTag)}</span>
+              <span class="feed-date-badge">📅 ${escapeHtml(dateFormatted)}</span>
             </div>
-            <div class="feed-card-stats">
-              <span>🛡️ ${nTeams} Times</span>
-              <span>•</span>
-              <span>🏐 ${doneGames}/${totalGames} jogos concluídos</span>
-              <span>•</span>
-              <span>${leaderStr}</span>
+
+            <h3 class="feed-card-name">${escapeHtml(sess.tournamentName || 'VÔLEI INTERNO')}</h3>
+
+            <div class="feed-teams-row">
+              ${teamsChips || '<span style="font-size:0.75rem;color:var(--text-secondary);">4 Times padrão</span>'}
+            </div>
+
+            <div class="feed-progress-box">
+              <div class="feed-progress-bar">
+                <div class="feed-progress-fill" style="width: ${percentDone}%;"></div>
+              </div>
+              <div class="feed-progress-labels">
+                <span>🏐 ${doneGames}/${totalGames} partidas concluídas (${percentDone}%)</span>
+                <span>•</span>
+                <span>${leaderStr}</span>
+              </div>
             </div>
           </div>
+
           <div class="feed-card-actions">
-            <button type="button" class="feed-enter-btn btn-primary" onclick="openTournamentSession('${sess.sessionId}')">
-              ▶️ Entrar no Jogo
+            <button type="button" class="btn-primary feed-enter-btn" onclick="openTournamentSession('${sess.sessionId}')">
+              ▶️ Entrar na Partida
             </button>
-            <button type="button" class="chip-btn" onclick="copySavedSessionSummary('${sess.sessionId}')" title="Copiar resumo para WhatsApp">
-              📲 Resumo
+            <button type="button" class="chip-btn feed-share-btn" onclick="copySavedSessionSummary('${sess.sessionId}')" title="Copiar resumo para WhatsApp">
+              📲 WhatsApp
             </button>
-            ${
-              list.length > 1
-                ? `<button type="button" class="chip-btn danger" onclick="deleteSavedSessionById('${sess.sessionId}')" title="Excluir do histórico">🗑️</button>`
-                : ''
-            }
+            <button type="button" class="chip-btn danger feed-delete-btn" onclick="deleteSavedSessionById('${sess.sessionId}')" title="Excluir este torneio">
+              🗑️ Excluir
+            </button>
           </div>
-        </div>
+        </article>
       `;
     })
     .join('');
@@ -1445,12 +1473,28 @@ window.loadSavedSessionById = window.openTournamentSession;
 window.deleteSavedSessionById = function (sessionId) {
   let list = getSavedSessionsList().filter((s) => s.sessionId !== sessionId);
   localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(list));
-  if (state.sessionId === sessionId && list.length > 0) {
-    state = { ...createDefaultState(), ...list[0], sessionSetupConfirmed: false };
+  if (state.sessionId === sessionId) {
+    if (list.length > 0) {
+      state = { ...createDefaultState(), ...list[0], sessionSetupConfirmed: false };
+    } else {
+      state = createDefaultState('MEU TORNEIO', getTodayDateIso());
+      state.sessionSetupConfirmed = false;
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
   renderLobbyFeed();
-  showToast('🗑️ Torneio removido do histórico.', 'info');
+  showToast('🗑️ Torneio excluído com sucesso.', 'info');
+};
+
+window.clearAllSavedTournaments = function () {
+  if (confirm('Tem certeza que deseja excluir todos os torneios existentes do histórico para começar limpo?')) {
+    localStorage.removeItem(SAVED_SESSIONS_KEY);
+    state = createDefaultState('MEU TORNEIO', getTodayDateIso());
+    state.sessionSetupConfirmed = false;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    renderLobbyFeed();
+    showToast('🗑️ Todos os torneios existentes foram excluídos!', 'info');
+  }
 };
 
 window.copySavedSessionSummary = function (sessionId) {
