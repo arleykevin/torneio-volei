@@ -4,7 +4,7 @@
  * Placar na Hora Auditável (Sem Desfeita)
  */
 
-const STORAGE_KEY = 'volei_pro_arena_dynamic_v3';
+const STORAGE_KEY = 'volei_pro_arena_dynamic_v4';
 
 const TEAM_COLORS = [
   '#38bdf8', // Sky Cyan
@@ -59,7 +59,7 @@ function createDefaultTeams(count = 4) {
   return defaults.slice(0, count);
 }
 
-function createMatchObject(id, teamAId, teamBId, stageLabel = 'Partida Oficial') {
+function createMatchObject(id, teamAId, teamBId, stageLabel = 'Partida Oficial', extra = {}) {
   return {
     id,
     stageLabel,
@@ -73,8 +73,67 @@ function createMatchObject(id, teamAId, teamBId, stageLabel = 'Partida Oficial')
     serving: 'A',
     history: [],
     createdAt: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    finishedAt: null
+    finishedAt: null,
+    ...extra
   };
+}
+
+/**
+ * Cria o bloco padrão de 4 jogos de um Mini Torneio igual à planilha:
+ * Jogo 1: Time 01 x Time 02
+ * Jogo 2: Time 03 x Time 04
+ * Jogo 3: Vencedor J1 x Vencedor J2
+ * Jogo 4: Perdedor J1 x Perdedor J2
+ */
+function createMiniTorneioBlock(miniIndex = 1, startId = 1, teams = []) {
+  const t1 = teams[0]?.id || 't1';
+  const t2 = teams[1]?.id || 't2';
+  const t3 = teams[2]?.id || t1;
+  const t4 = teams[3]?.id || t2;
+
+  // Alternate opening matchups slightly on subsequent mini-tournaments if desired,
+  // while keeping Mini Torneio #1 strictly Time 01 x Time 02 and Time 03 x Time 04
+  let openA1 = t1, openB1 = t2, openA2 = t3, openB2 = t4;
+  if (miniIndex > 1 && teams.length >= 4) {
+    const rot = (miniIndex - 1) % 3;
+    if (rot === 1) {
+      openA1 = t1; openB1 = t3; openA2 = t2; openB2 = t4;
+    } else if (rot === 2) {
+      openA1 = t1; openB1 = t4; openA2 = t2; openB2 = t3;
+    }
+  }
+
+  const j1Id = startId;
+  const j2Id = startId + 1;
+  const j3Id = startId + 2;
+  const j4Id = startId + 3;
+
+  return [
+    createMatchObject(j1Id, openA1, openB1, `${miniIndex}º Mini Torneio • Jogo ${j1Id}`, {
+      miniIndex,
+      slotInMini: 1
+    }),
+    createMatchObject(j2Id, openA2, openB2, `${miniIndex}º Mini Torneio • Jogo ${j2Id}`, {
+      miniIndex,
+      slotInMini: 2
+    }),
+    createMatchObject(j3Id, null, null, `${miniIndex}º Mini Torneio • Vencedores (J${j1Id} × J${j2Id})`, {
+      miniIndex,
+      slotInMini: 3,
+      sourceJ1: j1Id,
+      sourceJ2: j2Id,
+      placeholderA: `Vencedor J${j1Id}`,
+      placeholderB: `Vencedor J${j2Id}`
+    }),
+    createMatchObject(j4Id, null, null, `${miniIndex}º Mini Torneio • Perdedores (J${j1Id} × J${j2Id})`, {
+      miniIndex,
+      slotInMini: 4,
+      sourceJ1: j1Id,
+      sourceJ2: j2Id,
+      placeholderA: `Perdedor J${j1Id}`,
+      placeholderB: `Perdedor J${j2Id}`
+    })
+  ];
 }
 
 function createDefaultState() {
@@ -87,7 +146,7 @@ function createDefaultState() {
     lastSavedAt: new Date().toLocaleTimeString('pt-BR'),
     updatedAtMs: Date.now(),
     activeTab: 'placar',
-    rotationMode: 'king', // 'king' | 'king_2max' | 'winners_losers' | 'free'
+    rotationMode: 'winners_losers', // Default: Mini Torneio (J1, J2, J3 Vencedores, J4 Perdedores)
     drawFormat: 'size_3', // 'size_3' | 'size_4' | 'count_3' | 'count_4'
     targetPoints: 15,
     winByTwo: true,
@@ -100,7 +159,7 @@ function createDefaultState() {
     courtStreakTeamId: null,
     courtStreakCount: 0,
     playerPool: [],
-    matches: [createMatchObject(1, 't1', 't2', 'Jogo de Abertura')],
+    matches: createMiniTorneioBlock(1, 1, teams),
     liveMatchId: 1
   };
 }
@@ -658,9 +717,28 @@ function showToast(message, type = 'info') {
 }
 
 /* ==========================================
-   DYNAMIC NEXT MATCH GENERATOR
-   ("VAI GANHANDO, VAI PERDENDO E VAI CRIANDO")
+   MINI TORNEIO BRACKET SYNC & NEXT MATCH GENERATOR
+   ("J1: Time 01 x Time 02 | J2: Time 03 x Time 04 | J3: Vencedor J1 x Vencedor J2 | J4: Perdedor J1 x Perdedor J2")
    ========================================== */
+function syncMiniTorneioBrackets() {
+  state.matches.forEach((m) => {
+    if (m.sourceJ1 && m.sourceJ2) {
+      const j1 = state.matches.find((x) => x.id === m.sourceJ1);
+      const j2 = state.matches.find((x) => x.id === m.sourceJ2);
+
+      if (m.slotInMini === 3) {
+        // Jogo 3: Vencedor J1 x Vencedor J2
+        m.teamAId = j1 && j1.status === 'done' && j1.winnerId ? j1.winnerId : null;
+        m.teamBId = j2 && j2.status === 'done' && j2.winnerId ? j2.winnerId : null;
+      } else if (m.slotInMini === 4) {
+        // Jogo 4: Perdedor J1 x Perdedor J2
+        m.teamAId = j1 && j1.status === 'done' && j1.loserId ? j1.loserId : null;
+        m.teamBId = j2 && j2.status === 'done' && j2.loserId ? j2.loserId : null;
+      }
+    }
+  });
+}
+
 function generateNextMatchesAfterFinish(finishedMatch) {
   const winnerId = finishedMatch.winnerId;
   const loserId = finishedMatch.loserId;
@@ -673,6 +751,9 @@ function generateNextMatchesAfterFinish(finishedMatch) {
     state.courtStreakCount = 1;
   }
 
+  // First, propagate winners/losers of J1 & J2 into J3 (Vencedores) and J4 (Perdedores)
+  syncMiniTorneioBrackets();
+
   // Check if there is already a pending match in the queue after this one
   const existingPending = state.matches.find((m) => m.id > finishedMatch.id && m.status !== 'done');
   if (existingPending) {
@@ -682,22 +763,28 @@ function generateNextMatchesAfterFinish(finishedMatch) {
   const nextId = state.matches.reduce((max, m) => Math.max(max, m.id), 0) + 1;
   syncWaitingQueueWithCurrentMatch();
 
-  // MODE 1: QUEM GANHA FICA (REI DA QUADRA)
+  // MODE: MINI TORNEIO (J1, J2, J3 Vencedor×Vencedor, J4 Perdedor×Perdedor)
+  if (state.rotationMode === 'winners_losers' && state.teams.length >= 4) {
+    const maxMini = state.matches.reduce((max, m) => Math.max(max, m.miniIndex || 1), 1);
+    const newBlock = createMiniTorneioBlock(maxMini + 1, nextId, state.teams);
+    state.matches.push(...newBlock);
+    syncMiniTorneioBrackets();
+    return newBlock[0];
+  }
+
+  // MODE: QUEM GANHA FICA (REI DA QUADRA)
   if (state.rotationMode === 'king' || state.rotationMode === 'king_2max') {
     if (state.waitingQueue.length === 0) {
-      // Only 2 teams exist: rematch
       const nextMatch = createMatchObject(nextId, winnerId, loserId, `Jogo #${nextId} • Revanche`);
       state.matches.push(nextMatch);
       return nextMatch;
     }
 
-    // Check 2-win limit if king_2max is active
     if (state.rotationMode === 'king_2max' && state.courtStreakCount >= 2) {
       state.courtStreakCount = 0;
       state.courtStreakTeamId = null;
 
       if (state.waitingQueue.length >= 2) {
-        // Both teams leave court; next 2 waiting teams enter
         const nextA = state.waitingQueue.shift();
         const nextB = state.waitingQueue.shift();
         state.waitingQueue.push(loserId, winnerId);
@@ -710,7 +797,6 @@ function generateNextMatchesAfterFinish(finishedMatch) {
         state.matches.push(nextMatch);
         return nextMatch;
       } else {
-        // 3 teams total: Winner of 2 in a row rests, challenger plays loser
         const challengerId = state.waitingQueue.shift();
         state.waitingQueue.push(winnerId);
         const nextMatch = createMatchObject(
@@ -724,7 +810,6 @@ function generateNextMatchesAfterFinish(finishedMatch) {
       }
     }
 
-    // Standard King of the Court: Winner stays, Loser goes to end of queue, first in queue enters
     const challengerId = state.waitingQueue.shift();
     state.waitingQueue.push(loserId);
 
@@ -738,69 +823,7 @@ function generateNextMatchesAfterFinish(finishedMatch) {
     return nextMatch;
   }
 
-  // MODE 2: CHAVE DINÂMICA (VENCEDOR x VENCEDOR / PERDEDOR x PERDEDOR)
-  if (state.rotationMode === 'winners_losers') {
-    if (state.teams.length >= 4) {
-      // Check if we have a pair of opening games in this mini-wave
-      const doneGames = state.matches.filter((m) => m.status === 'done');
-      const posInCycle = doneGames.length % 4;
-
-      if (posInCycle === 1) {
-        // Finished 1st game of wave -> create 2nd game with the other two teams
-        const otherTwo = state.teams.filter(
-          (t) => t.id !== finishedMatch.teamAId && t.id !== finishedMatch.teamBId
-        );
-        const nextMatch = createMatchObject(
-          nextId,
-          otherTwo[0].id,
-          otherTwo[1].id,
-          `Jogo #${nextId} • Abertura 2 da Rodada`
-        );
-        state.matches.push(nextMatch);
-        return nextMatch;
-      } else if (posInCycle === 2) {
-        // Finished 2nd game of wave -> create Final (Winners) AND 3rd Place (Losers)!
-        const g1 = doneGames[doneGames.length - 2];
-        const g2 = doneGames[doneGames.length - 1];
-        const mWinners = createMatchObject(
-          nextId,
-          g1.winnerId,
-          g2.winnerId,
-          `🏆 Jogo #${nextId} • Vencedor × Vencedor`
-        );
-        const mLosers = createMatchObject(
-          nextId + 1,
-          g1.loserId,
-          g2.loserId,
-          `⚔️ Jogo #${nextId + 1} • Perdedor × Perdedor`
-        );
-        state.matches.push(mWinners, mLosers);
-        return mWinners;
-      } else if (posInCycle === 0) {
-        // Finished the 4-game wave -> start a new rotated wave!
-        const shuffled = [...state.teams].sort(() => Math.random() - 0.5);
-        const nextMatch = createMatchObject(
-          nextId,
-          shuffled[0].id,
-          shuffled[1].id,
-          `Jogo #${nextId} • Nova Rodada`
-        );
-        state.matches.push(nextMatch);
-        return nextMatch;
-      }
-    }
-
-    // Fallback for 3 teams in Winners/Losers mode
-    if (state.waitingQueue.length > 0) {
-      const challengerId = state.waitingQueue.shift();
-      state.waitingQueue.push(loserId);
-      const nextMatch = createMatchObject(nextId, winnerId, challengerId, `Jogo #${nextId} • Desafio`);
-      state.matches.push(nextMatch);
-      return nextMatch;
-    }
-  }
-
-  // MODE 3: LIVRE NA HORA
+  // MODE: LIVRE NA HORA (or 3 teams fallback)
   const nextA = winnerId;
   const nextB = state.waitingQueue.length > 0 ? state.waitingQueue.shift() : loserId;
   if (nextB !== loserId) state.waitingQueue.push(loserId);
@@ -1041,6 +1064,7 @@ window.startMatchById = function (matchId) {
    RENDER ALL VIEWS
    ========================================== */
 function renderAll() {
+  syncMiniTorneioBrackets();
   syncWaitingQueueWithCurrentMatch();
   renderHeaderAndNav();
   renderLiveScoreboard();
@@ -1332,41 +1356,59 @@ function renderLiveScoreboard() {
       .join('');
   }
 
-  // Render Recent & Next Matches Preview
+  // Render Current Mini Torneio Preview (Jogo 1, Jogo 2, Jogo 3 Vencedores, Jogo 4 Perdedores)
   const previewContainer = document.getElementById('live-recent-matches-preview');
-  const recentMatches = [...state.matches].slice(-5).reverse();
-  previewContainer.innerHTML = recentMatches.map((m) => buildMatchRowHtml(m)).join('');
+  const currentMiniIdx = match.miniIndex || state.matches[state.matches.length - 1]?.miniIndex || 1;
+  const currentMiniMatches = state.matches.filter((m) => (m.miniIndex || 1) === currentMiniIdx);
+  const previewList = currentMiniMatches.length > 0 ? currentMiniMatches : state.matches.slice(-4);
+  previewContainer.innerHTML =
+    `<div style="font-size:0.74rem;font-weight:800;color:var(--accent-cyan);letter-spacing:0.06em;margin-bottom:4px;">🏆 ${currentMiniIdx}º MINI TORNEIO (J3: Vencedor J1×J2 | J4: Perdedor J1×J2)</div>` +
+    previewList.map((m) => buildMatchRowHtml(m)).join('');
+}
+
+function buildPendingSlotHtml(label, alignRight = false) {
+  const pill = `<span class="team-crest-mini" style="background:rgba(148,163,184,0.2);border:1px dashed rgba(148,163,184,0.5);font-size:0.7rem;">⏳</span>`;
+  const text = `<span class="team-name-truncate" style="color:var(--text-secondary);font-style:italic;">${escapeHtml(label)}</span>`;
+  return alignRight ? `${text}${pill}` : `${pill}${text}`;
 }
 
 function buildMatchRowHtml(m) {
-  const teamA = getTeamById(m.teamAId);
-  const teamB = getTeamById(m.teamBId);
+  const hasTeamA = Boolean(m.teamAId);
+  const hasTeamB = Boolean(m.teamBId);
+  const teamA = hasTeamA ? getTeamById(m.teamAId) : null;
+  const teamB = hasTeamB ? getTeamById(m.teamBId) : null;
   const isLiveSelected = Number(state.liveMatchId) === m.id;
   const isDone = m.status === 'done';
-  const aWon = isDone && m.winnerId === teamA.id;
-  const bWon = isDone && m.winnerId === teamB.id;
-  const winnerTeam = isDone ? getTeamById(m.winnerId) : null;
+  const aWon = isDone && teamA && m.winnerId === teamA.id;
+  const bWon = isDone && teamB && m.winnerId === teamB.id;
+  const winnerTeam = isDone && m.winnerId ? getTeamById(m.winnerId) : null;
+
+  const sideAHtml = teamA
+    ? `${buildTeamMiniBadge(teamA)}<span class="team-name-truncate">${escapeHtml(teamA.name)} ${aWon ? '🏆' : ''}</span>`
+    : buildPendingSlotHtml(m.placeholderA || 'A definir', false);
+
+  const sideBHtml = teamB
+    ? `<span class="team-name-truncate">${bWon ? '🏆 ' : ''}${escapeHtml(teamB.name)}</span>${buildTeamMiniBadge(teamB)}`
+    : buildPendingSlotHtml(m.placeholderB || 'A definir', true);
 
   return `
     <div class="match-row-card ${isLiveSelected ? 'active-live' : ''}">
       <div class="match-row-top">
-        <span><strong>Jogo #${m.id}</strong> ${m.finishedAt ? `• Finalizado às ${m.finishedAt}` : ''}</span>
+        <span><strong>Jogo ${m.id}</strong> ${m.finishedAt ? `• Finalizado às ${m.finishedAt}` : ''}</span>
         <span class="match-stage-tag">${escapeHtml(m.stageLabel || 'Partida')}</span>
       </div>
 
       <div class="match-row-main">
         <div class="match-team-side ${aWon ? 'winner' : bWon ? 'loser' : ''}">
-          ${buildTeamMiniBadge(teamA)}
-          <span class="team-name-truncate">${escapeHtml(teamA.name)} ${aWon ? '🏆' : ''}</span>
+          ${sideAHtml}
         </div>
 
         <div class="match-score-center ${isDone ? 'done' : ''}">
-          ${isDone || m.scoreA > 0 || m.scoreB > 0 ? `${m.scoreA} × ${m.scoreB}` : 'VS'}
+          ${isDone || m.scoreA > 0 || m.scoreB > 0 ? `${m.scoreA} × ${m.scoreB}` : 'X'}
         </div>
 
         <div class="match-team-side right ${bWon ? 'winner' : aWon ? 'loser' : ''}">
-          <span class="team-name-truncate">${bWon ? '🏆 ' : ''}${escapeHtml(teamB.name)}</span>
-          ${buildTeamMiniBadge(teamB)}
+          ${sideBHtml}
         </div>
       </div>
 
@@ -1375,9 +1417,11 @@ function buildMatchRowHtml(m) {
           ${
             winnerTeam
               ? `Vencedor: <strong>${escapeHtml(winnerTeam.name)}</strong>`
+              : !hasTeamA || !hasTeamB
+              ? `⏳ Aguardando definição (${escapeHtml(m.placeholderA || 'J1')} × ${escapeHtml(m.placeholderB || 'J2')})`
               : isLiveSelected
               ? '⚡ Em quadra agora'
-              : '⏳ Na fila'
+              : '⏳ Pronto para jogar'
           }
         </span>
         <div class="match-btns-group">
@@ -1397,8 +1441,34 @@ function renderDynamicGamesTab() {
   const container = document.getElementById('dynamic-matches-list');
   if (!container) return;
 
-  const reversed = [...state.matches].reverse();
-  container.innerHTML = reversed.map((m) => buildMatchRowHtml(m)).join('');
+  // Group matches by miniIndex (1º MINI TORNEIO, 2º MINI TORNEIO...)
+  const groupsMap = new Map();
+  state.matches.forEach((m) => {
+    const idx = m.miniIndex || 1;
+    if (!groupsMap.has(idx)) groupsMap.set(idx, []);
+    groupsMap.get(idx).push(m);
+  });
+
+  const htmlBlocks = [];
+  for (const [miniIdx, games] of groupsMap.entries()) {
+    const j1Id = games[0]?.id || 1;
+    const j2Id = games[1]?.id || 2;
+    const j3Id = games[2]?.id || 3;
+    const j4Id = games[3]?.id || 4;
+    htmlBlocks.push(`
+      <div class="glass-card" style="padding:16px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(148,163,184,0.16);">
+          <strong style="font-size:0.95rem;color:#38bdf8;letter-spacing:0.05em;">🏆 ${miniIdx}º MINI TORNEIO</strong>
+          <span style="font-size:0.75rem;color:var(--text-secondary);">J${j3Id}: Vencedor J${j1Id} × Vencedor J${j2Id} | J${j4Id}: Perdedor J${j1Id} × Perdedor J${j2Id}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px;">
+          ${games.map((m) => buildMatchRowHtml(m)).join('')}
+        </div>
+      </div>
+    `);
+  }
+
+  container.innerHTML = htmlBlocks.join('');
 }
 
 /* ==========================================
@@ -2268,17 +2338,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-generate-mini-round').addEventListener('click', () => {
-    let nextId = state.matches.reduce((max, m) => Math.max(max, m.id), 0) + 1;
-    const t = state.teams;
-    if (t.length >= 4) {
-      const m1 = createMatchObject(nextId++, t[0].id, t[1].id, 'Rodada • Jogo 1');
-      const m2 = createMatchObject(nextId++, t[2].id, t[3].id, 'Rodada • Jogo 2');
-      state.matches.push(m1, m2);
-      state.liveMatchId = m1.id;
+    const nextId = state.matches.reduce((max, m) => Math.max(max, m.id), 0) + 1;
+    const maxMini = state.matches.reduce((max, m) => Math.max(max, m.miniIndex || 1), 0);
+    if (state.teams.length >= 4) {
+      const newBlock = createMiniTorneioBlock(maxMini + 1, nextId, state.teams);
+      state.matches.push(...newBlock);
+      state.liveMatchId = newBlock[0].id;
       state.rotationMode = 'winners_losers';
       saveState();
       renderAll();
-      showToast('⚡ Rodada criada! Ao terminar estes 2 jogos, o app criará Vencedor×Vencedor e Perdedor×Perdedor.', 'success');
+      showToast(
+        `🏆 <strong>${maxMini + 1}º Mini Torneio</strong> criado (J${nextId}, J${nextId + 1}, Vencedores e Perdedores)!`,
+        'success'
+      );
     } else {
       window.createAndStartNextMatchManual();
     }
@@ -2696,9 +2768,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-reset-scores-only').addEventListener('click', () => {
-    const tA = state.teams[0].id;
-    const tB = state.teams[1 % state.teams.length].id;
-    state.matches = [createMatchObject(1, tA, tB, 'Jogo #1 • Abertura')];
+    state.matches = createMiniTorneioBlock(1, 1, state.teams);
     state.liveMatchId = 1;
     state.courtStreakCount = 0;
     state.courtStreakTeamId = null;
@@ -2706,7 +2776,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveState();
     renderAll();
     document.getElementById('modal-settings').classList.add('hidden');
-    showToast('🔄 Histórico de jogos zerado! Os times foram mantidos.', 'info');
+    showToast('🔄 Histórico reiniciado no 1º Mini Torneio (Jogo 1, Jogo 2, Vencedores e Perdedores)!', 'info');
   });
 
   document.getElementById('btn-reset-all-factory').addEventListener('click', () => {
