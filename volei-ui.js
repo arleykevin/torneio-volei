@@ -246,8 +246,13 @@ let state = loadState();
 let quickScoreMatchId = null;
 let deferredPwaPrompt = null;
 let syncPushTimeout = null;
-let ntfyEventSource = null;
+let pahoMqttClient = null;
+let pahoMqttConnected = false;
+let pahoMqttConnecting = false;
+let pahoMqttTopic = null;
+let pahoReconnectTimer = null;
 let localPollInterval = null;
+const myTabId = 'tab_' + Math.random().toString(36).substring(2, 9);
 let courtFocusMode = false;
 let courtTouchLocked = false;
 let wakeLockSentinel = null;
@@ -432,19 +437,42 @@ function updateSyncStatusUI() {
 }
 
 /* ==========================================
-   MULTI-PHONE REAL-TIME ROOM SYNC ENGINE
+   MULTI-DEVICE REAL-TIME MQTT SYNC ENGINE
+   (HiveMQ WebSocket Broker wss://broker.hivemq.com:8884/mqtt)
    ========================================== */
 function getCleanRoomTopic(roomCode) {
-  const clean = String(roomCode || 'VOLEI1')
+  const clean = String(roomCode || state.roomCode || 'VOLEI1')
     .toUpperCase()
     .replace(/[^A-Z0-9_-]/g, '');
-  return `volei_pro_arena_sync_${clean || 'VOLEI1'}`;
+  return `volei_arena_room_${clean || 'VOLEI1'}`;
+}
+
+function updateRoomConnectionUI(status) {
+  const code = (state.roomCode || 'VOLEI1').toUpperCase();
+  const labelEl = document.getElementById('room-sync-label');
+  const pillEl = document.getElementById('sync-code-pill');
+  const lastSavedText = document.getElementById('sync-last-saved-text');
+  
+  if (labelEl) {
+    let icon = '🟢';
+    if (status === 'connecting') icon = '🟡';
+    if (status === 'disconnected') icon = '⚪';
+    labelEl.innerHTML = `${icon} #${escapeHtml(code)}`;
+  }
+  if (pillEl) {
+    pillEl.textContent = `#${code}`;
+  }
+  if (lastSavedText) {
+    lastSavedText.textContent = `📡 Sala #${code} • ${status === 'connected' ? 'Sincronizado ao vivo' : (status === 'connecting' ? 'Conectando...' : 'Offline')}`;
+  }
 }
 
 function buildCompactSyncPayload() {
   return {
-    senderTabTime: state.updatedAtMs,
+    senderId: myTabId,
+    senderTabTime: Date.now(),
     tournamentName: state.tournamentName,
+    tournamentDate: state.tournamentDate,
     roomCode: state.roomCode,
     rotationMode: state.rotationMode,
     drawFormat: state.drawFormat,
@@ -471,6 +499,7 @@ function applyIncomingRoomState(incoming) {
   state = {
     ...state,
     ...incoming,
+    sessionSetupConfirmed: true,
     updatedAtMs: incoming.senderTabTime || Date.now(),
     lastSavedAt: new Date().toLocaleTimeString('pt-BR')
   };
@@ -483,116 +512,139 @@ function scheduleCloudAndLocalRoomPush() {
   if (syncPushTimeout) clearTimeout(syncPushTimeout);
   syncPushTimeout = setTimeout(() => {
     pushRoomStateNow(false);
-  }, 350);
+  }, 200);
 }
 
-async function pushRoomStateNow(showFeedback = false) {
+function pushRoomStateNow(showFeedback = false) {
   const code = (state.roomCode || 'VOLEI1').toUpperCase();
   const payload = buildCompactSyncPayload();
 
-  // 1. Push to local Node server (/api/room/:code) if available
+  // 1. Publish to HiveMQ via Paho MQTT (retained = true so any device joining immediately gets latest state)
+  if (pahoMqttClient && pahoMqttConnected && pahoMqttTopic) {
+    try {
+      const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+      msg.destinationName = pahoMqttTopic;
+      msg.qos = 1;
+      msg.retained = true;
+      pahoMqttClient.send(msg);
+      if (showFeedback) {
+        showToast(`📡 Placar sincronizado ao vivo na Sala <strong>#${escapeHtml(code)}</strong>!`, 'success');
+      }
+    } catch (err) {
+      console.warn('MQTT send error:', err);
+    }
+  }
+
+  // 2. Local Node server backup if running
   fetch(`/api/room/${encodeURIComponent(code)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ state: payload })
   }).catch(() => {});
-
-  // 2. Push to public real-time relay (ntfy.sh) so phones on 4G/5G or GitHub Pages also sync live
-  const topic = getCleanRoomTopic(code);
-  try {
-    await fetch(`https://ntfy.sh/${topic}`, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-    if (showFeedback) {
-      showToast(`📡 Placar publicado ao vivo na Sala <strong>#${escapeHtml(code)}</strong>!`, 'success');
-    }
-  } catch (_) {
-    if (showFeedback) {
-      showToast(`💾 Placar salvo na Sala Local <strong>#${escapeHtml(code)}</strong>!`, 'info');
-    }
-  }
 }
 
-async function pullRoomStateOnce(roomCode, showFeedback = true) {
+function initPahoMqtt(roomCode, showToastFeedback = false) {
   const code = String(roomCode || state.roomCode || 'VOLEI1').trim().toUpperCase();
   state.roomCode = code;
-  let found = false;
+  const topic = getCleanRoomTopic(code);
+  pahoMqttTopic = topic;
 
-  // 1. Try local server first
-  try {
-    const res = await fetch(`/api/room/${encodeURIComponent(code)}`, { cache: 'no-store' });
-    if (res.ok) {
-      const json = await res.json();
-      if (json && json.payload && json.payload.state) {
-        const inc = json.payload.state;
-        inc.senderTabTime = Date.now() + 10;
-        applyIncomingRoomState(inc);
-        found = true;
-      }
-    }
-  } catch (_) {}
+  if (typeof Paho === 'undefined' || !Paho.MQTT || !Paho.MQTT.Client) {
+    console.warn('Paho MQTT not loaded yet; will retry in 1s.');
+    setTimeout(() => initPahoMqtt(code, showToastFeedback), 1000);
+    return;
+  }
 
-  // 2. Try public cloud relay (ntfy.sh cached messages)
-  if (!found) {
+  if (pahoMqttClient) {
     try {
-      const topic = getCleanRoomTopic(code);
-      const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=12h`, { cache: 'no-store' });
-      if (res.ok) {
-        const text = await res.text();
-        const lines = text.trim().split('\n').filter(Boolean);
-        if (lines.length > 0) {
-          const lastEvent = JSON.parse(lines[lines.length - 1]);
-          if (lastEvent && lastEvent.message) {
-            const parsedState = JSON.parse(lastEvent.message);
-            parsedState.senderTabTime = Date.now() + 10;
-            applyIncomingRoomState(parsedState);
-            found = true;
-          }
+      pahoMqttClient.disconnect();
+    } catch (_) {}
+    pahoMqttClient = null;
+    pahoMqttConnected = false;
+  }
+
+  if (pahoReconnectTimer) {
+    clearTimeout(pahoReconnectTimer);
+    pahoReconnectTimer = null;
+  }
+
+  pahoMqttConnecting = true;
+  updateRoomConnectionUI('connecting');
+
+  const clientId = 'volei_' + code.toLowerCase() + '_' + myTabId;
+  const brokerHost = 'broker.hivemq.com';
+  const brokerPort = 8884;
+  const brokerPath = '/mqtt';
+
+  try {
+    pahoMqttClient = new Paho.MQTT.Client(brokerHost, brokerPort, brokerPath, clientId);
+
+    pahoMqttClient.onConnectionLost = (responseObject) => {
+      pahoMqttConnected = false;
+      pahoMqttConnecting = false;
+      updateRoomConnectionUI('disconnected');
+      if (responseObject && responseObject.errorCode !== 0) {
+        console.warn('MQTT Connection lost:', responseObject.errorMessage);
+        if (!pahoReconnectTimer) {
+          pahoReconnectTimer = setTimeout(() => {
+            initPahoMqtt(state.roomCode);
+          }, 3000);
         }
       }
-    } catch (_) {}
-  }
+    };
 
-  subscribeToRoomRealtimeStream(code);
-  saveState(false);
-  renderAll();
-
-  if (showFeedback) {
-    if (found) {
-      showToast(`✅ Conectado à Sala <strong>#${escapeHtml(code)}</strong>! Placar atualizado na hora.`, 'success');
-    } else {
-      showToast(`📡 Sala <strong>#${escapeHtml(code)}</strong> criada! Publicando seu placar atual...`, 'info');
-      pushRoomStateNow(false);
-    }
-  }
-}
-
-function subscribeToRoomRealtimeStream(roomCode) {
-  const code = String(roomCode || state.roomCode || 'VOLEI1').trim().toUpperCase();
-  const topic = getCleanRoomTopic(code);
-
-  if (ntfyEventSource) {
-    try {
-      ntfyEventSource.close();
-    } catch (_) {}
-  }
-
-  if (typeof EventSource !== 'undefined') {
-    try {
-      ntfyEventSource = new EventSource(`https://ntfy.sh/${topic}/sse`);
-      ntfyEventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data && data.message) {
-            const incoming = JSON.parse(data.message);
-            applyIncomingRoomState(incoming);
+    pahoMqttClient.onMessageArrived = (message) => {
+      try {
+        const payload = JSON.parse(message.payloadString);
+        if (payload && payload.senderId !== myTabId) {
+          const applied = applyIncomingRoomState(payload);
+          if (applied) {
+            updateRoomConnectionUI('connected');
           }
-        } catch (_) {}
-      };
-    } catch (_) {}
+        }
+      } catch (err) {
+        console.error('Failed to parse incoming MQTT message:', err);
+      }
+    };
+
+    pahoMqttClient.connect({
+      useSSL: true,
+      timeout: 8,
+      keepAliveInterval: 30,
+      cleanSession: true,
+      onSuccess: () => {
+        pahoMqttConnected = true;
+        pahoMqttConnecting = false;
+        updateRoomConnectionUI('connected');
+        pahoMqttClient.subscribe(topic, { qos: 1 });
+        
+        if (showToastFeedback) {
+          showToast(`✅ Conectado à Sala <strong>#${escapeHtml(code)}</strong> ao vivo! Sincronizado com PC e celular.`, 'success');
+        }
+
+        // Se já tivermos dados de torneio, publicamos retido para outros dispositivos receberem na hora
+        if (state.teams && state.teams.length > 0) {
+          pushRoomStateNow(false);
+        }
+      },
+      onFailure: (err) => {
+        pahoMqttConnected = false;
+        pahoMqttConnecting = false;
+        updateRoomConnectionUI('disconnected');
+        console.warn('MQTT connect failure, retrying in 4s:', err);
+        if (!pahoReconnectTimer) {
+          pahoReconnectTimer = setTimeout(() => {
+            initPahoMqtt(state.roomCode);
+          }, 4000);
+        }
+      }
+    });
+  } catch (e) {
+    console.error('Error instantiating Paho client:', e);
+    pahoMqttConnecting = false;
   }
 
+  // Backup local polling if running local node server
   if (localPollInterval) clearInterval(localPollInterval);
   localPollInterval = setInterval(async () => {
     try {
@@ -604,8 +656,35 @@ function subscribeToRoomRealtimeStream(roomCode) {
         }
       }
     } catch (_) {}
-  }, 2500);
+  }, 3000);
 }
+
+// Aliases for compatibility
+function subscribeToRoomRealtimeStream(roomCode) {
+  initPahoMqtt(roomCode);
+}
+function pullRoomStateOnce(roomCode, showFeedback = true) {
+  initPahoMqtt(roomCode, showFeedback);
+}
+
+window.leaveRoomAndOpenLogin = function () {
+  if (pahoMqttClient) {
+    try {
+      pahoMqttClient.disconnect();
+    } catch (_) {}
+    pahoMqttClient = null;
+    pahoMqttConnected = false;
+  }
+  if (pahoReconnectTimer) {
+    clearTimeout(pahoReconnectTimer);
+    pahoReconnectTimer = null;
+  }
+  state.sessionSetupConfirmed = false;
+  saveState(false);
+  updateRoomConnectionUI('disconnected');
+  openSessionsModal();
+  showToast('🚪 Você saiu da sala. Digite outro código para entrar ou inicie um novo torneio.', 'info');
+};
 
 /* ==========================================
    REAL MP3 AUDIO PLAYER (SEM VOZ ROBÓTICA)
@@ -1181,9 +1260,11 @@ function openSessionsModal() {
   const nameInput = document.getElementById('input-session-title');
   const dateInput = document.getElementById('input-session-date');
   const roomInput = document.getElementById('input-login-room-code');
+  const sessionRoomInput = document.getElementById('input-session-room-code');
   if (nameInput) nameInput.value = state.tournamentName || 'VÔLEI INTERNO';
   if (dateInput) dateInput.value = state.tournamentDate || getTodayDateIso();
   if (roomInput && !roomInput.value) roomInput.value = (state.roomCode || 'VOLEI1').toUpperCase();
+  if (sessionRoomInput) sessionRoomInput.value = (state.roomCode || 'VOLEI1').toUpperCase();
   renderSavedSessionsModal();
   document.getElementById('modal-sessions')?.classList.remove('hidden');
 }
@@ -1194,7 +1275,7 @@ window.quickFillRoomCode = function (code) {
   window.joinRoomFromLogin();
 };
 
-window.joinRoomFromLogin = async function () {
+window.joinRoomFromLogin = function () {
   const input = document.getElementById('input-login-room-code');
   const code = (input ? input.value : '').replace(/^#/, '').trim().toUpperCase();
   if (!code) {
@@ -1205,9 +1286,7 @@ window.joinRoomFromLogin = async function () {
   state.sessionSetupConfirmed = true;
   saveState();
   document.getElementById('modal-sessions')?.classList.add('hidden');
-  showToast(`📡 Conectando à sala <strong>#${escapeHtml(code)}</strong>...`, 'info');
-  await pullRoomStateOnce(code, true);
-  startAutoSyncLoop();
+  initPahoMqtt(code, true);
   renderAll();
 };
 
@@ -4047,7 +4126,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-join-pull-room')?.addEventListener('click', () => {
     const roomInput = document.getElementById('input-room-code');
     const code = (roomInput?.value || 'VOLEI1').trim().toUpperCase();
-    pullRoomStateOnce(code, true);
+    initPahoMqtt(code, true);
+    document.getElementById('modal-room-sync')?.classList.add('hidden');
   });
 
   document.getElementById('btn-push-room-now')?.addEventListener('click', () => {
@@ -4055,8 +4135,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const code = (roomInput?.value || 'VOLEI1').trim().toUpperCase();
     state.roomCode = code;
     saveState(false);
+    initPahoMqtt(code, false);
     pushRoomStateNow(true);
-    subscribeToRoomRealtimeStream(code);
   });
 
   document.getElementById('btn-share-live-link')?.addEventListener('click', () => {
@@ -4139,30 +4219,34 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-save-session-meta')?.addEventListener('click', () => {
     const newName = (document.getElementById('input-session-title')?.value || '').trim() || 'VÔLEI INTERNO';
     const newDate = document.getElementById('input-session-date')?.value || getTodayDateIso();
+    const newRoom = (document.getElementById('input-session-room-code')?.value || state.roomCode || 'VOLEI1').replace(/^#/, '').trim().toUpperCase() || 'VOLEI1';
     state.tournamentName = newName;
     state.tournamentDate = newDate;
+    state.roomCode = newRoom;
     state.sessionSetupConfirmed = true;
     saveState();
+    initPahoMqtt(newRoom, false);
     renderAll();
     document.getElementById('modal-sessions')?.classList.add('hidden');
-    showToast(`🏐 Torneio <strong>${escapeHtml(newName)} (${formatDateBr(newDate)})</strong> confirmado!`, 'success');
+    showToast(`🏐 Torneio <strong>${escapeHtml(newName)}</strong> iniciado na Sala <strong>#${escapeHtml(newRoom)}</strong>!`, 'success');
   });
 
   document.getElementById('btn-create-new-session-archive')?.addEventListener('click', () => {
     upsertCurrentSessionInArchive();
     const newName = (document.getElementById('input-session-title')?.value || '').trim() || 'VÔLEI INTERNO';
     const newDate = document.getElementById('input-session-date')?.value || getTodayDateIso();
-    const prevRoom = state.roomCode || 'VOLEI1';
+    const newRoom = (document.getElementById('input-session-room-code')?.value || state.roomCode || 'VOLEI1').replace(/^#/, '').trim().toUpperCase() || 'VOLEI1';
 
     state = createDefaultState(newName, newDate);
-    state.roomCode = prevRoom;
+    state.roomCode = newRoom;
     state.sessionSetupConfirmed = true;
     saveState();
+    initPahoMqtt(newRoom, false);
     renderAll();
     renderSavedSessionsModal();
     document.getElementById('modal-sessions')?.classList.add('hidden');
     showToast(
-      `✨ Torneio anterior guardado! Novo torneio <strong>${escapeHtml(newName)} (${formatDateBr(newDate)})</strong> criado do zero!`,
+      `✨ Torneio anterior guardado! Novo torneio <strong>${escapeHtml(newName)}</strong> criado na Sala <strong>#${escapeHtml(newRoom)}</strong>!`,
       'success'
     );
   });
@@ -4917,13 +5001,15 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTimerDisplay();
 
     // Sai do modo tela fixa caso esteja ativo
-    if (focusMatchActive) {
-      setFocusMatchMode(false);
+    if (typeof courtFocusMode !== 'undefined' && courtFocusMode) {
+      if (typeof exitCourtFocusMode === 'function') {
+        exitCourtFocusMode();
+      }
     }
 
     if (resetMode === 'factory') {
       const preservedName = state.tournamentName || 'VÔLEI INTERNO';
-      const preservedDate = state.tournamentDate || getTodayISO();
+      const preservedDate = state.tournamentDate || (typeof getTodayDateIso === 'function' ? getTodayDateIso() : getTodayISO());
       state = createDefaultState(preservedName, preservedDate);
       state.sessionSetupConfirmed = true;
       showToast('✅ Senha confirmada! Tudo foi reiniciado do zero no Jogo #1!', 'success');
@@ -4959,11 +5045,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('btn-reset-scores-only').addEventListener('click', () => {
+  document.getElementById('btn-reset-scores-only')?.addEventListener('click', () => {
     window.openResetGamesPinModal('scores_only');
   });
 
-  document.getElementById('btn-reset-all-factory').addEventListener('click', () => {
+  document.getElementById('btn-reset-all-factory')?.addEventListener('click', () => {
     window.openResetGamesPinModal('factory');
   });
 

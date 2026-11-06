@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.5.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.6.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -61,9 +61,12 @@
       <!-- Quick Actions Bar (Clean & Minimal) -->
       <div class="header-actions">
         <div class="action-buttons-row">
-          <button id="btn-room-sync" class="action-btn btn-sync-live" type="button" title="Código da Sala Ao Vivo">
+          <button id="btn-room-sync" class="action-btn btn-sync-live" type="button" title="Código da Sala Ao Vivo • Clique para trocar ou compartilhar">
             <span class="sync-pulse-dot"></span>
             <span id="room-sync-label">#VOLEI1</span>
+          </button>
+          <button id="btn-leave-room-header" class="btn-leave-room" type="button" onclick="leaveRoomAndOpenLogin()" title="Sair da sala atual e ir para a tela de login / trocar de sala">
+            <span>🚪 Sair</span>
           </button>
           <button id="btn-theme-toggle" class="icon-btn" type="button" title="Alternar Modo Escuro / Modo Claro" aria-label="Alternar tema claro ou escuro">
             <span id="theme-icon">☀️</span>
@@ -1229,16 +1232,18 @@
             <button type="button" class="mini-tag-btn" onclick="quickFillRoomCode('VOLEI1')">#VOLEI1</button>
             <button type="button" class="mini-tag-btn" onclick="quickFillRoomCode('ARENA')">#ARENA</button>
             <button type="button" class="mini-tag-btn" onclick="quickFillRoomCode('SABADO')">#SABADO</button>
+            <button type="button" class="mini-tag-btn" onclick="quickFillRoomCode('DOMINGO')">#DOMINGO</button>
+            <button type="button" class="mini-tag-btn" onclick="quickFillRoomCode('RESENHA')">#RESENHA</button>
           </div>
         </div>
 
         <!-- SEÇÃO 2 (CRIAR OU CONTINUAR TORNEIO LOCAL) -->
         <div class="entrance-create-box">
           <div class="entrance-section-label">
-            <strong style="color:#fde047;letter-spacing:0.04em;">🏐 ORGANIZAR MEU PRÓPRIO TORNEIO / RESENHA</strong>
+            <strong style="color:#fde047;letter-spacing:0.04em;">🏐 CRIAR NOVO TORNEIO / RESENHA</strong>
           </div>
           <p class="entrance-hint">
-            Defina o nome da resenha de hoje e a data para registrar os jogos e estatísticas:
+            Defina o nome da resenha de hoje, a data e o código da sala para que os outros celulares possam entrar:
           </p>
           <div class="session-inputs-grid">
             <div class="setting-field">
@@ -1259,6 +1264,17 @@
                 class="modern-input"
               />
             </div>
+          </div>
+          <div class="setting-field" style="margin-bottom:12px;">
+            <label for="input-session-room-code" class="toolbar-label">CÓDIGO DA SALA (COMPARTILHE COM A GALERA)</label>
+            <input
+              type="text"
+              id="input-session-room-code"
+              class="modern-input"
+              style="font-family:var(--font-mono);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;"
+              placeholder="Ex: VOLEI1"
+              value="VOLEI1"
+            />
           </div>
 
           <div class="session-setup-actions">
@@ -1286,8 +1302,13 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button class="btn-primary full-width" data-close-modal="modal-sessions" type="button">Pronto • Ir para a Quadra</button>
+      <div class="modal-footer" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button id="btn-leave-room-modal" class="btn-leave-room" type="button" onclick="leaveRoomAndOpenLogin()" title="Desconectar da sala atual">
+          🚪 Sair da Sala Atual
+        </button>
+        <button class="btn-primary" data-close-modal="modal-sessions" type="button" style="flex:1;min-width:180px;">
+          Pronto • Ir para a Quadra
+        </button>
       </div>
     </div>
   </div>
@@ -1400,6 +1421,8 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="./volei-ui.js?v=4.5.0"></script>
+  <!-- Multi-Device Real-Time WebSocket MQTT Engine (Paho MQTT) -->
+  <script src="./paho-mqtt.min.js"></script>
+  <script src="./volei-ui.js?v=4.6.0"></script>
 </body>
 </html>

@@ -2872,6 +2872,30 @@ html[data-theme="light"] .team-available-select option {
   border-color: rgba(16, 185, 129, 0.65);
 }
 
+.btn-leave-room {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.42);
+  color: #fca5a5;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.btn-leave-room:hover {
+  background: rgba(239, 68, 68, 0.32);
+  border-color: #ef4444;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
 .sync-pulse-dot {
   width: 8px;
   height: 8px;
@@ -3809,30 +3833,39 @@ body.court-focus-mode .score-giant-number {
   }
 
   /* NÚMERO DO PLACAR PERFEITAMENTE PROPORCIONADO */
+  .score-number-wrapper {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
   .score-giant-number,
   body.court-focus-mode .score-giant-number {
-    font-size: clamp(2.8rem, 21vh, 4.2rem) !important;
-    line-height: 0.9 !important;
-    margin: 2px 0 !important;
+    font-size: clamp(2.4rem, 18vh, 3.8rem) !important;
+    line-height: 0.95 !important;
+    margin: 1px 0 !important;
   }
 
   /* BOTÕES DE MARCAR PONTO */
   .score-controls {
     display: flex !important;
     gap: 4px !important;
-    margin-top: 3px !important;
+    margin-top: 2px !important;
   }
 
+  .score-btn.btn-plus,
   .btn-plus-point {
     height: 34px !important;
-    font-size: 0.8rem !important;
-    padding: 2px 8px !important;
+    min-height: 34px !important;
+    font-size: 0.82rem !important;
+    padding: 2px 10px !important;
   }
 
+  .score-btn.btn-minus,
   .btn-minus-point {
     height: 34px !important;
+    min-height: 34px !important;
     width: 38px !important;
-    font-size: 0.78rem !important;
+    font-size: 0.8rem !important;
     padding: 2px !important;
   }
 
@@ -3842,48 +3875,67 @@ body.court-focus-mode .score-giant-number {
     padding: 0 2px !important;
   }
 
+  .center-action-btn,
   .court-center-btn {
-    padding: 3px 5px !important;
-    font-size: 0.62rem !important;
+    padding: 3px 6px !important;
+    font-size: 0.65rem !important;
+    min-height: 24px !important;
     gap: 2px !important;
     border-radius: 6px !important;
   }
 
+  .center-action-btn img,
   .court-center-btn img {
     width: 12px !important;
     height: 12px !important;
   }
 
-  /* ÁUDIOS DE DEBOCHE EMBAIXO DO PLACAR */
+  /* ÁUDIOS DE DEBOCHE EMBAIXO DO PLACAR (ROLÁVEL HORIZONTALMENTE COM 1 TOQUE) */
   body.court-focus-mode .deboche-soundboard-bar,
   .deboche-soundboard-bar {
     display: block !important;
-    margin-top: 4px !important;
-    margin-bottom: 4px !important;
+    margin-top: 5px !important;
+    margin-bottom: 3px !important;
+    width: 100% !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    border-radius: 10px !important;
+    padding: 4px 8px !important;
   }
 
   .deboche-soundboard-bar .clean-drawer-summary {
-    padding: 5px 8px !important;
-    font-size: 0.7rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 2px 4px !important;
+    font-size: 0.68rem !important;
+    cursor: pointer !important;
   }
 
   .deboche-soundboard-bar .clean-drawer-body {
-    padding: 4px 6px !important;
-    max-height: 90px !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+    padding: 3px 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   .deboche-soundboard-bar .soundboard-buttons-grid {
     display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 3px !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 5px !important;
+    padding: 4px 2px !important;
+    scrollbar-width: thin !important;
   }
 
   .deboche-soundboard-bar .chip-btn {
-    padding: 3px 7px !important;
-    font-size: 0.65rem !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    padding: 5px 9px !important;
+    font-size: 0.72rem !important;
     border-radius: 6px !important;
+    background: rgba(30, 41, 59, 0.9) !important;
   }
 }
 
