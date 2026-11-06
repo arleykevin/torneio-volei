@@ -18,6 +18,16 @@ const TEAM_COLORS = [
 ];
 
 // Full catalog of user-provided SVGs for Team Crests & Watermarks
+const UI_SVGS = {
+  sun: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+  moon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+  soundOn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>',
+  soundOff: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>',
+  whistleOn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  whistleOff: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><line x1="1" y1="1" x2="23" y2="23"/></svg>',
+  courtWhistle: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+};
+
 const TEAM_SVGS = [
   { id: 'motion', src: './volleyball-player-motion-svgrepo-com.svg', label: 'Craque em Movimento', mono: true },
   { id: 'spike', src: './volleyball-silhouette-svgrepo-com.svg', label: 'Cortada / Ataque', mono: true },
@@ -1436,7 +1446,7 @@ window.enterCourtFocusMode = function () {
   const lockBtn = document.getElementById('btn-toggle-court-lock');
   if (lockBtn) {
     lockBtn.classList.remove('locked-active');
-    lockBtn.innerHTML = '🔒 Travar Toques';
+    lockBtn.innerHTML = 'Travar Placar';
   }
 
   // Start timer automatically if not running
@@ -1466,7 +1476,7 @@ window.toggleCourtTouchLock = function () {
   const lockBtn = document.getElementById('btn-toggle-court-lock');
   if (lockBtn) {
     lockBtn.classList.toggle('locked-active', courtTouchLocked);
-    lockBtn.innerHTML = courtTouchLocked ? '🔓 Destravar Placar' : '🔒 Travar Toques';
+    lockBtn.innerHTML = courtTouchLocked ? 'Destravar Placar' : 'Travar Placar';
   }
   renderLiveScoreboard();
   if (courtTouchLocked) {
@@ -1579,7 +1589,7 @@ function renderLobbyFeed() {
         <h3>Nenhum torneio ativo no momento</h3>
         <p>Você pode digitar o código de uma sala acima para entrar em um jogo ao vivo ou criar seu próprio torneio abaixo!</p>
         <button type="button" class="btn-accent-glow" style="margin-top:6px;padding:10px 20px;font-size:0.85rem;" onclick="document.getElementById('input-lobby-new-title')?.focus()">
-          ➕ Criar Meu Primeiro Torneio
+          Criar Primeiro Torneio
         </button>
       </div>
     `;
@@ -1650,13 +1660,13 @@ function renderLobbyFeed() {
 
           <div class="feed-card-actions">
             <button type="button" class="btn-primary feed-enter-btn" onclick="openTournamentSession('${sess.sessionId}')">
-              ▶️ Entrar na Partida
+              Entrar na Partida
             </button>
             <button type="button" class="chip-btn feed-share-btn" onclick="copySavedSessionSummary('${sess.sessionId}')" title="Copiar resumo para WhatsApp">
-              📲 WhatsApp
+              Compartilhar
             </button>
             <button type="button" class="chip-btn danger feed-delete-btn" onclick="promptDeleteSession('${sess.sessionId}')" title="Excluir este torneio (requer senha de segurança)">
-              🗑️ Excluir
+              Excluir
             </button>
           </div>
         </article>
@@ -1682,7 +1692,7 @@ window.promptDeleteSession = function (sessionId) {
   const inputEl = document.getElementById('input-delete-pin');
   const errorEl = document.getElementById('delete-pin-error');
 
-  if (titleEl) titleEl.textContent = `🗑️ Excluir: ${name}`;
+  if (titleEl) titleEl.textContent = `Excluir: ${name}`;
   if (descEl) {
     descEl.innerHTML = `Para evitar que alguém apague o torneio <strong>"${escapeHtml(name)}"</strong> sem querer, digite a <strong>senha de segurança</strong> para confirmar:`;
   }
@@ -2090,7 +2100,7 @@ function renderHeaderAndNav() {
   const whistlesOn = state.whistlesEnabled === true;
   if (whistleHeaderBtn && whistleHeaderIcon) {
     whistleHeaderBtn.classList.toggle('active', whistlesOn);
-    whistleHeaderIcon.textContent = whistlesOn ? '📣' : '🔕';
+    whistleHeaderIcon.innerHTML = whistlesOn ? UI_SVGS.whistleOn : UI_SVGS.whistleOff;
     whistleHeaderBtn.title = whistlesOn
       ? 'Apitos do Juiz: LIGADOS (Toque para desligar)'
       : 'Apitos do Juiz: DESLIGADOS (Toque para ligar)';
@@ -2100,7 +2110,7 @@ function renderHeaderAndNav() {
   const soundIcon = document.getElementById('sound-icon');
   if (soundBtn && soundIcon) {
     soundBtn.classList.toggle('active', state.soundEnabled);
-    soundIcon.textContent = state.soundEnabled ? '🔊' : '🔇';
+    soundIcon.innerHTML = state.soundEnabled ? UI_SVGS.soundOn : UI_SVGS.soundOff;
   }
 
   const voiceBtn = document.getElementById('btn-voice-toggle');
@@ -2116,7 +2126,7 @@ function renderHeaderAndNav() {
   const themeIcon = document.getElementById('theme-icon');
   if (themeBtn && themeIcon) {
     themeBtn.classList.toggle('active', isLight);
-    themeIcon.textContent = isLight ? '🌙' : '☀️';
+    themeIcon.innerHTML = isLight ? UI_SVGS.moon : UI_SVGS.sun;
     themeBtn.title = isLight ? 'Mudar para Modo Escuro' : 'Mudar para Modo Claro';
   }
 
@@ -2150,7 +2160,7 @@ function renderLiveScoreboard() {
   const deuceBtn = document.getElementById('btn-toggle-deuce');
   if (deuceBtn) {
     deuceBtn.classList.toggle('active', state.winByTwo);
-    deuceBtn.textContent = state.winByTwo ? '✅ Vai a 2' : '⚡ Ponto Direto';
+    deuceBtn.textContent = state.winByTwo ? 'Diferença de 2' : 'Ponto Direto';
   }
 
   const whistlesOn = state.whistlesEnabled === true;
@@ -2162,7 +2172,7 @@ function renderLiveScoreboard() {
   if (courtWhistleBtn) {
     courtWhistleBtn.classList.toggle('active', whistlesOn);
     courtWhistleBtn.classList.toggle('subtle', !whistlesOn);
-    if (courtWhistleIcon) courtWhistleIcon.textContent = whistlesOn ? '📣' : '🔕';
+    if (courtWhistleIcon) courtWhistleIcon.innerHTML = UI_SVGS.courtWhistle;
     if (courtWhistleLabel) courtWhistleLabel.textContent = whistlesOn ? 'Apito ON' : 'Apito OFF';
     courtWhistleBtn.title = whistlesOn
       ? 'Apitos do Juiz: LIGADOS (Toque para desligar)'
@@ -2173,7 +2183,7 @@ function renderLiveScoreboard() {
   const ruleWhistleBtn = document.getElementById('btn-rule-whistle-toggle');
   if (ruleWhistleBtn) {
     ruleWhistleBtn.classList.toggle('active', whistlesOn);
-    ruleWhistleBtn.innerHTML = whistlesOn ? '📣 Apitos: Ligados' : '🔕 Apitos: Desligados';
+    ruleWhistleBtn.innerHTML = whistlesOn ? 'Apitos: Ligados' : 'Apitos: Desligados';
   }
 
   // Soundboard Whistle Toggle Chip
@@ -2343,7 +2353,7 @@ function renderLiveScoreboard() {
     const winnerTeam = leftWon ? leftTeam : rightTeam;
     const nextPending = state.matches.find((m) => m.status !== 'done' && m.id !== match.id);
     const exitFocusBtnHtml = courtFocusMode
-      ? `<button type="button" class="chip-btn" onclick="exitCourtFocusMode()">🔓 Sair da Tela Fixa</button>`
+      ? `<button type="button" class="chip-btn" onclick="exitCourtFocusMode()">Sair da Tela Fixa</button>`
       : '';
 
     alertBar.className = 'match-alert-bar victory';
@@ -2367,7 +2377,7 @@ function renderLiveScoreboard() {
       } × ${match.scoreB}</strong>!`;
       alertActions.innerHTML = `
         <button type="button" class="btn-primary" onclick="createAndStartNextMatchManual()">
-          ➕ Criar Próximo Jogo
+          Criar Próximo Jogo
         </button>
         ${exitFocusBtnHtml}
       `;
@@ -2491,10 +2501,10 @@ function buildMatchRowHtml(m) {
         </span>
         <div class="match-btns-group">
           <button type="button" class="mini-action-btn" onclick="startMatchById(${m.id})">
-            ⚡ Placar
+            Placar
           </button>
           <button type="button" class="mini-action-btn" onclick="openQuickScoreModal(${m.id})">
-            ✏️ Editar
+            Editar
           </button>
         </div>
       </div>
@@ -2523,7 +2533,7 @@ function renderDynamicGamesTab() {
     htmlBlocks.push(`
       <div class="glass-card mini-torneio-group-card">
         <div class="mini-torneio-group-header">
-          <strong style="font-size:0.95rem;color:#38bdf8;letter-spacing:0.05em;">🏆 ${miniIdx}º MINI TORNEIO</strong>
+          <strong style="font-size:0.95rem;color:#38bdf8;letter-spacing:0.05em;">${miniIdx}º MINI TORNEIO</strong>
           <span style="font-size:0.75rem;color:var(--text-secondary);">J3: vencedores dos dois primeiros jogos | J4: perdedores dos dois primeiros jogos</span>
         </div>
         <div class="mini-torneio-games-grid">
@@ -2629,7 +2639,7 @@ function renderTeamsAndDrawTab() {
               onclick="togglePlayerPresenceToday('${mp.id}')"
               title="${isPresent ? 'Clique para tirar da lista de hoje' : 'Clique para colocar no sorteio de hoje'}"
             >
-              <span class="pick-status-icon">${isPresent ? '✅' : '➕'}</span>
+              <span class="pick-status-icon">${isPresent ? '✓' : '+'}</span>
               <span class="pick-name">${escapeHtml(mp.name)}</span>
               <span class="pick-stars">${mp.skill || 3}★</span>
               <span class="pick-role">${roleShort}</span>
@@ -2801,13 +2811,13 @@ function renderTeamsAndDrawTab() {
             />
             ${
               state.teams.length > 2
-                ? `<button type="button" class="team-delete-btn" onclick="deleteTeam('${team.id}')" title="Remover este time">🗑️</button>`
+                ? `<button type="button" class="team-delete-btn" onclick="deleteTeam('${team.id}')" title="Remover este time">✕</button>`
                 : ''
             }
           </div>
 
           <details class="team-customize-drawer">
-            <summary class="team-customize-summary">🎨 Trocar Cor e Escudo ▾</summary>
+            <summary class="team-customize-summary">Trocar Cor e Escudo ▾</summary>
             <div class="team-customize-body">
               <div class="color-swatches-row">
                 <span style="font-size:0.72rem;color:var(--text-secondary);margin-right:4px;">Cor:</span>
@@ -3540,7 +3550,7 @@ function renderElencoTab() {
               onclick="togglePlayerPresenceToday('${mp.id}')"
               title="${isPresent ? 'Presente no sorteio de hoje (Clique para tirar)' : 'Clique para escalar no sorteio de hoje'}"
             >
-              ${isPresent ? '✅ Vai Jogar Hoje' : '➕ Escalar Hoje'}
+              ${isPresent ? 'Joga Hoje' : 'Escalar Hoje'}
             </button>
             <button
               type="button"
@@ -5491,9 +5501,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.setAttribute('data-theme', state.theme);
     const isLight = state.theme === 'light';
     const lobbyIcon = document.getElementById('lobby-theme-icon');
-    if (lobbyIcon) lobbyIcon.textContent = isLight ? '🌙' : '☀️';
+    if (lobbyIcon) lobbyIcon.innerHTML = isLight ? UI_SVGS.moon : UI_SVGS.sun;
     const themeIcon = document.getElementById('theme-icon');
-    if (themeIcon) themeIcon.textContent = isLight ? '🌙' : '☀️';
+    if (themeIcon) themeIcon.innerHTML = isLight ? UI_SVGS.moon : UI_SVGS.sun;
     saveState(false);
   });
 
