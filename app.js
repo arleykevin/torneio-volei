@@ -468,24 +468,26 @@ function speakNarration(text) {
 }
 
 function buildElevenLabsScript() {
-  const t1 = state.teams[0]?.name || 'Time 1';
-  const t2 = state.teams[1]?.name || 'Time 2';
-  const t3 = state.teams[2]?.name || 'Time 3';
-  const t4 = state.teams[3]?.name || 'Time 4';
+  const t1 = (state.teams[0]?.name || 'Time 1').toUpperCase();
+  const t2 = (state.teams[1]?.name || 'Time 2').toUpperCase();
+  const t3 = (state.teams[2]?.name || 'Time 3').toUpperCase();
+  const t4 = (state.teams[3]?.name || 'Time 4').toUpperCase();
 
   return [
-    `Ponto para o ${t1}.`,
-    `Ponto para o ${t2}.`,
-    `Ponto para o ${t3}.`,
-    `Ponto para o ${t4}.`,
-    `Match point para o ${t1}.`,
-    `Match point para o ${t2}.`,
-    `Match point para o ${t3}.`,
-    `Match point para o ${t4}.`,
-    `${t1} ganhou a partida.`,
-    `${t2} ganhou a partida.`,
-    `${t3} ganhou a partida.`,
-    `${t4} ganhou a partida.`
+    `PONTO... para o ${t1}!`,
+    `PONTO... para o ${t2}!`,
+    `PONTO... para o ${t3}!`,
+    `PONTO... para o ${t4}!`,
+    ``,
+    `É MATCH POINT — para o ${t1}!`,
+    `É MATCH POINT — para o ${t2}!`,
+    `É MATCH POINT — para o ${t3}!`,
+    `É MATCH POINT — para o ${t4}!`,
+    ``,
+    `FIM DE JOGO! ... ${t1} — GANHOU a partida!`,
+    `FIM DE JOGO! ... ${t2} — GANHOU a partida!`,
+    `FIM DE JOGO! ... ${t3} — GANHOU a partida!`,
+    `FIM DE JOGO! ... ${t4} — GANHOU a partida!`
   ].join('\n');
 }
 
