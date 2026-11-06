@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.10.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.11.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -214,32 +214,37 @@
       <!-- Quick Actions Bar (Clean & Minimal) -->
       <div class="header-actions">
         <div class="action-buttons-row">
-          <button id="btn-room-sync" class="action-btn btn-sync-live" type="button" title="Código da Sala Ao Vivo • Clique para trocar ou compartilhar">
-            <span class="sync-pulse-dot"></span>
-            <span id="room-sync-label">#VOLEI1</span>
-          </button>
-          <button id="header-presence-badge" class="action-btn presence-pill" type="button" onclick="showRoomPresenceToast()" title="Aparelhos conectados nesta sala ao vivo">
-            <span class="presence-dot"></span>
-            <span id="header-presence-count">1 online</span>
-          </button>
-          <button id="btn-leave-room-header" class="btn-leave-room" type="button" onclick="goToLobbyScreen()" title="Sair do torneio e voltar ao Painel Principal">
-            <span>🚪 Sair da Sala</span>
-          </button>
-          <button id="btn-theme-toggle" class="icon-btn" type="button" title="Alternar Modo Escuro / Modo Claro" aria-label="Alternar tema claro ou escuro">
-            <span id="theme-icon">☀️</span>
-          </button>
-          <button id="btn-whistle-toggle" class="icon-btn" type="button" title="Ligar ou Desligar Apitos do Juiz" aria-label="Alternar apitos">
-            <span id="whistle-header-icon">🔕</span>
-          </button>
-          <button id="btn-sound-toggle" class="icon-btn active" type="button" title="Ativar/Desativar Sons e Áudios" aria-label="Alternar som">
-            <span id="sound-icon">🔊</span>
-          </button>
-          <button id="btn-whatsapp-share" class="icon-btn" type="button" title="Copiar Resumo para WhatsApp">
-            <span>📲</span>
-          </button>
-          <button id="btn-settings-menu" class="icon-btn" type="button" title="Configurações e Backup" aria-label="Menu de opções">
-            <span>⚙️</span>
-          </button>
+          <div class="header-room-row">
+            <button id="btn-room-sync" class="action-btn btn-sync-live" type="button" title="Código da Sala Ao Vivo • Clique para trocar ou compartilhar">
+              <span class="sync-pulse-dot"></span>
+              <span id="room-sync-label">#VOLEI1</span>
+            </button>
+            <button id="header-presence-badge" class="action-btn presence-pill" type="button" onclick="showRoomPresenceToast()" title="Aparelhos conectados nesta sala ao vivo">
+              <span class="presence-dot"></span>
+              <span id="header-presence-count">1 online</span>
+            </button>
+            <button id="btn-leave-room-header" class="btn-leave-room" type="button" onclick="goToLobbyScreen()" title="Sair do torneio e voltar ao Painel Principal">
+              <span class="leave-room-full-text">🚪 Sair da Sala</span>
+              <span class="leave-room-short-text">🚪 Sair</span>
+            </button>
+          </div>
+          <div class="header-tools-row">
+            <button id="btn-whistle-toggle" class="icon-btn" type="button" title="Ligar ou Desligar Apitos do Juiz" aria-label="Alternar apitos">
+              <span id="whistle-header-icon">🔕</span>
+            </button>
+            <button id="btn-sound-toggle" class="icon-btn active" type="button" title="Ativar/Desativar Sons e Áudios" aria-label="Alternar som">
+              <span id="sound-icon">🔊</span>
+            </button>
+            <button id="btn-theme-toggle" class="icon-btn" type="button" title="Alternar Modo Escuro / Modo Claro" aria-label="Alternar tema claro ou escuro">
+              <span id="theme-icon">☀️</span>
+            </button>
+            <button id="btn-whatsapp-share" class="icon-btn" type="button" title="Copiar Resumo para WhatsApp">
+              <span>📲</span>
+            </button>
+            <button id="btn-settings-menu" class="icon-btn" type="button" title="Configurações e Backup" aria-label="Menu de opções">
+              <span>⚙️</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1512,6 +1517,6 @@
 
   <!-- Multi-Device Real-Time WebSocket MQTT Engine (Paho MQTT) -->
   <script src="./paho-mqtt.min.js"></script>
-  <script src="./volei-ui.js?v=4.10.0"></script>
+  <script src="./volei-ui.js?v=4.11.0"></script>
 </body>
 </html>

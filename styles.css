@@ -503,6 +503,26 @@ body {
   gap: 8px;
 }
 
+.header-room-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-tools-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.leave-room-full-text {
+  display: inline;
+}
+
+.leave-room-short-text {
+  display: none;
+}
+
 .icon-btn {
   width: 38px;
   height: 38px;
@@ -3177,20 +3197,68 @@ html[data-theme="light"] .team-available-select option {
   }
 
   .action-buttons-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .header-room-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .header-room-row #btn-room-sync {
+    flex: 1.2;
+    min-width: 0;
+    height: 36px;
+    padding: 0 8px;
+    justify-content: center;
+    font-size: 0.74rem;
+  }
+
+  .header-room-row #header-presence-badge {
+    flex: 0 0 auto;
+    height: 36px;
+    padding: 0 8px;
+    font-size: 0.72rem;
+  }
+
+  .header-room-row #btn-leave-room-header {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    padding: 0 8px;
+    justify-content: center;
+    font-size: 0.74rem;
+  }
+
+  .leave-room-full-text {
+    display: none !important;
+  }
+
+  .leave-room-short-text {
+    display: inline !important;
+  }
+
+  .header-tools-row {
     display: grid;
-    grid-template-columns: 1.4fr repeat(5, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 5px;
     width: 100%;
   }
 
-  .action-buttons-row .icon-btn,
-  .action-buttons-row .action-btn {
+  .header-tools-row .icon-btn {
     width: 100%;
     height: 36px;
-    padding: 0 4px;
+    padding: 0;
+    display: flex;
+    align-items: center;
     justify-content: center;
     border-radius: 9px;
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     min-width: 0;
   }
 
@@ -3368,40 +3436,41 @@ html[data-theme="light"] .team-available-select option {
     padding-top: 8px;
   }
 
-  /* Arena do Placar no Celular */
+  /* Arena do Placar no Celular (Ultra Proporcional & Sem Rolagem Excessiva) */
   .scoreboard-arena {
     grid-template-columns: 1fr;
-    gap: 10px;
-    margin-bottom: 14px;
+    gap: 8px;
+    margin-bottom: 10px;
   }
 
   .score-team-card {
-    padding: 14px 12px;
-    border-radius: 18px;
+    padding: 8px 10px !important;
+    border-radius: 14px !important;
     min-width: 0;
   }
 
   .team-card-top {
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     min-width: 0;
+    margin-bottom: 2px;
   }
 
   .team-identity {
     flex: 1;
     min-width: 0;
-    gap: 8px;
+    gap: 6px;
   }
 
   .team-crest-badge {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
   }
 
   .team-crest-img {
-    width: 21px;
-    height: 21px;
+    width: 17px !important;
+    height: 17px !important;
   }
 
   .team-title-stack {
@@ -3416,70 +3485,79 @@ html[data-theme="light"] .team-available-select option {
   .team-inline-switcher {
     width: 100%;
     max-width: 100%;
-    font-size: 1rem;
-    padding: 4px 8px;
+    font-size: 0.92rem;
+    padding: 2px 6px;
     text-overflow: ellipsis;
   }
 
   .score-team-roster {
     max-width: 100%;
-    font-size: 0.71rem;
+    font-size: 0.66rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .serve-badge {
-    padding: 5px 8px;
-    font-size: 0.64rem;
+    padding: 3px 6px;
+    font-size: 0.62rem;
     flex-shrink: 0;
-    gap: 4px;
+    gap: 3px;
   }
 
   .serve-badge img {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
   }
 
   .score-number-wrapper {
-    padding: 8px 0;
+    padding: 2px 0 !important;
+    margin: 0 !important;
   }
 
   .score-giant-number {
-    font-size: clamp(5.8rem, 23vw, 8.2rem);
+    font-size: clamp(3.4rem, 13vw, 4.5rem) !important;
+    line-height: 0.92 !important;
+    margin: 2px 0 !important;
   }
 
   .score-controls {
-    grid-template-columns: 62px 1fr;
-    gap: 8px;
+    grid-template-columns: 50px 1fr !important;
+    gap: 6px !important;
   }
 
-  .btn-minus,
+  .btn-minus {
+    height: 44px !important;
+    border-radius: 11px !important;
+    font-size: 0.95rem !important;
+  }
+
   .btn-plus {
-    height: 50px;
-    border-radius: 13px;
-    font-size: 1.05rem;
+    height: 44px !important;
+    border-radius: 11px !important;
+    font-size: 1rem !important;
+    font-weight: 900 !important;
   }
 
   .plus-sign {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
   }
 
-  /* Barra Central Simétrica de 5 Botões no Celular (3 em cima + 2 embaixo) */
+  /* Barra Central Simétrica de 5 Botões no Celular (1 Linha Compacta) */
   .score-center-column {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
-    padding: 2px 0;
-    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 4px !important;
+    padding: 2px 0 !important;
+    width: 100% !important;
   }
 
   .score-center-column .center-action-btn:nth-child(1),
   .score-center-column .center-action-btn:nth-child(2),
-  .score-center-column .center-action-btn:nth-child(3) {
-    grid-column: span 2;
-  }
-
+  .score-center-column .center-action-btn:nth-child(3),
   .score-center-column .center-action-btn:nth-child(4),
   .score-center-column .center-action-btn:nth-child(5) {
-    grid-column: span 3;
+    grid-column: span 1 !important;
   }
 
   .vs-net-box {
@@ -3487,20 +3565,32 @@ html[data-theme="light"] .team-available-select option {
   }
 
   .center-action-btn {
-    width: 100%;
-    height: 42px;
-    flex-direction: row;
-    justify-content: center;
-    padding: 0 6px;
-    font-size: 0.74rem;
-    gap: 5px;
-    border-radius: 10px;
+    width: 100% !important;
+    height: 38px !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 2px 1px !important;
+    font-size: 0.62rem !important;
+    gap: 1px !important;
+    border-radius: 8px !important;
   }
 
-  /* Soundboard ElevenLabs & Deboche 2 Colunas Perfeitas no Celular */
+  .center-action-btn span:first-child {
+    font-size: 0.85rem !important;
+    line-height: 1 !important;
+  }
+
+  .center-action-btn span:last-child {
+    font-size: 0.6rem !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+  }
+
+  /* Soundboard ElevenLabs & Deboche: Apitos em Cima, Áudios Roláveis Embaixo */
   .deboche-soundboard-bar {
-    padding: 12px;
-    gap: 10px;
+    padding: 10px;
+    gap: 8px;
   }
 
   .soundboard-title {
@@ -3509,9 +3599,19 @@ html[data-theme="light"] .team-available-select option {
   }
 
   .soundboard-buttons-grid.official-grid,
+  .soundboard-buttons-grid.whistles-top-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
   .soundboard-buttons-grid.deboche-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 6px;
+    max-height: 250px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding: 3px 2px;
   }
 
   .soundboard-buttons-grid.deboche-grid button:first-child {
@@ -5119,913 +5219,6 @@ html[data-theme="light"] #btn-soundboard-whistle-toggle.active {
 }
 
 /* ==========================================
-   MODAL 8 & BOTÕES: IMAGEM DOS TIMES P/ WHATSAPP
-   ========================================== */
-.btn-whatsapp-image {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #04130d;
-  border: none;
-  border-radius: 13px;
-  padding: 13px 18px;
-  font-family: var(--font-sans);
-  font-size: 0.9rem;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 8px 22px -6px rgba(16, 185, 129, 0.45);
-  transition: all 0.2s ease;
-}
-
-.btn-whatsapp-image:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.08);
-}
-
-.whatsapp-img-chip {
-  background: rgba(16, 185, 129, 0.18) !important;
-  border-color: rgba(16, 185, 129, 0.55) !important;
-  color: #6ee7b7 !important;
-  font-weight: 800;
-}
-
-.whatsapp-img-chip:hover {
-  background: rgba(16, 185, 129, 0.32) !important;
-  color: #ecfdf5 !important;
-}
-
-.teams-image-actions-top {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.btn-whatsapp-share-main {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  color: #04130d;
-  border: none;
-  border-radius: 12px;
-  padding: 11px 18px;
-  font-family: var(--font-sans);
-  font-size: 0.88rem;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.4);
-  transition: all 0.18s ease;
-}
-
-.btn-whatsapp-share-main:hover {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
-}
-
-.teams-image-preview-wrap {
-  background: rgba(6, 10, 22, 0.9);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  border-radius: 16px;
-  padding: 10px;
-  max-height: 62vh;
-  overflow-y: auto;
-  display: flex;
-  justify-content: center;
-}
-
-.teams-share-preview-img {
-  width: 100%;
-  max-width: 560px;
-  height: auto;
-  border-radius: 12px;
-  display: block;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65);
-}
-
-@media (max-width: 768px) {
-  .teams-image-actions-top {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-  }
-
-  .btn-whatsapp-share-main {
-    grid-column: 1 / -1;
-    width: 100%;
-    text-align: center;
-  }
-
-  .teams-image-actions-top .chip-btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* ==========================================
-   ABA 4: ⭐ ELENCO FIXO (1-CLICK STARS & ROLES)
-   & QUICK ROSTER CHIPS + COMANDOS DE IMPORTAÇÃO
-   ========================================== */
-.quick-roster-box {
-  background: rgba(15, 23, 42, 0.72);
-  border: 1px solid rgba(250, 204, 21, 0.28);
-  border-radius: 14px;
-  padding: 12px 14px;
-  margin-top: 12px;
-  margin-bottom: 12px;
-}
-
-.quick-roster-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.quick-roster-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  max-height: 175px;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.roster-pick-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(30, 41, 59, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  color: #e2e8f0;
-  font-family: var(--font-sans);
-  font-size: 0.76rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.16s ease;
-}
-
-.roster-pick-chip:hover {
-  border-color: rgba(56, 189, 248, 0.6);
-  transform: translateY(-1px);
-}
-
-.roster-pick-chip.present {
-  background: rgba(16, 185, 129, 0.18);
-  border-color: rgba(16, 185, 129, 0.65);
-  color: #ecfdf5;
-  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.22);
-}
-
-.roster-pick-chip .pick-stars {
-  color: #facc15;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
-.roster-pick-chip .pick-role {
-  font-size: 0.66rem;
-  color: var(--text-secondary);
-  background: rgba(9, 14, 28, 0.6);
-  padding: 1px 6px;
-  border-radius: 6px;
-}
-
-/* Inline 1-Click Stars inside Player Pool */
-.pool-inline-stars {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  margin-top: 2px;
-}
-
-.pool-star-btn {
-  background: none;
-  border: none;
-  padding: 0 1px;
-  font-size: 0.92rem;
-  line-height: 1;
-  color: rgba(148, 163, 184, 0.32);
-  cursor: pointer;
-  transition: transform 0.12s, color 0.12s;
-}
-
-.pool-star-btn.lit {
-  color: #facc15;
-  text-shadow: 0 0 8px rgba(250, 204, 21, 0.45);
-}
-
-.pool-star-btn:hover {
-  transform: scale(1.22);
-}
-
-.pool-role-cycle-btn {
-  background: rgba(56, 189, 248, 0.14);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: #7dd3fc;
-  font-family: var(--font-sans);
-  font-size: 0.66rem;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.pool-role-cycle-btn:hover {
-  background: rgba(56, 189, 248, 0.28);
-}
-
-/* Elenco Fixo Main Section */
-.elenco-header-card {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.elenco-top-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.elenco-quick-create-bar {
-  background: rgba(9, 14, 28, 0.65);
-  border: 1px solid rgba(56, 189, 248, 0.26);
-  border-radius: 14px;
-  padding: 14px;
-}
-
-.elenco-create-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.elenco-name-input {
-  flex: 1 1 220px;
-  min-width: 180px;
-}
-
-.elenco-stars-picker-group,
-.elenco-role-picker-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.picker-mini-label {
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: var(--text-secondary);
-  letter-spacing: 0.04em;
-}
-
-.interactive-stars-bar {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  padding: 4px 8px;
-  border-radius: 10px;
-}
-
-.star-click-btn {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  line-height: 1;
-  padding: 2px 3px;
-  color: rgba(148, 163, 184, 0.28);
-  cursor: pointer;
-  transition: transform 0.14s ease, color 0.14s ease;
-}
-
-.star-click-btn.lit {
-  color: #facc15;
-  text-shadow: 0 0 10px rgba(250, 204, 21, 0.55);
-}
-
-.star-click-btn:hover {
-  transform: scale(1.22);
-}
-
-.role-pills-bar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.role-pill-btn {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  color: var(--text-secondary);
-  font-family: var(--font-sans);
-  font-size: 0.73rem;
-  font-weight: 800;
-  padding: 6px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.role-pill-btn:hover {
-  border-color: rgba(56, 189, 248, 0.5);
-  color: #fff;
-}
-
-.role-pill-btn.active {
-  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-  border-color: #38bdf8;
-  color: #060913;
-  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.35);
-}
-
-.elenco-filter-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.elenco-star-filters {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.filter-pill {
-  background: rgba(15, 23, 42, 0.78);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  color: var(--text-secondary);
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 800;
-  padding: 6px 12px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all 0.16s;
-}
-
-.filter-pill.active {
-  background: rgba(250, 204, 21, 0.2);
-  border-color: #facc15;
-  color: #fde047;
-}
-
-.elenco-search-input {
-  max-width: 260px;
-  flex: 1 1 180px;
-}
-
-/* Master Roster Grid Cards */
-.master-roster-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
-  gap: 12px;
-}
-
-.master-player-card {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  border-radius: 14px;
-  padding: 13px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  transition: all 0.18s ease;
-}
-
-.master-player-card.is-present {
-  border-color: rgba(16, 185, 129, 0.55);
-  background: linear-gradient(160deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.92) 70%);
-}
-
-.mp-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.mp-presence-toggle-btn {
-  flex: 1;
-  background: rgba(30, 41, 59, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  color: #e2e8f0;
-  font-family: var(--font-sans);
-  font-size: 0.76rem;
-  font-weight: 800;
-  padding: 6px 10px;
-  border-radius: 9px;
-  cursor: pointer;
-  transition: all 0.16s;
-  text-align: center;
-}
-
-.mp-presence-toggle-btn.active {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border-color: #34d399;
-  color: #04130d;
-  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
-}
-
-.mp-delete-btn {
-  background: rgba(244, 63, 94, 0.12);
-  border: 1px solid rgba(244, 63, 94, 0.28);
-  color: #fda4af;
-  border-radius: 8px;
-  padding: 5px 8px;
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-
-.mp-delete-btn:hover {
-  background: rgba(244, 63, 94, 0.28);
-}
-
-.mp-name-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mp-name-input {
-  flex: 1;
-  min-width: 0;
-  background: rgba(9, 14, 28, 0.75);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  border-radius: 9px;
-  padding: 7px 10px;
-  color: #ffffff;
-  font-family: var(--font-sans);
-  font-size: 0.95rem;
-  font-weight: 800;
-}
-
-.mp-stars-section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.mp-mini-label {
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-}
-
-.mp-roles-section .role-pills-bar {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-}
-
-.mp-roles-section .role-pill-btn {
-  padding: 5px 2px;
-  font-size: 0.68rem;
-  text-align: center;
-}
-
-/* Import Modal Commands Guide & Quick Insert Buttons */
-.import-commands-guide {
-  background: rgba(15, 23, 42, 0.82);
-  border: 1px solid rgba(250, 204, 21, 0.35);
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
-}
-
-.import-guide-title {
-  font-size: 0.76rem;
-  font-weight: 800;
-  color: #fde047;
-  margin-bottom: 6px;
-}
-
-.import-cmd-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 6px;
-}
-
-.cmd-badge {
-  font-size: 0.7rem;
-  color: #e2e8f0;
-  background: rgba(30, 41, 59, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  padding: 3px 7px;
-  border-radius: 6px;
-}
-
-.cmd-badge code {
-  color: #38bdf8;
-  font-family: var(--font-mono);
-  font-weight: 800;
-}
-
-.import-guide-sub {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-}
-
-.cmd-insert-bar {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.cmd-insert-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  margin-right: 2px;
-}
-
-.cmd-insert-btn {
-  background: rgba(56, 189, 248, 0.14);
-  border: 1px solid rgba(56, 189, 248, 0.38);
-  color: #7dd3fc;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: all 0.14s;
-}
-
-.cmd-insert-btn:hover {
-  background: rgba(56, 189, 248, 0.28);
-  color: #fff;
-}
-
-@media (max-width: 768px) {
-  .elenco-top-actions {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .elenco-top-actions button {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .elenco-create-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .elenco-name-input,
-  .elenco-search-input {
-    max-width: none;
-    width: 100%;
-  }
-
-  .elenco-stars-picker-group,
-  .elenco-role-picker-group {
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  #btn-elenco-add-player {
-    width: 100%;
-  }
-
-  .master-roster-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ==========================================
-   ORGANIZAÇÃO LIMPA (GAVETAS RETRÁTEIS / DRAWERS)
-   ========================================== */
-.timer-pill-box {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  padding: 5px 10px;
-  border-radius: 10px;
-}
-
-.clean-drawer {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  margin-top: 12px;
-  overflow: hidden;
-  box-shadow: var(--shadow-glass);
-}
-
-.clean-drawer-summary {
-  list-style: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 13px 18px;
-  cursor: pointer;
-  user-select: none;
-  font-size: 0.86rem;
-  color: var(--text-primary);
-  transition: background 0.15s ease;
-}
-
-.clean-drawer-summary::-webkit-details-marker {
-  display: none;
-}
-
-.clean-drawer-summary:hover {
-  background: rgba(56, 189, 248, 0.06);
-}
-
-.clean-drawer-summary small {
-  color: var(--text-secondary);
-  font-weight: 500;
-  margin-left: 4px;
-}
-
-.drawer-chevron {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  transition: transform 0.2s ease;
-}
-
-.clean-drawer[open] .drawer-chevron {
-  transform: rotate(180deg);
-}
-
-.clean-drawer-body {
-  padding: 14px 18px 18px;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.toolbar-drawer-grid {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-/* Gaveta compacta de Cor e Escudo dentro de cada Card de Time */
-.team-customize-drawer {
-  background: rgba(9, 14, 28, 0.45);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.team-customize-summary {
-  list-style: none;
-  padding: 7px 11px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  cursor: pointer;
-  user-select: none;
-}
-
-.team-customize-summary::-webkit-details-marker {
-  display: none;
-}
-
-.team-customize-summary:hover {
-  color: var(--text-primary);
-}
-
-.team-customize-body {
-  padding: 10px;
-  border-top: 1px solid rgba(148, 163, 184, 0.14);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* ==========================================
-   MODO CLARO (☀️ LIGHT THEME COMPLETO)
-   ========================================== */
-html[data-theme="light"] {
-  --bg-deep: #f1f5f9;
-  --bg-surface: rgba(255, 255, 255, 0.94);
-  --bg-card: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --border-subtle: rgba(15, 23, 42, 0.12);
-  --border-glow: rgba(2, 132, 199, 0.35);
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --shadow-glass: 0 8px 26px -4px rgba(15, 23, 42, 0.08);
-}
-
-html[data-theme="light"] body {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-html[data-theme="light"] .ambient-bg {
-  opacity: 0.25;
-}
-
-html[data-theme="light"] .app-header {
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
-}
-
-html[data-theme="light"] .brand-title-row h1,
-html[data-theme="light"] .section-heading,
-html[data-theme="light"] .card-title,
-html[data-theme="light"] .modal-title,
-html[data-theme="light"] .score-giant-number,
-html[data-theme="light"] .team-inline-switcher,
-html[data-theme="light"] .podium-team-name,
-html[data-theme="light"] .pool-player-name,
-html[data-theme="light"] .saved-session-top strong {
-  color: #0f172a !important;
-  text-shadow: none !important;
-}
-
-html[data-theme="light"] .nav-tab {
-  color: #475569;
-}
-
-html[data-theme="light"] .nav-tab.active {
-  color: #0284c7;
-  background: rgba(2, 132, 199, 0.08);
-}
-
-html[data-theme="light"] .mono-svg {
-  filter: brightness(0.2);
-}
-
-html[data-theme="light"] .team-crest-badge .mono-svg {
-  filter: brightness(0) invert(1);
-}
-
-html[data-theme="light"] .icon-btn,
-html[data-theme="light"] .action-btn,
-html[data-theme="light"] .chip-btn,
-html[data-theme="light"] .mini-action-btn,
-html[data-theme="light"] .center-action-btn,
-html[data-theme="light"] .pt-pill,
-html[data-theme="light"] .role-pill-btn,
-html[data-theme="light"] .filter-pill {
-  background: #ffffff;
-  color: #0f172a;
-  border-color: rgba(15, 23, 42, 0.16);
-}
-
-html[data-theme="light"] .chip-btn.accent {
-  background: rgba(2, 132, 199, 0.12);
-  color: #0369a1;
-  border-color: rgba(2, 132, 199, 0.35);
-}
-
-html[data-theme="light"] .modern-input,
-html[data-theme="light"] .modern-textarea,
-html[data-theme="light"] .modern-select,
-html[data-theme="light"] .team-name-edit-input,
-html[data-theme="light"] .team-quick-add-input,
-html[data-theme="light"] .mp-name-input {
-  background: #ffffff !important;
-  color: #0f172a !important;
-  border-color: rgba(15, 23, 42, 0.2) !important;
-}
-
-html[data-theme="light"] .team-inline-switcher {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(15, 23, 42, 0.18);
-}
-
-html[data-theme="light"] .team-inline-switcher option {
-  background: #ffffff;
-  color: #0f172a;
-}
-
-html[data-theme="light"] .score-team-card#score-card-left {
-  background: linear-gradient(165deg, color-mix(in srgb, var(--team-left-color) 24%, #ffffff) 0%, #ffffff 75%) !important;
-  border-color: rgba(15, 23, 42, 0.14);
-}
-
-html[data-theme="light"] .score-team-card#score-card-right {
-  background: linear-gradient(165deg, color-mix(in srgb, var(--team-right-color) 24%, #ffffff) 0%, #ffffff 75%) !important;
-  border-color: rgba(15, 23, 42, 0.14);
-}
-
-html[data-theme="light"] .score-number-wrapper {
-  background: rgba(241, 245, 249, 0.85);
-  border-color: rgba(15, 23, 42, 0.1);
-}
-
-html[data-theme="light"] .score-btn.btn-minus {
-  background: #f1f5f9;
-  color: #334155;
-  border-color: rgba(15, 23, 42, 0.18);
-}
-
-html[data-theme="light"] .match-status-banner,
-html[data-theme="light"] .waiting-queue-bar,
-html[data-theme="light"] .quick-roster-box,
-html[data-theme="light"] .elenco-quick-create-bar,
-html[data-theme="light"] .master-player-card,
-html[data-theme="light"] .pool-player-chip,
-html[data-theme="light"] .match-row-card,
-html[data-theme="light"] .team-roster-box,
-html[data-theme="light"] .roster-member-item,
-html[data-theme="light"] .team-customize-drawer,
-html[data-theme="light"] .timer-pill-box,
-html[data-theme="light"] .interactive-stars-bar {
-  background: #ffffff !important;
-  border-color: rgba(15, 23, 42, 0.14) !important;
-  color: #0f172a !important;
-}
-
-html[data-theme="light"] .master-player-card.is-present {
-  background: linear-gradient(160deg, rgba(16, 185, 129, 0.14) 0%, #ffffff 75%) !important;
-  border-color: rgba(16, 185, 129, 0.55) !important;
-}
-
-html[data-theme="light"] .roster-pick-chip {
-  background: #f8fafc;
-  color: #0f172a;
-  border-color: rgba(15, 23, 42, 0.18);
-}
-
-html[data-theme="light"] .roster-pick-chip.present {
-  background: rgba(16, 185, 129, 0.18);
-  color: #065f46;
-  border-color: rgba(16, 185, 129, 0.6);
-}
-
-html[data-theme="light"] . roster-pick-chip .pick-stars {
-  color: #d97706;
-}
-
-html[data-theme="light"] .standings-table th {
-  background: #f8fafc;
-  color: #334155;
-}
-
-html[data-theme="light"] .standings-table td {
-  background: #ffffff;
-  color: #0f172a;
-}
-
-html[data-theme="light"] .modal-card {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.15);
-  color: #0f172a;
-}
-
-html[data-theme="light"] .date-session-pill {
-  background: rgba(245, 158, 11, 0.16);
-  color: #b45309;
-  border-color: rgba(245, 158, 11, 0.45);
-}
-
-html[data-theme="light"] .icon-btn#btn-whistle-toggle.active {
-  background: rgba(245, 158, 11, 0.16);
-  border-color: rgba(217, 119, 6, 0.45);
-  color: #b45309;
-}
-
-html[data-theme="light"] .center-action-btn.whistle-center-btn.active {
-  background: rgba(245, 158, 11, 0.18);
-  border-color: rgba(217, 119, 6, 0.45);
-  color: #b45309;
-}
-
-html[data-theme="light"] .center-action-btn.whistle-center-btn.subtle {
-  background: #f1f5f9;
-  border-color: rgba(148, 163, 184, 0.25);
-  color: #64748b;
-}
-
-html[data-theme="light"] #btn-rule-whistle-toggle.active,
-html[data-theme="light"] #btn-soundboard-whistle-toggle.active {
-  background: rgba(245, 158, 11, 0.16) !important;
-  border-color: rgba(217, 119, 6, 0.5) !important;
-  color: #b45309 !important;
-}
-
-/* ==========================================
    BOTÃO DE ZERAR TODOS OS JOGOS E MODAL DE SENHA (2026)
    ========================================== */
 .btn-reset-games-top {
@@ -6852,6 +6045,191 @@ html[data-theme="light"] .pin-error-msg {
   max-width: 420px;
   line-height: 1.45;
   margin: 0;
+}
+
+/* ==========================================
+   RESPONSIVIDADE MOBILE COMPLETA: PAINEL PRINCIPAL (LOBBY)
+   ========================================== */
+@media (max-width: 680px) {
+  .lobby-container {
+    padding: max(14px, env(safe-area-inset-top, 14px)) max(10px, env(safe-area-inset-right, 10px)) max(48px, env(safe-area-inset-bottom, 48px)) max(10px, env(safe-area-inset-left, 10px)) !important;
+    gap: 14px !important;
+  }
+
+  .lobby-header {
+    padding: 14px 12px !important;
+    border-radius: 18px !important;
+    gap: 10px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .lobby-brand {
+    gap: 10px !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  .lobby-logo {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+  }
+
+  .lobby-title-group {
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  .lobby-main-title {
+    font-size: 1.15rem !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+  }
+
+  .lobby-subtitle {
+    font-size: 0.72rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .lobby-card {
+    padding: 14px 12px !important;
+    border-radius: 18px !important;
+    gap: 12px !important;
+  }
+
+  .lobby-card-header {
+    gap: 10px !important;
+  }
+
+  .lobby-card-icon-badge {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1.1rem !important;
+    border-radius: 10px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .lobby-card-title {
+    font-size: 1.05rem !important;
+  }
+
+  .lobby-card-desc {
+    font-size: 0.76rem !important;
+  }
+
+  /* Campo de Entrar por Código no Celular */
+  .room-code-input-row {
+    display: grid !important;
+    grid-template-columns: auto 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .room-prefix-tag {
+    grid-column: 1 / 2 !important;
+    grid-row: 1 !important;
+    padding: 8px 12px !important;
+    font-size: 1.1rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .room-login-input {
+    grid-column: 2 / 3 !important;
+    grid-row: 1 !important;
+    height: 44px !important;
+    font-size: 1rem !important;
+    width: 100% !important;
+  }
+
+  .room-login-btn {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.94rem !important;
+    border-radius: 12px !important;
+  }
+
+  .room-quick-suggestions {
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* Cards de Torneios Disponíveis no Feed */
+  .tournament-feed-card {
+    padding: 14px 12px !important;
+    border-radius: 16px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .feed-card-header {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+
+  .feed-card-name {
+    font-size: 1.08rem !important;
+  }
+
+  .feed-card-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .feed-enter-btn {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    height: 44px !important;
+    font-size: 0.92rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 11px !important;
+  }
+
+  .feed-share-btn {
+    grid-column: 1 / 2 !important;
+    width: 100% !important;
+    height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.78rem !important;
+    border-radius: 9px !important;
+  }
+
+  .feed-delete-btn {
+    grid-column: 2 / 3 !important;
+    width: 100% !important;
+    height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.78rem !important;
+    border-radius: 9px !important;
+  }
+
+  /* Formulário de Criação de Novo Torneio */
+  .lobby-create-form .session-inputs-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  #btn-lobby-create-submit {
+    height: 48px !important;
+    font-size: 0.95rem !important;
+    border-radius: 14px !important;
+  }
 }
 
 @media print {
