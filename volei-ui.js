@@ -416,6 +416,9 @@ function saveState(shouldBroadcast = true) {
         } catch (_) {}
       }
       scheduleCloudAndLocalRoomPush();
+      if (typeof pushTournamentsHubSync === 'function') {
+        pushTournamentsHubSync();
+      }
     }
   } catch (_) {}
 }
@@ -471,6 +474,7 @@ function buildCompactSyncPayload() {
   return {
     senderId: myTabId,
     senderTabTime: Date.now(),
+    sessionId: state.sessionId,
     tournamentName: state.tournamentName,
     tournamentDate: state.tournamentDate,
     roomCode: state.roomCode,
@@ -541,7 +545,166 @@ function pushRoomStateNow(showFeedback = false) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ state: payload })
   }).catch(() => {});
+
+  // Também envia sync do Hub de Torneios para o feed do lobby
+  pushTournamentsHubSync();
 }
+
+/* ==========================================
+   PRESENÇA EM TEMPO REAL & HUB DE TORNEIOS
+   ========================================== */
+let globalPeers = {};
+let roomPeers = {};
+let presenceHeartbeatInterval = null;
+let presencePruneInterval = null;
+
+function sendPresencePing(action = 'ping') {
+  if (!pahoMqttClient || !pahoMqttConnected) return;
+  try {
+    const isMob = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    const payload = {
+      clientId: myTabId,
+      action,
+      ua: isMob ? 'Celular' : 'Computador',
+      room: (state.roomCode || 'VOLEI1').toUpperCase(),
+      ts: Date.now()
+    };
+    const jsonStr = JSON.stringify(payload);
+
+    // Ping global
+    const gMsg = new Paho.MQTT.Message(jsonStr);
+    gMsg.destinationName = 'volei_arena/global/presence';
+    gMsg.qos = 0;
+    pahoMqttClient.send(gMsg);
+
+    // Ping sala atual
+    if (state.roomCode) {
+      const rMsg = new Paho.MQTT.Message(jsonStr);
+      rMsg.destinationName = `volei_arena/room/${(state.roomCode || 'VOLEI1').toUpperCase()}/presence`;
+      rMsg.qos = 0;
+      pahoMqttClient.send(rMsg);
+    }
+  } catch (_) {}
+}
+
+function pruneAndRenderPresence() {
+  const now = Date.now();
+  const isMob = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  globalPeers[myTabId] = { ts: now, ua: isMob ? 'Celular' : 'Computador' };
+  roomPeers[myTabId] = { ts: now, ua: isMob ? 'Celular' : 'Computador' };
+
+  for (const id in globalPeers) {
+    if (now - globalPeers[id].ts > 25000) delete globalPeers[id];
+  }
+  for (const id in roomPeers) {
+    if (now - roomPeers[id].ts > 25000) delete roomPeers[id];
+  }
+
+  const globalCount = Object.keys(globalPeers).length;
+  const roomCount = Object.keys(roomPeers).length;
+
+  const lobbyCountEl = document.getElementById('lobby-online-count');
+  if (lobbyCountEl) {
+    lobbyCountEl.textContent = `${globalCount} ${globalCount === 1 ? 'dispositivo online' : 'dispositivos online'}`;
+  }
+
+  const headerCountEl = document.getElementById('header-presence-count');
+  if (headerCountEl) {
+    headerCountEl.textContent = `${roomCount} online`;
+  }
+
+  const focusCountEl = document.getElementById('focus-presence-count');
+  if (focusCountEl) {
+    focusCountEl.textContent = `${roomCount} online`;
+  }
+}
+
+window.showOnlineDevicesToast = function () {
+  pruneAndRenderPresence();
+  const count = Object.keys(globalPeers).length;
+  const isMob = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const myDevice = isMob ? '📱 Celular' : '💻 Computador';
+  showToast(`🌐 <strong>${count} aparelho(s) conectado(s) na Arena ao vivo!</strong><br><small>Seu aparelho atual: ${myDevice}. Sincronização multi-telas ativa via MQTT.</small>`, 'info');
+};
+
+window.showRoomPresenceToast = function () {
+  pruneAndRenderPresence();
+  const roomCount = Object.keys(roomPeers).length;
+  const globalCount = Object.keys(globalPeers).length;
+  const room = (state.roomCode || 'VOLEI1').toUpperCase();
+  showToast(`📡 <strong>${roomCount} aparelho(s) ao vivo na Sala #${escapeHtml(room)}</strong> (${globalCount} no site todo).<br><small>Pontos, times e apitos sincronizam em tempo real entre celular e PC!</small>`, 'success');
+};
+
+function pushTournamentsHubSync() {
+  if (!pahoMqttClient || !pahoMqttConnected) return;
+  try {
+    const list = getSavedSessionsList();
+    if (!list || list.length === 0) return;
+    const payload = {
+      senderId: myTabId,
+      updatedAt: Date.now(),
+      sessions: list
+    };
+    const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+    msg.destinationName = 'volei_arena/hub/tournaments';
+    msg.qos = 1;
+    msg.retained = true;
+    pahoMqttClient.send(msg);
+  } catch (err) {
+    console.warn('Failed to push tournaments hub sync:', err);
+  }
+}
+
+function applyIncomingHubTournaments(payload) {
+  if (!payload || !Array.isArray(payload.sessions)) return;
+  if (payload.senderId === myTabId) return;
+
+  const currentLocal = getSavedSessionsList();
+  const sessionMap = {};
+  currentLocal.forEach((s) => {
+    if (s && s.sessionId) sessionMap[s.sessionId] = s;
+  });
+
+  let hasChanges = false;
+  payload.sessions.forEach((incomingSess) => {
+    if (!incomingSess || !incomingSess.sessionId) return;
+    const existing = sessionMap[incomingSess.sessionId];
+    if (!existing) {
+      sessionMap[incomingSess.sessionId] = incomingSess;
+      hasChanges = true;
+    } else {
+      const incomingStamp = incomingSess.updatedAtMs || 0;
+      const existingStamp = existing.updatedAtMs || 0;
+      if (incomingStamp > existingStamp) {
+        sessionMap[incomingSess.sessionId] = incomingSess;
+        hasChanges = true;
+      }
+    }
+  });
+
+  if (hasChanges) {
+    const mergedList = Object.values(sessionMap);
+    localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(mergedList));
+
+    // Se a sessão aberta no momento foi atualizada na nuvem, atualiza na tela
+    if (state.sessionId && sessionMap[state.sessionId]) {
+      const updatedSess = sessionMap[state.sessionId];
+      if ((updatedSess.updatedAtMs || 0) > (state.updatedAtMs || 0)) {
+        state = { ...state, ...updatedSess };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        renderAll();
+      }
+    }
+    renderLobbyFeed();
+  }
+}
+
+window.addEventListener('beforeunload', () => {
+  sendPresencePing('leave');
+});
+window.addEventListener('pagehide', () => {
+  sendPresencePing('leave');
+});
 
 function initPahoMqtt(roomCode, showToastFeedback = false) {
   const code = String(roomCode || state.roomCode || 'VOLEI1').trim().toUpperCase();
@@ -594,9 +757,42 @@ function initPahoMqtt(roomCode, showToastFeedback = false) {
     };
 
     pahoMqttClient.onMessageArrived = (message) => {
+      const arrivedTopic = message.destinationName;
       try {
         const payload = JSON.parse(message.payloadString);
-        if (payload && payload.senderId !== myTabId) {
+        if (!payload) return;
+
+        if (arrivedTopic === 'volei_arena/hub/tournaments') {
+          applyIncomingHubTournaments(payload);
+          return;
+        }
+
+        if (arrivedTopic === 'volei_arena/global/presence') {
+          if (payload.clientId && payload.clientId !== myTabId) {
+            if (payload.action === 'leave') {
+              delete globalPeers[payload.clientId];
+            } else {
+              globalPeers[payload.clientId] = { ts: Date.now(), ua: payload.ua || 'Dispositivo' };
+            }
+            pruneAndRenderPresence();
+          }
+          return;
+        }
+
+        if (arrivedTopic.endsWith('/presence')) {
+          if (payload.clientId && payload.clientId !== myTabId) {
+            if (payload.action === 'leave') {
+              delete roomPeers[payload.clientId];
+            } else {
+              roomPeers[payload.clientId] = { ts: Date.now(), ua: payload.ua || 'Dispositivo' };
+            }
+            pruneAndRenderPresence();
+          }
+          return;
+        }
+
+        // Room state update
+        if (payload.senderId !== myTabId) {
           const applied = applyIncomingRoomState(payload);
           if (applied) {
             updateRoomConnectionUI('connected');
@@ -616,15 +812,39 @@ function initPahoMqtt(roomCode, showToastFeedback = false) {
         pahoMqttConnected = true;
         pahoMqttConnecting = false;
         updateRoomConnectionUI('connected');
+
+        // Subscribing to:
+        // 1. Room state
         pahoMqttClient.subscribe(topic, { qos: 1 });
-        
+        // 2. Hub tournaments list (so any tournament created on PC shows on phone)
+        pahoMqttClient.subscribe('volei_arena/hub/tournaments', { qos: 1 });
+        // 3. Global presence (how many people are on the site)
+        pahoMqttClient.subscribe('volei_arena/global/presence', { qos: 0 });
+        // 4. Room presence (how many people in this room)
+        pahoMqttClient.subscribe(`volei_arena/room/${code}/presence`, { qos: 0 });
+
         if (showToastFeedback) {
           showToast(`✅ Conectado à Sala <strong>#${escapeHtml(code)}</strong> ao vivo! Sincronizado com PC e celular.`, 'success');
         }
 
-        // Se já tivermos dados de torneio, publicamos retido para outros dispositivos receberem na hora
+        // Send presence ping immediately
+        sendPresencePing('ping');
+        pruneAndRenderPresence();
+
+        // Push local tournaments to hub if we have any
+        pushTournamentsHubSync();
+
+        // Push room state if we have teams
         if (state.teams && state.teams.length > 0) {
           pushRoomStateNow(false);
+        }
+
+        // Start presence heartbeat if not already started
+        if (!presenceHeartbeatInterval) {
+          presenceHeartbeatInterval = setInterval(() => sendPresencePing('ping'), 10000);
+        }
+        if (!presencePruneInterval) {
+          presencePruneInterval = setInterval(pruneAndRenderPresence, 4000);
         }
       },
       onFailure: (err) => {
@@ -1264,6 +1484,14 @@ function showLobbyScreen() {
   document.getElementById('screen-tournament')?.classList.add('hidden');
   renderLobbyFeed();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Conecta ou mantém MQTT ativo para receber torneios criados em outros aparelhos e presença ao vivo
+  if (!pahoMqttClient || !pahoMqttConnected) {
+    initPahoMqtt(state.roomCode || 'VOLEI1', false);
+  } else {
+    sendPresencePing('ping');
+    pushTournamentsHubSync();
+  }
 }
 
 function showTournamentScreen() {
@@ -1278,20 +1506,9 @@ function openSessionsModal() {
 }
 
 window.goToLobbyScreen = function () {
-  if (pahoMqttClient) {
-    try {
-      pahoMqttClient.disconnect();
-    } catch (_) {}
-    pahoMqttClient = null;
-    pahoMqttConnected = false;
-  }
-  if (pahoReconnectTimer) {
-    clearTimeout(pahoReconnectTimer);
-    pahoReconnectTimer = null;
-  }
+  sendPresencePing('leave');
   state.sessionSetupConfirmed = false;
   saveState(false);
-  updateRoomConnectionUI('disconnected');
   showLobbyScreen();
   showToast('🚪 Você voltou ao Painel Principal. Escolha um jogo ou entre com um código.', 'info');
 };
@@ -1539,6 +1756,7 @@ window.executeProtectedDelete = function () {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
     renderLobbyFeed();
+    pushTournamentsHubSync();
     showToast(`🗑️ Torneio <strong>"${escapeHtml(pendingDeleteTarget.name)}"</strong> excluído com sucesso!`, 'success');
   } else if (pendingDeleteTarget.type === 'all') {
     localStorage.removeItem(SAVED_SESSIONS_KEY);
@@ -1546,6 +1764,7 @@ window.executeProtectedDelete = function () {
     state.sessionSetupConfirmed = false;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     renderLobbyFeed();
+    pushTournamentsHubSync();
     showToast('🗑️ Todos os torneios anteriores foram excluídos com sucesso!', 'success');
   }
 
@@ -5286,10 +5505,11 @@ document.addEventListener('DOMContentLoaded', () => {
     saveState(false);
     showTournamentScreen();
     initPahoMqtt(salaCode, true);
-  } else if (!state.sessionSetupConfirmed) {
-    showLobbyScreen();
-  } else {
+  } else if (urlParams.get('jogar') === '1' || urlParams.get('quadra') === '1') {
     showTournamentScreen();
     initPahoMqtt(state.roomCode || 'VOLEI1');
+  } else {
+    // SEMPRE ABRIR NA PÁGINA PRINCIPAL (LOBBY) QUANDO O USUÁRIO CLICAR NO LINK!
+    showLobbyScreen();
   }
 });
