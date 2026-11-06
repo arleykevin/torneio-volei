@@ -1256,27 +1256,49 @@ window.toggleCourtTouchLock = function () {
   }
 };
 
-function openSessionsModal() {
-  const nameInput = document.getElementById('input-session-title');
-  const dateInput = document.getElementById('input-session-date');
-  const roomInput = document.getElementById('input-login-room-code');
-  const sessionRoomInput = document.getElementById('input-session-room-code');
-  if (nameInput) nameInput.value = state.tournamentName || 'VÔLEI INTERNO';
-  if (dateInput) dateInput.value = state.tournamentDate || getTodayDateIso();
-  if (roomInput && !roomInput.value) roomInput.value = (state.roomCode || 'VOLEI1').toUpperCase();
-  if (sessionRoomInput) sessionRoomInput.value = (state.roomCode || 'VOLEI1').toUpperCase();
-  renderSavedSessionsModal();
-  document.getElementById('modal-sessions')?.classList.remove('hidden');
+/* ==========================================
+   TELA SEPARADA: LOBBY & PAINEL DE JOGOS
+   ========================================== */
+function showLobbyScreen() {
+  document.getElementById('screen-lobby')?.classList.remove('hidden');
+  document.getElementById('screen-tournament')?.classList.add('hidden');
+  renderLobbyFeed();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-window.quickFillRoomCode = function (code) {
-  const input = document.getElementById('input-login-room-code');
-  if (input) input.value = code;
-  window.joinRoomFromLogin();
-};
+function showTournamentScreen() {
+  document.getElementById('screen-lobby')?.classList.add('hidden');
+  document.getElementById('screen-tournament')?.classList.remove('hidden');
+  renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-window.joinRoomFromLogin = function () {
-  const input = document.getElementById('input-login-room-code');
+function openSessionsModal() {
+  showLobbyScreen();
+}
+
+window.goToLobbyScreen = function () {
+  if (pahoMqttClient) {
+    try {
+      pahoMqttClient.disconnect();
+    } catch (_) {}
+    pahoMqttClient = null;
+    pahoMqttConnected = false;
+  }
+  if (pahoReconnectTimer) {
+    clearTimeout(pahoReconnectTimer);
+    pahoReconnectTimer = null;
+  }
+  state.sessionSetupConfirmed = false;
+  saveState(false);
+  updateRoomConnectionUI('disconnected');
+  showLobbyScreen();
+  showToast('🚪 Você voltou ao Painel Principal. Escolha um jogo ou entre com um código.', 'info');
+};
+window.leaveRoomAndOpenLogin = window.goToLobbyScreen;
+
+window.joinRoomFromLobby = function () {
+  const input = document.getElementById('input-lobby-room-code');
   const code = (input ? input.value : '').replace(/^#/, '').trim().toUpperCase();
   if (!code) {
     showToast('⚠️ Digite o código da sala (ex: VOLEI1)!', 'warn');
@@ -1285,28 +1307,60 @@ window.joinRoomFromLogin = function () {
   state.roomCode = code;
   state.sessionSetupConfirmed = true;
   saveState();
-  document.getElementById('modal-sessions')?.classList.add('hidden');
+  showTournamentScreen();
   initPahoMqtt(code, true);
-  renderAll();
 };
 
-function renderSavedSessionsModal() {
+window.quickFillLobbyRoom = function (code) {
+  const input = document.getElementById('input-lobby-room-code');
+  if (input) input.value = code;
+  window.joinRoomFromLobby();
+};
+
+window.quickFillRoomCode = window.quickFillLobbyRoom;
+window.joinRoomFromLogin = window.joinRoomFromLobby;
+
+window.createNewTournamentFromLobby = function () {
   upsertCurrentSessionInArchive();
-  const listEl = document.getElementById('saved-sessions-list');
-  const countEl = document.getElementById('saved-sessions-count');
-  if (!listEl) return;
+  const nameInput = document.getElementById('input-lobby-new-title');
+  const dateInput = document.getElementById('input-lobby-new-date');
+  const roomInput = document.getElementById('input-lobby-new-room');
+
+  const newName = (nameInput?.value || '').trim() || 'VÔLEI INTERNO';
+  const newDate = dateInput?.value || getTodayDateIso();
+  const newRoom = (roomInput?.value || 'VOLEI1').replace(/^#/, '').trim().toUpperCase() || 'VOLEI1';
+
+  state = createDefaultState(newName, newDate);
+  state.roomCode = newRoom;
+  state.sessionSetupConfirmed = true;
+  saveState();
+  showTournamentScreen();
+  initPahoMqtt(newRoom, false);
+  showToast(`✨ Novo torneio <strong>${escapeHtml(newName)}</strong> criado na Sala <strong>#${escapeHtml(newRoom)}</strong>!`, 'success');
+};
+
+function renderLobbyFeed() {
+  upsertCurrentSessionInArchive();
+  const feedEl = document.getElementById('lobby-tournaments-feed');
+  const countPill = document.getElementById('lobby-saved-count-pill');
+  if (!feedEl) return;
 
   const list = getSavedSessionsList();
-  if (countEl) {
-    countEl.textContent = `${list.length} ${list.length === 1 ? 'salvo' : 'salvos'}`;
+  if (countPill) {
+    countPill.textContent = `${list.length} ${list.length === 1 ? 'jogo salvo' : 'jogos salvos'}`;
   }
 
   if (list.length === 0) {
-    listEl.innerHTML = `<div class="empty-state-mini">Nenhum torneio salvo ainda.</div>`;
+    feedEl.innerHTML = `
+      <div style="padding:22px;text-align:center;background:rgba(23,33,53,0.5);border-radius:14px;border:1px dashed rgba(148,163,184,0.25);">
+        <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:6px;">Nenhum torneio guardado ainda neste aparelho.</p>
+        <p style="font-size:0.78rem;color:var(--text-secondary);margin:0;">Digite um código de sala acima para entrar em uma partida em andamento ou crie seu torneio abaixo!</p>
+      </div>
+    `;
     return;
   }
 
-  listEl.innerHTML = list
+  feedEl.innerHTML = list
     .map((sess) => {
       const isCurrent = sess.sessionId === state.sessionId;
       const doneGames = (sess.matches || []).filter((m) => m.status === 'done').length;
@@ -1328,15 +1382,18 @@ function renderSavedSessionsModal() {
           ? `🏆 Líder: ${escapeHtml(sortedTeams[0].name)} (${sortedTeams[0].w}V)`
           : '⏳ Em andamento';
 
+      const roomTag = (sess.roomCode || 'VOLEI1').toUpperCase();
+
       return `
-        <div class="saved-session-item ${isCurrent ? 'active-session' : ''}">
-          <div class="saved-session-info">
-            <div class="saved-session-top">
-              <strong>${escapeHtml(sess.tournamentName || 'VÔLEI INTERNO')}</strong>
+        <div class="tournament-feed-card ${isCurrent ? 'active-feed-card' : ''}">
+          <div class="feed-card-header">
+            <div class="feed-card-title-row">
+              <h3 class="feed-card-name">${escapeHtml(sess.tournamentName || 'VÔLEI INTERNO')}</h3>
               <span class="session-date-chip">📅 ${escapeHtml(dateFormatted)}</span>
-              ${isCurrent ? `<span class="badge-pill">ABERTO AGORA</span>` : ''}
+              <span class="badge-pill" style="font-family:var(--font-mono);font-size:0.72rem;background:#38bdf820;color:#7dd3fc;border-color:#38bdf840;">#${escapeHtml(roomTag)}</span>
+              ${isCurrent ? `<span class="badge-pill" style="background:#10b98125;color:#6ee7b7;border-color:#10b98150;font-size:0.68rem;">ABERTO AGORA</span>` : ''}
             </div>
-            <div class="saved-session-meta">
+            <div class="feed-card-stats">
               <span>🛡️ ${nTeams} Times</span>
               <span>•</span>
               <span>🏐 ${doneGames}/${totalGames} jogos concluídos</span>
@@ -1344,16 +1401,16 @@ function renderSavedSessionsModal() {
               <span>${leaderStr}</span>
             </div>
           </div>
-          <div class="saved-session-actions">
-            ${
-              !isCurrent
-                ? `<button type="button" class="mini-action-btn accent" onclick="loadSavedSessionById('${sess.sessionId}')">📂 Abrir</button>`
-                : ''
-            }
-            <button type="button" class="mini-action-btn" onclick="copySavedSessionSummary('${sess.sessionId}')" title="Copiar resumo deste dia para WhatsApp">📲 Resumo</button>
+          <div class="feed-card-actions">
+            <button type="button" class="feed-enter-btn btn-primary" onclick="openTournamentSession('${sess.sessionId}')">
+              ▶️ Entrar no Jogo
+            </button>
+            <button type="button" class="chip-btn" onclick="copySavedSessionSummary('${sess.sessionId}')" title="Copiar resumo para WhatsApp">
+              📲 Resumo
+            </button>
             ${
               list.length > 1
-                ? `<button type="button" class="mini-action-btn" onclick="deleteSavedSessionById('${sess.sessionId}')" title="Excluir do histórico">🗑️</button>`
+                ? `<button type="button" class="chip-btn danger" onclick="deleteSavedSessionById('${sess.sessionId}')" title="Excluir do histórico">🗑️</button>`
                 : ''
             }
           </div>
@@ -1363,7 +1420,11 @@ function renderSavedSessionsModal() {
     .join('');
 }
 
-window.loadSavedSessionById = function (sessionId) {
+function renderSavedSessionsModal() {
+  renderLobbyFeed();
+}
+
+window.openTournamentSession = function (sessionId) {
   upsertCurrentSessionInArchive();
   const list = getSavedSessionsList();
   const target = list.find((s) => s.sessionId === sessionId);
@@ -1371,24 +1432,24 @@ window.loadSavedSessionById = function (sessionId) {
 
   state = { ...createDefaultState(), ...target, sessionSetupConfirmed: true };
   saveState(true);
-  renderAll();
-  renderSavedSessionsModal();
-  document.getElementById('modal-sessions')?.classList.add('hidden');
+  showTournamentScreen();
+  initPahoMqtt(state.roomCode || 'VOLEI1', true);
   showToast(
-    `📂 Torneio <strong>${escapeHtml(state.tournamentName)} (${formatDateBr(state.tournamentDate)})</strong> carregado!`,
+    `📂 Torneio <strong>${escapeHtml(state.tournamentName)} (${formatDateBr(state.tournamentDate)})</strong> aberto na Quadra!`,
     'success'
   );
 };
+
+window.loadSavedSessionById = window.openTournamentSession;
 
 window.deleteSavedSessionById = function (sessionId) {
   let list = getSavedSessionsList().filter((s) => s.sessionId !== sessionId);
   localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(list));
   if (state.sessionId === sessionId && list.length > 0) {
-    state = { ...createDefaultState(), ...list[0], sessionSetupConfirmed: true };
+    state = { ...createDefaultState(), ...list[0], sessionSetupConfirmed: false };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    renderAll();
   }
-  renderSavedSessionsModal();
+  renderLobbyFeed();
   showToast('🗑️ Torneio removido do histórico.', 'info');
 };
 
@@ -4179,13 +4240,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Start real-time room stream on boot
-  subscribeToRoomRealtimeStream(state.roomCode || 'VOLEI1');
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('sala') && !urlParams.get('s')) {
-    pullRoomStateOnce(urlParams.get('sala'), true);
-  }
-
   document.getElementById('btn-whatsapp-share')?.addEventListener('click', () => {
     copyTextToClipboard(
       generateWhatsAppSummary(),
@@ -5076,9 +5130,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  renderAll();
+  document.getElementById('btn-lobby-theme-toggle')?.addEventListener('click', () => {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', state.theme);
+    const isLight = state.theme === 'light';
+    const lobbyIcon = document.getElementById('lobby-theme-icon');
+    if (lobbyIcon) lobbyIcon.textContent = isLight ? '🌙' : '☀️';
+    const themeIcon = document.getElementById('theme-icon');
+    if (themeIcon) themeIcon.textContent = isLight ? '🌙' : '☀️';
+    saveState(false);
+  });
 
-  if (!state.sessionSetupConfirmed && !urlParams.get('sala') && !urlParams.get('s')) {
-    openSessionsModal();
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('sala')) {
+    const salaCode = urlParams.get('sala').trim().toUpperCase();
+    state.roomCode = salaCode;
+    state.sessionSetupConfirmed = true;
+    saveState(false);
+    showTournamentScreen();
+    initPahoMqtt(salaCode, true);
+  } else if (!state.sessionSetupConfirmed) {
+    showLobbyScreen();
+  } else {
+    showTournamentScreen();
+    initPahoMqtt(state.roomCode || 'VOLEI1');
   }
 });
