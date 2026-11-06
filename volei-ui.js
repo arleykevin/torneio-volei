@@ -1438,7 +1438,7 @@ function renderLobbyFeed() {
             <button type="button" class="chip-btn feed-share-btn" onclick="copySavedSessionSummary('${sess.sessionId}')" title="Copiar resumo para WhatsApp">
               📲 WhatsApp
             </button>
-            <button type="button" class="chip-btn danger feed-delete-btn" onclick="deleteSavedSessionById('${sess.sessionId}')" title="Excluir este torneio">
+            <button type="button" class="chip-btn danger feed-delete-btn" onclick="promptDeleteSession('${sess.sessionId}')" title="Excluir este torneio (requer senha de segurança)">
               🗑️ Excluir
             </button>
           </div>
@@ -1451,6 +1451,108 @@ function renderLobbyFeed() {
 function renderSavedSessionsModal() {
   renderLobbyFeed();
 }
+
+let pendingDeleteTarget = null;
+
+window.promptDeleteSession = function (sessionId) {
+  const list = getSavedSessionsList();
+  const target = list.find((s) => s.sessionId === sessionId);
+  const name = target ? target.tournamentName : 'Torneio';
+  pendingDeleteTarget = { type: 'single', sessionId, name };
+
+  const titleEl = document.getElementById('modal-delete-pin-title');
+  const descEl = document.getElementById('modal-delete-pin-desc');
+  const inputEl = document.getElementById('input-delete-pin');
+  const errorEl = document.getElementById('delete-pin-error');
+
+  if (titleEl) titleEl.textContent = `🗑️ Excluir: ${name}`;
+  if (descEl) {
+    descEl.innerHTML = `Para evitar que alguém apague o torneio <strong>"${escapeHtml(name)}"</strong> sem querer, digite a <strong>senha de segurança</strong> para confirmar:`;
+  }
+  if (errorEl) errorEl.classList.add('hidden');
+  if (inputEl) {
+    inputEl.value = '';
+    inputEl.classList.remove('pin-shake');
+  }
+
+  document.getElementById('modal-delete-pin')?.classList.remove('hidden');
+  setTimeout(() => inputEl?.focus(), 150);
+};
+
+window.promptDeleteAllSessions = function () {
+  pendingDeleteTarget = { type: 'all' };
+
+  const titleEl = document.getElementById('modal-delete-pin-title');
+  const descEl = document.getElementById('modal-delete-pin-desc');
+  const inputEl = document.getElementById('input-delete-pin');
+  const errorEl = document.getElementById('delete-pin-error');
+
+  if (titleEl) titleEl.textContent = '⚠️ Excluir TODOS os Torneios Salvos';
+  if (descEl) {
+    descEl.innerHTML = `⚠️ <strong>Atenção!</strong> Você está prestes a apagar <strong>todos os torneios guardados</strong> no aparelho. Digite a <strong>senha de segurança</strong> para confirmar:`;
+  }
+  if (errorEl) errorEl.classList.add('hidden');
+  if (inputEl) {
+    inputEl.value = '';
+    inputEl.classList.remove('pin-shake');
+  }
+
+  document.getElementById('modal-delete-pin')?.classList.remove('hidden');
+  setTimeout(() => inputEl?.focus(), 150);
+};
+
+window.executeProtectedDelete = function () {
+  const inputEl = document.getElementById('input-delete-pin');
+  const errorEl = document.getElementById('delete-pin-error');
+  const enteredPin = (inputEl?.value || '').trim();
+
+  if (enteredPin !== '2026' && enteredPin !== '1234') {
+    playSound('undo');
+    triggerHaptic([60, 40, 80]);
+    if (errorEl) errorEl.classList.remove('hidden');
+    if (inputEl) {
+      inputEl.classList.remove('pin-shake');
+      void inputEl.offsetWidth;
+      inputEl.classList.add('pin-shake');
+      inputEl.select();
+    }
+    showToast('🔒 Senha incorreta! Digite a senha correta (2026) para excluir.', 'warn');
+    return;
+  }
+
+  if (!pendingDeleteTarget) {
+    document.getElementById('modal-delete-pin')?.classList.add('hidden');
+    return;
+  }
+
+  if (pendingDeleteTarget.type === 'single') {
+    const sId = pendingDeleteTarget.sessionId;
+    let list = getSavedSessionsList().filter((s) => s.sessionId !== sId);
+    localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(list));
+    if (state.sessionId === sId) {
+      if (list.length > 0) {
+        state = { ...createDefaultState(), ...list[0], sessionSetupConfirmed: false };
+      } else {
+        state = createDefaultState('MEU TORNEIO', getTodayDateIso());
+        state.sessionSetupConfirmed = false;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+    renderLobbyFeed();
+    showToast(`🗑️ Torneio <strong>"${escapeHtml(pendingDeleteTarget.name)}"</strong> excluído com sucesso!`, 'success');
+  } else if (pendingDeleteTarget.type === 'all') {
+    localStorage.removeItem(SAVED_SESSIONS_KEY);
+    state = createDefaultState('MEU TORNEIO', getTodayDateIso());
+    state.sessionSetupConfirmed = false;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    renderLobbyFeed();
+    showToast('🗑️ Todos os torneios anteriores foram excluídos com sucesso!', 'success');
+  }
+
+  playSound('whistle_short');
+  document.getElementById('modal-delete-pin')?.classList.add('hidden');
+  pendingDeleteTarget = null;
+};
 
 window.openTournamentSession = function (sessionId) {
   upsertCurrentSessionInArchive();
@@ -1471,30 +1573,11 @@ window.openTournamentSession = function (sessionId) {
 window.loadSavedSessionById = window.openTournamentSession;
 
 window.deleteSavedSessionById = function (sessionId) {
-  let list = getSavedSessionsList().filter((s) => s.sessionId !== sessionId);
-  localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(list));
-  if (state.sessionId === sessionId) {
-    if (list.length > 0) {
-      state = { ...createDefaultState(), ...list[0], sessionSetupConfirmed: false };
-    } else {
-      state = createDefaultState('MEU TORNEIO', getTodayDateIso());
-      state.sessionSetupConfirmed = false;
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }
-  renderLobbyFeed();
-  showToast('🗑️ Torneio excluído com sucesso.', 'info');
+  promptDeleteSession(sessionId);
 };
 
 window.clearAllSavedTournaments = function () {
-  if (confirm('Tem certeza que deseja excluir todos os torneios existentes do histórico para começar limpo?')) {
-    localStorage.removeItem(SAVED_SESSIONS_KEY);
-    state = createDefaultState('MEU TORNEIO', getTodayDateIso());
-    state.sessionSetupConfirmed = false;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    renderLobbyFeed();
-    showToast('🗑️ Todos os torneios existentes foram excluídos!', 'info');
-  }
+  promptDeleteAllSessions();
 };
 
 window.copySavedSessionSummary = function (sessionId) {
@@ -5140,6 +5223,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') {
       e.preventDefault();
       executeProtectedReset();
+    }
+  });
+
+  document.getElementById('btn-confirm-delete-pin')?.addEventListener('click', executeProtectedDelete);
+
+  document.getElementById('input-delete-pin')?.addEventListener('keydown', (e) => {
+    document.getElementById('delete-pin-error')?.classList.add('hidden');
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeProtectedDelete();
     }
   });
 

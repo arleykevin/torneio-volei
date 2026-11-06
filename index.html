@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.8.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.9.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -117,7 +117,7 @@
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <span id="lobby-saved-count-pill" class="badge-pill subtle">0 jogos</span>
-            <button type="button" id="btn-clear-all-tournaments" class="mini-tag-btn danger-tag" onclick="clearAllSavedTournaments()" title="Excluir todos os torneios salvos e começar do zero">
+            <button type="button" id="btn-clear-all-tournaments" class="mini-tag-btn danger-tag" onclick="promptDeleteAllSessions()" title="Excluir todos os torneios salvos (requer senha de segurança)">
               🗑️ Excluir Todos
             </button>
           </div>
@@ -1433,11 +1433,56 @@
     </div>
   </div>
 
+  <!-- ==========================================
+       MODAL: CONFIRMAÇÃO COM SENHA (2026) PARA EXCLUIR TORNEIOS
+       ========================================== -->
+  <div id="modal-delete-pin" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-delete-pin-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow-tag" style="color:#f87171;border-color:rgba(239,68,68,0.4);">🔒 PROTEÇÃO COM SENHA</span>
+          <h3 id="modal-delete-pin-title" class="modal-title">🗑️ Confirmar Exclusão</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-delete-pin" type="button" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body settings-modal-body">
+        <p id="modal-delete-pin-desc" class="modal-hint" style="margin-bottom:14px;color:#f1f5f9;line-height:1.45;">
+          Para evitar que alguém apague este torneio sem querer, digite a <strong>senha de segurança</strong> para confirmar a exclusão:
+        </p>
+
+        <div class="setting-field" style="margin-top:10px;">
+          <label for="input-delete-pin" class="toolbar-label" style="text-align:center;display:block;">DIGITE A SENHA DE SEGURANÇA</label>
+          <input
+            type="password"
+            id="input-delete-pin"
+            class="modern-input pin-code-input"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="8"
+            placeholder="••••"
+            autocomplete="off"
+          />
+          <p id="delete-pin-error" class="pin-error-msg hidden">
+            ❌ Senha incorreta! Digite a senha correta (2026) para excluir.
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="chip-btn" data-close-modal="modal-delete-pin" type="button">Cancelar</button>
+        <button id="btn-confirm-delete-pin" class="chip-btn danger" type="button" style="font-weight:800;padding:10px 18px;">
+          🗑️ Confirmar e Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
   <!-- Multi-Device Real-Time WebSocket MQTT Engine (Paho MQTT) -->
   <script src="./paho-mqtt.min.js"></script>
-  <script src="./volei-ui.js?v=4.8.0"></script>
+  <script src="./volei-ui.js?v=4.9.0"></script>
 </body>
 </html>
