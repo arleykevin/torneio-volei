@@ -18,10 +18,10 @@ const MIME_TYPES = {
   '.ogg': 'audio/ogg'
 };
 
-// In-memory store for multi-device room sync when running locally
+// In-memory store for multi-device room sync
 const roomsStore = new Map();
 
-const server = http.createServer((req, res) => {
+function requestHandler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -32,7 +32,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const safeUrl = decodeURIComponent(req.url.split('?')[0]);
+  const safeUrl = decodeURIComponent((req.url || '/').split('?')[0]);
 
   // Real-time room sync endpoint for multiple phones
   if (safeUrl.startsWith('/api/room/')) {
@@ -54,6 +54,16 @@ const server = http.createServer((req, res) => {
     }
 
     if (req.method === 'POST') {
+      if (req.body && typeof req.body === 'object') {
+        roomsStore.set(roomCode, {
+          updatedAt: Date.now(),
+          state: req.body.state || req.body
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: true, roomCode, updatedAt: Date.now() }));
+        return;
+      }
+
       let body = '';
       req.on('data', (chunk) => {
         body += chunk;
@@ -105,8 +115,15 @@ const server = http.createServer((req, res) => {
       res.end(content);
     });
   });
-});
+}
 
-server.listen(PORT, () => {
-  console.log(`🏐 Vôlei Pro Arena PWA rodando em: http://localhost:${PORT}`);
-});
+// Export handler for Vercel Serverless (Framework Preset: Node)
+module.exports = requestHandler;
+
+// Only start HTTP listener when executed directly (local dev)
+if (require.main === module) {
+  const server = http.createServer(requestHandler);
+  server.listen(PORT, () => {
+    console.log(`🏐 Vôlei Pro Arena PWA rodando em: http://localhost:${PORT}`);
+  });
+}
