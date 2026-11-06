@@ -272,6 +272,11 @@ const customAudioMap = {
   deboche_maluca: './audio/deboche_maluca.mp3',
   deboche_doida: './audio/deboche_doida.mp3',
   deboche_doida2: './audio/deboche_doida2.mp3',
+  efeito_grito: './audio/efeito_grito.mp3',
+  apito_curto: './audio/apito_curto.mp3',
+  apito_duplo: './audio/apito_duplo.mp3',
+  apito_forte: './audio/apito_forte.mp3',
+  apito_fim: './audio/apito_fim.mp3',
   slay_1: './audio/deboche_passada.mp3',
   slay_2: './audio/deboche_lucinda.mp3',
   slay_3: './audio/deboche_milagre.mp3',
@@ -617,6 +622,11 @@ const DEBOCHE_LINES = {
   deboche_maluca: 'Hahaha! Maluca! Hahaha!',
   deboche_doida: 'Hahaha! Doida! Hahaha!',
   deboche_doida2: 'Hahaha! Doida! Hahaha! (2)',
+  efeito_grito: '😱 AAAAAHHH! (Surto na quadra!)',
+  apito_curto: '📣 Piii! (Apito de Saque / Ponto)',
+  apito_duplo: '📣 Piii-Piii! (Apito Duplo)',
+  apito_forte: '📣 Prrrrriii! (Apito Forte / Falta)',
+  apito_fim: '🏁 Piiiii-Piiiii! (Apito de Fim de Jogo)',
   slay_1: 'Passada! Ela não fez o ponto, ela saiu desfilando!',
   slay_2: 'Obrigado pelo toque, Lucinda! O que eu mais prezo na vida é conselho de mendiga!',
   slay_3: 'Milagre! Finalmente acertou uma bola, já pode chover!',
@@ -628,10 +638,10 @@ const DEBOCHE_LINES = {
 
 window.triggerDebocheAudio = function (slotKey) {
   const phrase = DEBOCHE_LINES[slotKey] || DEBOCHE_LINES.flop_1;
-  state.voiceEnabled = true;
+  state.soundEnabled = true;
   renderHeaderAndNav();
   playCustomAudioOrSpeak(slotKey, phrase);
-  showToast(`💅 <strong>Deboche na quadra:</strong> "${escapeHtml(phrase)}"`, 'info');
+  showToast(`🔊 <strong>Som na quadra:</strong> ${escapeHtml(phrase)}`, 'info');
 };
 
 function buildElevenLabsScript() {
@@ -681,6 +691,19 @@ function getAudioContext() {
 function playSound(type) {
   if (!state.soundEnabled) return;
   try {
+    const mp3Map = {
+      point: './audio/apito_curto.mp3',
+      setpoint: './audio/apito_duplo.mp3',
+      victory: './audio/apito_fim.mp3',
+      buzzer: './audio/apito_forte.mp3'
+    };
+    if (mp3Map[type]) {
+      const whistleAudio = new Audio(mp3Map[type]);
+      whistleAudio.volume = type === 'point' ? 0.65 : 0.9;
+      whistleAudio.play().catch(() => {});
+      return;
+    }
+
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;

@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.0.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.1.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -206,10 +206,10 @@
 
         <!-- Center Court Net / Controls -->
         <div class="score-center-column">
-          <div class="vs-net-box" title="Rede Central">
-            <img src="./volleyball-svgrepo-com (3).svg" alt="" class="net-center-svg mono-svg" />
-            <span class="vs-label-text">VS</span>
-          </div>
+          <button type="button" class="center-action-btn whistle-center-btn" onclick="triggerDebocheAudio('apito_forte')" title="Tocar Apito do Juiz agora">
+            <span>📣</span>
+            <span>Apito</span>
+          </button>
 
           <button id="btn-undo-point" class="center-action-btn" type="button" disabled title="Desfazer o último ponto marcado">
             <span>↩️</span>
@@ -284,7 +284,7 @@
       <!-- GAVETA 1: SOUNDBOARD DE DEBOCHE E VOZES (Retrátil para não poluir) -->
       <details class="clean-drawer deboche-soundboard-bar" open>
         <summary class="clean-drawer-summary">
-          <span>💅 <strong>Áudios de Deboche & Vozes da Partida</strong> <small>(Toque para recolher/abrir)</small></span>
+          <span>💅 <strong>Áudios de Deboche, Apitos & Vozes da Partida</strong> <small>(Toque para recolher/abrir)</small></span>
           <span class="drawer-chevron">▾</span>
         </summary>
         <div class="clean-drawer-body">
@@ -299,8 +299,13 @@
             <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_maluca')">🤪 Maluca!</button>
             <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_doida')">😂 Doida!</button>
             <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_doida2')">🤣 Doida! (2)</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('efeito_grito')">😱 Grito / Surto!</button>
           </div>
           <div class="soundboard-buttons-grid official-grid" style="margin-top:8px;">
+            <button type="button" class="chip-btn" onclick="triggerDebocheAudio('apito_curto')">📣 Apito Saque</button>
+            <button type="button" class="chip-btn" onclick="triggerDebocheAudio('apito_duplo')">📣 Apito Duplo</button>
+            <button type="button" class="chip-btn" onclick="triggerDebocheAudio('apito_forte')">📣 Apito Falta</button>
+            <button type="button" class="chip-btn" onclick="triggerDebocheAudio('apito_fim')">🏁 Apito Fim</button>
             <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t1')">🔥 Match Pt T1</button>
             <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t2')">🔥 Match Pt T2</button>
             <button type="button" class="chip-btn accent" onclick="triggerDebocheAudio('matchpoint_t3')">🔥 Match Pt T3</button>
@@ -1213,6 +1218,6 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="./volei-ui.js?v=4.0.0"></script>
+  <script src="./volei-ui.js?v=4.1.0"></script>
 </body>
 </html>
