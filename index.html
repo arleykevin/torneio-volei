@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.4.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.5.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -140,6 +140,7 @@
             <span class="timer-icon">⏱️</span>
             <span id="match-timer-display" class="mono-time">00:00</span>
             <button id="btn-timer-toggle" class="mini-icon-btn" type="button" title="Iniciar/Pausar cronômetro">▶️</button>
+            <button id="btn-timer-reset" class="mini-icon-btn timer-reset-btn" type="button" title="Zerar cronômetro (00:00)">🔄</button>
             <button id="btn-timeout-30s" class="timeout-btn" type="button" title="Tempo técnico de 30s">30s</button>
           </div>
         </div>
@@ -151,6 +152,8 @@
           <span class="focus-live-badge">🔴 EM PARTIDA</span>
           <strong id="focus-match-title">JOGO #1</strong>
           <span id="focus-timer-mirror" class="mono-time">00:00</span>
+          <button id="btn-focus-timer-toggle" class="focus-ctrl-btn" type="button" title="Iniciar/Pausar cronômetro" style="padding:4px 9px;">▶️</button>
+          <button id="btn-focus-timer-reset" class="focus-ctrl-btn timer-reset-btn" type="button" title="Zerar cronômetro (00:00)" style="padding:4px 9px;">🔄 Zerar</button>
         </div>
         <div class="focus-bar-actions">
           <button id="btn-toggle-court-lock" class="focus-ctrl-btn" type="button" title="Bloqueia até os botões de ponto para ninguém esbarrar na tela">
@@ -308,6 +311,24 @@
             <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_ficacalado')">🤫 Apanhou, Fica Calado!</button>
             <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('deboche_risadakiko')">🤣 Risada do Kiko</button>
             <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('efeito_grito')">😱 Grito / Surto!</button>
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('deboche_bomdia')">☀️ Bom Dia Grupo!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_seminaura')">🫵 Sem Aura / Desiste!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_sapatonas')">👠 Sapatonas!</button>
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('deboche_miaumiau')">🐱 Miau Miau!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_charlene')">🤦 Não Acredito Charlene!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_acabapeloamor')">🙏 Acaba Pelo Amor!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_darkness')">🌑 Darkness...</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_vidadesgraca')">🥖 Pastel & Caldo de Cana!</button>
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('deboche_cr7maquina')">🤖 Besta Enjaulada CR7!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_morenoignorante')">😠 Moreno Ignorante!</button>
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('deboche_ahpara')">✋ Ah Pára!</button>
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('deboche_aleluia')">👼 Aleluia!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_fakenews')">🔮 Fake News Mãe Dináh!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_plantaoglobo')">🚨 Plantão Urgente!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_choranao')">😭 Chora Não!</button>
+            <button type="button" class="chip-btn deboche-hit" onclick="triggerDebocheAudio('deboche_acabou')">📢 Acaboooou!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_eita')">😱 Eitaaa!</button>
+            <button type="button" class="chip-btn deboche-miss" onclick="triggerDebocheAudio('deboche_naoacredito')">🤯 Não Tô Acreditando!</button>
           </div>
           <div class="soundboard-buttons-grid official-grid" style="margin-top:8px;">
             <button id="btn-soundboard-whistle-toggle" type="button" class="chip-btn" style="grid-column: 1 / -1; font-weight:800;" title="Ligar ou desligar apito automático nos pontos">
@@ -615,6 +636,25 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <!-- BANNER DE JOGADORES DISPONÍVEIS & RESERVAS -->
+          <div id="available-players-card" class="glass-card available-players-card">
+            <div class="available-header-row">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span class="available-pulse-dot"></span>
+                <div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <strong class="available-title">JOGADORES DISPONÍVEIS</strong>
+                    <span id="available-count-badge" class="badge-pill" style="font-size:0.68rem;padding:2px 7px;">0</span>
+                  </div>
+                  <span class="available-subtitle">
+                    Jogadores que ainda não estão em quadra ou foram tirados de um time (toque no botão do time para escalar):
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div id="available-players-chips" class="available-chips-wrap"></div>
           </div>
 
           <div id="four-teams-grid" class="four-teams-grid"></div>
@@ -1136,20 +1176,70 @@
   </div>
 
   <!-- ==========================================
-       MODAL 7: NOME E DATA DO TORNEIO + HISTÓRICO DE SESSÕES GUARDADAS
+       MODAL 7: TELA INICIAL / LOGIN DE SALA & IDENTIFICAR TORNEIO
        ========================================== -->
-  <div id="modal-sessions" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-sessions-title">
-    <div class="modal-card modal-wide">
-      <div class="modal-header">
-        <div>
-          <span class="eyebrow-tag">ORGANIZAÇÃO POR NOME & DATA • HISTÓRICO SALVO</span>
-          <h3 id="modal-sessions-title" class="modal-title">📅 Identificar Torneio do Dia & Torneios Salvos</h3>
+  <div id="modal-sessions" class="modal-backdrop entrance-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-sessions-title">
+    <div class="modal-card modal-wide entrance-modal-card">
+      <div class="modal-header entrance-modal-header">
+        <div class="entrance-header-brand">
+          <img src="./logo.png" alt="Logo Vôlei Arena" class="entrance-logo" width="48" height="48" />
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="eyebrow-tag" style="color:#fde047;border-color:rgba(250,204,21,0.4);margin-bottom:0;">🏐 ARENA DO VÔLEI</span>
+              <span class="badge-pill" style="font-size:0.65rem;background:#10b98125;color:#6ee7b7;border-color:#10b98150;">PWA AO VIVO</span>
+            </div>
+            <h3 id="modal-sessions-title" class="modal-title" style="font-size:1.15rem;margin-top:2px;">Entrar na Partida de Hoje</h3>
+          </div>
         </div>
         <button class="modal-close-btn" data-close-modal="modal-sessions" type="button" aria-label="Fechar">✕</button>
       </div>
 
-      <div class="modal-body settings-modal-body">
-        <div class="session-setup-box">
+      <div class="modal-body settings-modal-body entrance-modal-body">
+        <!-- SEÇÃO 1 (LOGIN / CONECTAR A VÔLEI EM ANDAMENTO) -->
+        <div class="entrance-room-box">
+          <div class="entrance-section-label">
+            <span class="live-pulse-dot"></span>
+            <strong style="color:#6ee7b7;letter-spacing:0.04em;">ENTRAR EM UM VÔLEI EM ANDAMENTO</strong>
+          </div>
+          <p class="entrance-hint">
+            Digite o <strong>código da sala</strong> que já foi iniciado para acompanhar o placar ao vivo no seu celular ou apitar:
+          </p>
+          <div class="room-code-input-row">
+            <div class="room-prefix-tag">#</div>
+            <input
+              type="text"
+              id="input-login-room-code"
+              class="modern-input room-login-input"
+              placeholder="Ex: VOLEI1, PRAIA-10..."
+              autocomplete="off"
+              autocapitalize="characters"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();joinRoomFromLogin();}"
+            />
+            <button
+              type="button"
+              id="btn-login-room-submit"
+              class="btn-primary room-login-btn"
+              onclick="joinRoomFromLogin()"
+            >
+              ⚡ Entrar
+            </button>
+          </div>
+          <div class="room-quick-suggestions">
+            <small style="color:var(--text-secondary);font-size:0.72rem;">Salas rápidas:</small>
+            <button type="button" class="mini-tag-btn" onclick="quickFillRoomCode('VOLEI1')">#VOLEI1</button>
+            <button type="button" class="mini-tag-btn" onclick="quickFillRoomCode('ARENA')">#ARENA</button>
+            <button type="button" class="mini-tag-btn" onclick="quickFillRoomCode('SABADO')">#SABADO</button>
+          </div>
+        </div>
+
+        <!-- SEÇÃO 2 (CRIAR OU CONTINUAR TORNEIO LOCAL) -->
+        <div class="entrance-create-box">
+          <div class="entrance-section-label">
+            <strong style="color:#fde047;letter-spacing:0.04em;">🏐 ORGANIZAR MEU PRÓPRIO TORNEIO / RESENHA</strong>
+          </div>
+          <p class="entrance-hint">
+            Defina o nome da resenha de hoje e a data para registrar os jogos e estatísticas:
+          </p>
           <div class="session-inputs-grid">
             <div class="setting-field">
               <label for="input-session-title" class="toolbar-label">NOME DO TORNEIO / RESENHA</label>
@@ -1157,7 +1247,7 @@
                 type="text"
                 id="input-session-title"
                 class="modern-input"
-                placeholder="Ex: Vôlei de Sexta, Torneio da Galera..."
+                placeholder="Ex: Vôlei dos Amigos, Praia de Domingo..."
                 value="VÔLEI INTERNO"
               />
             </div>
@@ -1173,30 +1263,31 @@
 
           <div class="session-setup-actions">
             <button id="btn-save-session-meta" class="btn-accent-glow full-width" type="button">
-              🏐 Confirmar Nome e Data e Abrir Placar
+              🏐 Confirmar e Abrir Placar da Quadra
             </button>
             <button id="btn-create-new-session-archive" class="chip-btn accent full-width" type="button">
-              ➕ Guardar Torneio Atual no Histórico e Começar um NOVO do Zero
+              ➕ Começar Novo Torneio do Zero (Guardar atual)
             </button>
           </div>
         </div>
 
         <hr class="modal-divider" style="margin: 16px 0;" />
 
-        <div>
+        <!-- SEÇÃO 3 (HISTÓRICO SALVO) -->
+        <div class="entrance-history-box">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-            <span class="toolbar-label" style="margin-bottom:0;">📚 TORNEIOS GUARDADOS (SEPARADOS POR NOME E DATA)</span>
+            <span class="toolbar-label" style="margin-bottom:0;">📚 TORNEIOS GUARDADOS (HISTÓRICO)</span>
             <span id="saved-sessions-count" class="badge-pill subtle">0 salvos</span>
           </div>
           <p class="modal-hint" style="margin-bottom:10px;">
-            Todos os seus torneios ficam guardados abaixo. Você pode abrir qualquer dia anterior para consultar o ranking ou continuar jogando:
+            Consulte qualquer dia anterior para rever quem ganhou ou continuar jogando:
           </p>
           <div id="saved-sessions-list" class="saved-sessions-list"></div>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-primary" data-close-modal="modal-sessions" type="button">Pronto • Ir para a Quadra</button>
+        <button class="btn-primary full-width" data-close-modal="modal-sessions" type="button">Pronto • Ir para a Quadra</button>
       </div>
     </div>
   </div>
@@ -1309,6 +1400,6 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="./volei-ui.js?v=4.4.0"></script>
+  <script src="./volei-ui.js?v=4.5.0"></script>
 </body>
 </html>

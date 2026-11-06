@@ -276,6 +276,24 @@ const customAudioMap = {
   deboche_ficacalado: './audio/deboche_ficacalado.mp3',
   deboche_risadakiko: './audio/deboche_risadakiko.mp3',
   efeito_grito: './audio/efeito_grito.mp3',
+  deboche_bomdia: './audio/deboche_bomdia.mp3',
+  deboche_seminaura: './audio/deboche_seminaura.mp3',
+  deboche_sapatonas: './audio/deboche_sapatonas.mp3',
+  deboche_miaumiau: './audio/deboche_miaumiau.mp3',
+  deboche_charlene: './audio/deboche_charlene.mp3',
+  deboche_acabapeloamor: './audio/deboche_acabapeloamor.mp3',
+  deboche_darkness: './audio/deboche_darkness.mp3',
+  deboche_vidadesgraca: './audio/deboche_vidadesgraca.mp3',
+  deboche_cr7maquina: './audio/deboche_cr7maquina.mp3',
+  deboche_morenoignorante: './audio/deboche_morenoignorante.mp3',
+  deboche_ahpara: './audio/deboche_ahpara.mp3',
+  deboche_aleluia: './audio/deboche_aleluia.mp3',
+  deboche_fakenews: './audio/deboche_fakenews.mp3',
+  deboche_plantaoglobo: './audio/deboche_plantaoglobo.mp3',
+  deboche_choranao: './audio/deboche_choranao.mp3',
+  deboche_acabou: './audio/deboche_acabou.mp3',
+  deboche_eita: './audio/deboche_eita.mp3',
+  deboche_naoacredito: './audio/deboche_naoacredito.mp3',
   apito_curto: './audio/apito_curto.mp3',
   apito_duplo: './audio/apito_duplo.mp3',
   apito_forte: './audio/apito_forte.mp3',
@@ -628,6 +646,24 @@ const DEBOCHE_LINES = {
   deboche_ficacalado: '🤫 Apanhou e aí fica calado! Não vai ficar dando explicação no grupo não! Apanhou, ficou calado!',
   deboche_risadakiko: '🤣 Ar-ar-ar-ar-ar! (Risada do Kiko)',
   efeito_grito: '😱 AAAAAHHH! (Surto na quadra!)',
+  deboche_bomdia: '☀️ Bom dia a todas, a todes, a Toddy, Nesquik... Teletubbies!',
+  deboche_seminaura: '🫵 Cara você não tem aura mano... Desiste cara, desiste!',
+  deboche_sapatonas: '👠 Sapatonas! Eu sinto de longe o cheiro de couro...',
+  deboche_miaumiau: '🐱 Miau miau miau miau...',
+  deboche_charlene: '🤦 Eu não acredito não, Charlene...',
+  deboche_acabapeloamor: '🙏 Acaba pelo amor de Deus, acaba!',
+  deboche_darkness: '🌑 Hello darkness my old friend...',
+  deboche_vidadesgraca: '🥖 A minha vida aqui é uma desgraça... Caldo de cana e pastel!',
+  deboche_cr7maquina: '🤖 O homem, uma máquina, uma besta enjaulada com ódio! Cristiano Ronaldo!',
+  deboche_morenoignorante: '😠 Rapaz, o moreno tá ignorante, hein cara...',
+  deboche_ahpara: '✋ Ah pára... Hahaha!',
+  deboche_aleluia: '👼 Aleluia! Aleluia! Aleluia!',
+  deboche_fakenews: '🔮 Momento Fake News! Oferecimento: Mãe Dináh!',
+  deboche_plantaoglobo: '🚨 Tchan-tchan-tchan! Plantão da Globo urgente!',
+  deboche_choranao: '😭 Vai chorar? Chora não vagabunda, chora não...',
+  deboche_acabou: '📢 Acaboooou! É tetra! Acabou!',
+  deboche_eita: '😱 Eitaaa!',
+  deboche_naoacredito: '🤯 Na moral, sinceramente eu não tô acreditando nisso que eu tô vendo!',
   apito_curto: '📣 Piii! (Apito de Saque / Ponto)',
   apito_duplo: '📣 Piii-Piii! (Apito Duplo)',
   apito_forte: '📣 Prrrrriii! (Apito Forte / Falta)',
@@ -697,11 +733,10 @@ function playSound(type) {
   if (!state.soundEnabled) return;
   try {
     const isExplicitWhistle = ['whistle_short', 'whistle_double', 'whistle_strong', 'whistle_end'].includes(type);
-    const useWhistleForMatch = state.whistlesEnabled === true && ['point', 'setpoint', 'victory', 'buzzer'].includes(type);
+    const useWhistleForMatch = state.whistlesEnabled === true && ['setpoint', 'victory', 'buzzer'].includes(type);
 
     if (isExplicitWhistle || useWhistleForMatch) {
       const mp3Map = {
-        point: './audio/apito_curto.mp3',
         setpoint: './audio/apito_duplo.mp3',
         victory: './audio/apito_fim.mp3',
         buzzer: './audio/apito_forte.mp3',
@@ -712,7 +747,7 @@ function playSound(type) {
       };
       if (mp3Map[type]) {
         const whistleAudio = new Audio(mp3Map[type]);
-        whistleAudio.volume = type === 'point' ? 0.65 : 0.9;
+        whistleAudio.volume = 0.9;
         whistleAudio.play().catch(() => {});
         return;
       }
@@ -1145,11 +1180,36 @@ window.toggleCourtTouchLock = function () {
 function openSessionsModal() {
   const nameInput = document.getElementById('input-session-title');
   const dateInput = document.getElementById('input-session-date');
+  const roomInput = document.getElementById('input-login-room-code');
   if (nameInput) nameInput.value = state.tournamentName || 'VÔLEI INTERNO';
   if (dateInput) dateInput.value = state.tournamentDate || getTodayDateIso();
+  if (roomInput && !roomInput.value) roomInput.value = (state.roomCode || 'VOLEI1').toUpperCase();
   renderSavedSessionsModal();
   document.getElementById('modal-sessions')?.classList.remove('hidden');
 }
+
+window.quickFillRoomCode = function (code) {
+  const input = document.getElementById('input-login-room-code');
+  if (input) input.value = code;
+  window.joinRoomFromLogin();
+};
+
+window.joinRoomFromLogin = async function () {
+  const input = document.getElementById('input-login-room-code');
+  const code = (input ? input.value : '').replace(/^#/, '').trim().toUpperCase();
+  if (!code) {
+    showToast('⚠️ Digite o código da sala (ex: VOLEI1)!', 'warn');
+    return;
+  }
+  state.roomCode = code;
+  state.sessionSetupConfirmed = true;
+  saveState();
+  document.getElementById('modal-sessions')?.classList.add('hidden');
+  showToast(`📡 Conectando à sala <strong>#${escapeHtml(code)}</strong>...`, 'info');
+  await pullRoomStateOnce(code, true);
+  startAutoSyncLoop();
+  renderAll();
+};
 
 function renderSavedSessionsModal() {
   upsertCurrentSessionInArchive();
@@ -1991,6 +2051,71 @@ function renderDynamicGamesTab() {
 }
 
 /* ==========================================
+   JOGADORES DISPONÍVEIS & ROSTER HELPERS
+   ========================================== */
+function getAssignedPlayerKeys() {
+  const set = new Set();
+  (state.teams || []).forEach((t) => {
+    (t.players || []).forEach((p) => {
+      const k = normalizePlayerKey(p.name);
+      if (k) set.add(k);
+    });
+  });
+  return set;
+}
+
+function getAvailablePlayers() {
+  const assignedKeys = getAssignedPlayerKeys();
+  const seen = new Set();
+  const list = [];
+
+  // 1. Jogadores no playerPool que não estão escalados em nenhum time
+  (state.playerPool || []).forEach((p) => {
+    const k = normalizePlayerKey(p.name);
+    if (k && !assignedKeys.has(k) && !seen.has(k)) {
+      seen.add(k);
+      list.push({
+        id: p.id || `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        masterId: p.masterId,
+        name: p.name,
+        role: p.role || 'Geral',
+        skill: p.skill || 3
+      });
+    }
+  });
+
+  // 2. Jogadores no elenco fixo marcados como presentes hoje
+  (state.masterRoster || []).forEach((mp) => {
+    const k = normalizePlayerKey(mp.name);
+    if (mp.presentToday && k && !assignedKeys.has(k) && !seen.has(k)) {
+      seen.add(k);
+      list.push({
+        id: `p_m_${mp.id}`,
+        masterId: mp.id,
+        name: mp.name,
+        role: mp.role || 'Geral',
+        skill: mp.skill || 3
+      });
+    }
+  });
+
+  return list;
+}
+
+function getOtherMasterRosterAvailable() {
+  const assignedKeys = getAssignedPlayerKeys();
+  const availKeys = new Set(getAvailablePlayers().map((p) => normalizePlayerKey(p.name)));
+  const list = [];
+  (state.masterRoster || []).forEach((mp) => {
+    const k = normalizePlayerKey(mp.name);
+    if (k && !assignedKeys.has(k) && !availKeys.has(k)) {
+      list.push(mp);
+    }
+  });
+  return list;
+}
+
+/* ==========================================
    TAB 3: TEAMS & FLEXIBLE DRAW (3 OR 4)
    ========================================== */
 function renderTeamsAndDrawTab() {
@@ -2108,6 +2233,64 @@ function renderTeamsAndDrawTab() {
 
   document.getElementById('teams-column-heading').textContent = `Equipes do Dia (${state.teams.length} Times)`;
 
+  const availableToday = getAvailablePlayers();
+  const otherMaster = getOtherMasterRosterAvailable();
+
+  // Render Available Players Card
+  const availCountBadge = document.getElementById('available-count-badge');
+  if (availCountBadge) availCountBadge.textContent = availableToday.length;
+
+  const availChipsWrap = document.getElementById('available-players-chips');
+  if (availChipsWrap) {
+    if (availableToday.length === 0) {
+      availChipsWrap.innerHTML = `
+        <div class="available-empty-state">
+          <span>✅ <strong>Todos os jogadores escalados!</strong> Quando você clicar no ✕ de qualquer time, o jogador volta direto para cá.</span>
+          ${
+            otherMaster.length > 0
+              ? `<span style="font-size:0.73rem;color:var(--text-secondary);">(${otherMaster.length} outros cadastrados no ⭐ Elenco Fixo)</span>`
+              : ''
+          }
+        </div>
+      `;
+    } else {
+      availChipsWrap.innerHTML = availableToday
+        .map(
+          (p) => `
+        <div class="available-chip">
+          <div class="avail-chip-header">
+            <img src="${getRoleSvg(p.role)}" width="14" height="14" class="mono-svg-accent" alt="" />
+            <strong class="avail-player-name">${escapeHtml(p.name)}</strong>
+            <span class="pick-stars">${'★'.repeat(p.skill)}</span>
+            <span class="avail-role-badge">${p.role || 'Geral'}</span>
+          </div>
+          <div class="avail-quick-assign-row">
+            <span class="avail-assign-label">+ Escalar:</span>
+            <div class="avail-teams-buttons">
+              ${state.teams
+                .map(
+                  (t) => `
+                <button
+                  type="button"
+                  class="mini-team-assign-btn"
+                  style="border-color:${t.color}88; background:${t.color}20; color:${t.color};"
+                  onclick="addAvailablePlayerToTeam('${t.id}', '${escapeHtml(p.name)}')"
+                  title="Escalar ${escapeHtml(p.name)} no ${t.name}"
+                >
+                  ${t.name.replace('Time ', 'T')}
+                </button>
+              `
+                )
+                .join('')}
+            </div>
+          </div>
+        </div>
+      `
+        )
+        .join('');
+    }
+  }
+
   const teamsGrid = document.getElementById('four-teams-grid');
   teamsGrid.innerHTML = state.teams
     .map((team, idx) => {
@@ -2181,7 +2364,7 @@ function renderTeamsAndDrawTab() {
           <div class="team-roster-box">
             ${
               team.players.length === 0
-                ? `<div class="empty-state-mini" style="padding:12px;">Sem jogadores. Use o sorteador ao lado ou adicione abaixo.</div>`
+                ? `<div class="empty-state-mini" style="padding:12px;">Sem jogadores. Puxe dos disponíveis ou adicione manualmente abaixo.</div>`
                 : team.players
                     .map(
                       (p, pIdx) => `
@@ -2190,7 +2373,7 @@ function renderTeamsAndDrawTab() {
                         <img src="${getRoleSvg(p.role)}" alt="" width="15" height="15" class="mono-svg-accent" />
                         <span><strong>${pIdx + 1}.</strong> ${escapeHtml(p.name)} <small style="color:var(--text-secondary)">(${p.role || 'Geral'})</small></span>
                       </span>
-                      <button type="button" class="pool-remove-btn" onclick="removePlayerFromTeam('${team.id}', ${pIdx})" title="Remover do time">✕</button>
+                      <button type="button" class="pool-remove-btn" onclick="removePlayerFromTeam('${team.id}', ${pIdx})" title="Tirar do time e devolver para os Disponíveis">✕</button>
                     </div>
                   `
                     )
@@ -2198,15 +2381,60 @@ function renderTeamsAndDrawTab() {
             }
           </div>
 
-          <div class="team-quick-add-row">
-            <input
-              type="text"
-              id="quick-player-${team.id}"
-              class="team-quick-add-input"
-              placeholder="Adicionar jogador neste time..."
-              onkeydown="if(event.key==='Enter'){event.preventDefault();addDirectPlayerToTeam('${team.id}');}"
-            />
-            <button type="button" class="mini-action-btn" onclick="addDirectPlayerToTeam('${team.id}')">+ Add</button>
+          <!-- SELETOR DE DISPONÍVEIS E ENTRADA MANUAL -->
+          <div class="team-add-player-section">
+            <div class="team-available-select-wrap">
+              <select
+                class="modern-select compact team-available-select"
+                aria-label="Puxar jogador disponível para ${escapeHtml(team.name)}"
+                onchange="addAvailablePlayerToTeam('${team.id}', this.value); this.value='';"
+              >
+                <option value="">
+                  ${availableToday.length > 0 ? `➕ Puxar dos Disponíveis (${availableToday.length})...` : 'Nenhum jogador livre no momento'}
+                </option>
+                ${
+                  availableToday.length > 0
+                    ? `<optgroup label="🟢 Disponíveis Hoje (${availableToday.length})">
+                        ${availableToday
+                          .map(
+                            (p) => `
+                          <option value="${escapeHtml(p.name)}">
+                            ${escapeHtml(p.name)} (${'★'.repeat(p.skill)} • ${p.role || 'Geral'})
+                          </option>
+                        `
+                          )
+                          .join('')}
+                       </optgroup>`
+                    : ''
+                }
+                ${
+                  otherMaster.length > 0
+                    ? `<optgroup label="⭐ Do Elenco Fixo (${otherMaster.length})">
+                        ${otherMaster
+                          .map(
+                            (p) => `
+                          <option value="${escapeHtml(p.name)}">
+                            ${escapeHtml(p.name)} (${'★'.repeat(p.skill)} • ${p.role || 'Geral'})
+                          </option>
+                        `
+                          )
+                          .join('')}
+                       </optgroup>`
+                    : ''
+                }
+              </select>
+            </div>
+
+            <div class="team-quick-add-row">
+              <input
+                type="text"
+                id="quick-player-${team.id}"
+                class="team-quick-add-input"
+                placeholder="Ou digite manual (ex: Carlos 4* L)..."
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addDirectPlayerToTeam('${team.id}');}"
+              />
+              <button type="button" class="mini-action-btn" onclick="addDirectPlayerToTeam('${team.id}')">+ Add</button>
+            </div>
           </div>
         </div>
       `;
@@ -3419,10 +3647,119 @@ window.removePlayerFromPool = function (playerId) {
 
 window.removePlayerFromTeam = function (teamId, playerIdx) {
   const team = getTeamById(teamId);
-  if (!team) return;
-  team.players.splice(playerIdx, 1);
+  if (!team || !team.players[playerIdx]) return;
+
+  const removed = team.players.splice(playerIdx, 1)[0];
+
+  // Devolve o jogador para o playerPool para reaparecer IMEDIATAMENTE nos Disponíveis!
+  if (removed && removed.name) {
+    const alreadyInPool = (state.playerPool || []).some(
+      (p) => normalizePlayerKey(p.name) === normalizePlayerKey(removed.name)
+    );
+    if (!alreadyInPool) {
+      if (!Array.isArray(state.playerPool)) state.playerPool = [];
+      state.playerPool.push({
+        id: removed.id || `p_${Date.now()}`,
+        masterId: removed.masterId,
+        name: removed.name,
+        role: removed.role || 'Geral',
+        skill: removed.skill || 3
+      });
+    }
+
+    // Marca no Elenco Fixo como presente hoje
+    if (Array.isArray(state.masterRoster)) {
+      const mp = state.masterRoster.find(
+        (m) => normalizePlayerKey(m.name) === normalizePlayerKey(removed.name)
+      );
+      if (mp) {
+        mp.presentToday = true;
+        saveMasterRoster();
+      }
+    }
+  }
+
   saveState();
   renderAll();
+  playSound('undo');
+  showToast(`↩️ <strong>${escapeHtml(removed.name)}</strong> saiu do ${escapeHtml(team.name)} e voltou para os <strong>Disponíveis</strong>!`, 'info');
+};
+
+window.addAvailablePlayerToTeam = function (teamId, playerNameOrId) {
+  if (!playerNameOrId) return;
+  const team = getTeamById(teamId);
+  if (!team) return;
+
+  const raw = String(playerNameOrId).trim();
+  const targetKey = normalizePlayerKey(raw);
+
+  // Procura primeiro nos jogadores disponíveis
+  const available = getAvailablePlayers();
+  let found = available.find((p) => normalizePlayerKey(p.name) === targetKey || p.id === raw);
+
+  // Se não estiver nos disponíveis imediatos, procura no elenco fixo
+  if (!found && Array.isArray(state.masterRoster)) {
+    const mp = state.masterRoster.find((m) => normalizePlayerKey(m.name) === targetKey || m.id === raw);
+    if (mp) {
+      found = {
+        id: `p_m_${mp.id}`,
+        masterId: mp.id,
+        name: mp.name,
+        role: mp.role || 'Geral',
+        skill: mp.skill || 3
+      };
+      mp.presentToday = true;
+      saveMasterRoster();
+    }
+  }
+
+  // Se ainda não encontrou, interpreta como entrada direta
+  if (!found) {
+    const parsed = parsePlayersTextWithCommands(raw)[0];
+    const pName = parsed ? parsed.name : raw;
+    const pRole = parsed ? parsed.role : 'Geral';
+    const pSkill = parsed ? parsed.skill : 3;
+    const masterObj = upsertMasterPlayer(pName, pRole, pSkill);
+    found = {
+      id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      masterId: masterObj ? masterObj.id : undefined,
+      name: masterObj ? masterObj.name : pName,
+      role: pRole,
+      skill: pSkill
+    };
+  }
+
+  // Garante que está no playerPool
+  const inPool = state.playerPool.some((p) => normalizePlayerKey(p.name) === normalizePlayerKey(found.name));
+  if (!inPool) {
+    state.playerPool.push({
+      id: found.id || `p_${Date.now()}`,
+      masterId: found.masterId,
+      name: found.name,
+      role: found.role,
+      skill: found.skill
+    });
+  }
+
+  // Checa se já está escalado neste time
+  const alreadyInTeam = team.players.some((p) => normalizePlayerKey(p.name) === normalizePlayerKey(found.name));
+  if (alreadyInTeam) {
+    showToast(`⚠️ ${found.name} já está escalado no ${team.name}!`, 'warn');
+    return;
+  }
+
+  team.players.push({
+    id: `tp_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+    masterId: found.masterId,
+    name: found.name,
+    role: found.role || 'Geral',
+    skill: found.skill || 3
+  });
+
+  saveState();
+  renderAll();
+  playSound('point');
+  showToast(`👤 <strong>${escapeHtml(found.name)}</strong> escalado no <strong>${escapeHtml(team.name)}</strong>!`, 'info');
 };
 
 window.addDirectPlayerToTeam = function (teamId) {
@@ -3437,16 +3774,38 @@ window.addDirectPlayerToTeam = function (teamId) {
     const pRole = parsed ? parsed.role : 'Geral';
     const pSkill = parsed ? parsed.skill : 3;
     const masterObj = upsertMasterPlayer(pName, pRole, pSkill);
-    team.players.push({
-      id: `p_${Date.now()}`,
+    if (masterObj) {
+      masterObj.presentToday = true;
+      saveMasterRoster();
+    }
+
+    const newPlayer = {
+      id: `tp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       masterId: masterObj ? masterObj.id : undefined,
       name: masterObj ? masterObj.name : pName,
       role: pRole,
       skill: pSkill
-    });
+    };
+
+    team.players.push(newPlayer);
+
+    // Mantém no playerPool de hoje também
+    const inPool = state.playerPool.some((p) => normalizePlayerKey(p.name) === normalizePlayerKey(newPlayer.name));
+    if (!inPool) {
+      state.playerPool.push({
+        id: `p_${Date.now()}`,
+        masterId: newPlayer.masterId,
+        name: newPlayer.name,
+        role: newPlayer.role,
+        skill: newPlayer.skill
+      });
+    }
+
     input.value = '';
     saveState();
     renderAll();
+    playSound('point');
+    showToast(`👤 <strong>${escapeHtml(newPlayer.name)}</strong> adicionado ao <strong>${escapeHtml(team.name)}</strong>!`, 'info');
   }
 };
 
@@ -3986,9 +4345,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (focusMirror) focusMirror.textContent = formatted;
   }
 
-  document.getElementById('btn-timer-toggle').addEventListener('click', () => {
+  function toggleMatchTimer() {
     timerRunning = !timerRunning;
-    document.getElementById('btn-timer-toggle').textContent = timerRunning ? '⏸️' : '▶️';
+    const txt = timerRunning ? '⏸️' : '▶️';
+    const mainToggle = document.getElementById('btn-timer-toggle');
+    if (mainToggle) mainToggle.textContent = txt;
+    const focusToggle = document.getElementById('btn-focus-timer-toggle');
+    if (focusToggle) focusToggle.textContent = txt;
+
     if (timerRunning) {
       timerInterval = setInterval(() => {
         timerSeconds++;
@@ -3997,7 +4361,27 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       clearInterval(timerInterval);
     }
-  });
+  }
+
+  function resetMatchTimer() {
+    if (timerRunning) {
+      timerRunning = false;
+      clearInterval(timerInterval);
+      const mainToggle = document.getElementById('btn-timer-toggle');
+      if (mainToggle) mainToggle.textContent = '▶️';
+      const focusToggle = document.getElementById('btn-focus-timer-toggle');
+      if (focusToggle) focusToggle.textContent = '▶️';
+    }
+    timerSeconds = 0;
+    updateTimerDisplay();
+    playSound('undo');
+    showToast('⏱️ Cronômetro zerado para 00:00!', 'info');
+  }
+
+  document.getElementById('btn-timer-toggle')?.addEventListener('click', toggleMatchTimer);
+  document.getElementById('btn-focus-timer-toggle')?.addEventListener('click', toggleMatchTimer);
+  document.getElementById('btn-timer-reset')?.addEventListener('click', resetMatchTimer);
+  document.getElementById('btn-focus-timer-reset')?.addEventListener('click', resetMatchTimer);
 
   document.getElementById('btn-timeout-30s').addEventListener('click', () => {
     playSound('buzzer');

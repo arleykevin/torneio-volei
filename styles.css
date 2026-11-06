@@ -2005,6 +2005,203 @@ body {
 }
 
 /* ==========================================
+   CARD DE JOGADORES DISPONÍVEIS & RESERVAS
+   ========================================== */
+.available-players-card {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.45);
+}
+
+.available-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.available-pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.available-title {
+  font-size: 0.84rem;
+  color: #f8fafc;
+  letter-spacing: 0.03em;
+}
+
+.available-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.available-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.available-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.16s ease;
+}
+
+.available-chip:hover {
+  border-color: #34d399;
+  transform: translateY(-1px);
+}
+
+.avail-chip-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.avail-player-name {
+  font-size: 0.82rem;
+  color: #f8fafc;
+}
+
+.avail-role-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(15, 23, 42, 0.7);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.avail-quick-assign-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.avail-assign-label {
+  font-size: 0.66rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.avail-teams-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.mini-team-assign-btn {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.mini-team-assign-btn:hover {
+  transform: scale(1.1);
+  filter: brightness(1.2);
+}
+
+.available-empty-state {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 8px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* Dentro de cada Card de Time */
+.team-add-player-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.team-available-select {
+  width: 100%;
+  font-size: 0.78rem;
+  padding: 7px 10px;
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(15, 23, 42, 0.85);
+  color: #6ee7b7;
+  font-weight: 700;
+}
+
+.team-available-select:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+.team-available-select optgroup {
+  background: #0f172a;
+  color: #94a3b8;
+  font-weight: 800;
+}
+
+.team-available-select option {
+  background: #1e293b;
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+/* Light Theme */
+html[data-theme="light"] .available-players-card {
+  background: #ffffff;
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+html[data-theme="light"] .available-title,
+html[data-theme="light"] .avail-player-name {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .available-chip {
+  background: #f8fafc;
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+html[data-theme="light"] .team-available-select {
+  background: #ffffff;
+  border-color: rgba(16, 185, 129, 0.6);
+  color: #047857;
+}
+
+html[data-theme="light"] .team-available-select optgroup,
+html[data-theme="light"] .team-available-select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* ==========================================
    TAB 4: CLASSIFICAÇÃO FINAL & PODIUM
    ========================================== */
 .podium-grid {
@@ -3486,9 +3683,14 @@ body.court-focus-mode .app-header,
 body.court-focus-mode .scoreboard-toolbar,
 body.court-focus-mode .waiting-queue-bar,
 body.court-focus-mode .match-status-banner,
-body.court-focus-mode .deboche-soundboard-bar,
 body.court-focus-mode .live-bottom-grid {
   display: none !important;
+}
+
+body.court-focus-mode .deboche-soundboard-bar {
+  display: block !important;
+  margin-top: 10px;
+  width: 100%;
 }
 
 body.court-focus-mode .app-main {
@@ -3512,6 +3714,177 @@ body.court-focus-mode .scoreboard-arena {
 
 body.court-focus-mode .score-giant-number {
   font-size: clamp(7.2rem, 25vw, 14rem);
+}
+
+/* ==========================================
+   MODO LANDSCAPE (CELULAR DEITADO)
+   ========================================== */
+@media (orientation: landscape) and (max-height: 550px), (max-height: 520px) {
+  body.court-focus-mode .app-main {
+    padding: max(4px, env(safe-area-inset-top, 4px)) max(8px, env(safe-area-inset-right, 8px)) max(6px, env(safe-area-inset-bottom, 6px)) max(8px, env(safe-area-inset-left, 8px)) !important;
+    min-height: auto !important;
+  }
+
+  .focus-mode-bar {
+    padding: 3px 8px !important;
+    margin-bottom: 3px !important;
+    gap: 6px !important;
+  }
+
+  .focus-bar-left {
+    gap: 8px !important;
+    font-size: 0.76rem !important;
+  }
+
+  .focus-live-badge {
+    padding: 2px 6px !important;
+    font-size: 0.65rem !important;
+  }
+
+  .focus-bar-actions {
+    gap: 4px !important;
+  }
+
+  .focus-ctrl-btn {
+    padding: 4px 8px !important;
+    font-size: 0.68rem !important;
+  }
+
+  /* Grid dos 2 times e coluna central */
+  .scoreboard-arena,
+  body.court-focus-mode .scoreboard-arena {
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr !important;
+    gap: 6px !important;
+    align-items: stretch !important;
+    margin-bottom: 4px !important;
+  }
+
+  .score-team-card {
+    padding: 6px 10px !important;
+    border-radius: 14px !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+
+  .team-card-top {
+    gap: 6px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .team-identity {
+    gap: 6px !important;
+  }
+
+  .team-crest-badge {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 6px !important;
+  }
+
+  .team-crest-img {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .team-inline-switcher {
+    font-size: 0.85rem !important;
+    padding: 2px 4px !important;
+    font-weight: 800 !important;
+  }
+
+  .score-team-roster {
+    font-size: 0.62rem !important;
+    max-width: 170px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .serve-badge {
+    padding: 2px 6px !important;
+    font-size: 0.6rem !important;
+  }
+
+  /* NÚMERO DO PLACAR PERFEITAMENTE PROPORCIONADO */
+  .score-giant-number,
+  body.court-focus-mode .score-giant-number {
+    font-size: clamp(2.8rem, 21vh, 4.2rem) !important;
+    line-height: 0.9 !important;
+    margin: 2px 0 !important;
+  }
+
+  /* BOTÕES DE MARCAR PONTO */
+  .score-controls {
+    display: flex !important;
+    gap: 4px !important;
+    margin-top: 3px !important;
+  }
+
+  .btn-plus-point {
+    height: 34px !important;
+    font-size: 0.8rem !important;
+    padding: 2px 8px !important;
+  }
+
+  .btn-minus-point {
+    height: 34px !important;
+    width: 38px !important;
+    font-size: 0.78rem !important;
+    padding: 2px !important;
+  }
+
+  /* COLUNA CENTRAL DE AÇÕES */
+  .score-center-column {
+    gap: 3px !important;
+    padding: 0 2px !important;
+  }
+
+  .court-center-btn {
+    padding: 3px 5px !important;
+    font-size: 0.62rem !important;
+    gap: 2px !important;
+    border-radius: 6px !important;
+  }
+
+  .court-center-btn img {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* ÁUDIOS DE DEBOCHE EMBAIXO DO PLACAR */
+  body.court-focus-mode .deboche-soundboard-bar,
+  .deboche-soundboard-bar {
+    display: block !important;
+    margin-top: 4px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .deboche-soundboard-bar .clean-drawer-summary {
+    padding: 5px 8px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .deboche-soundboard-bar .clean-drawer-body {
+    padding: 4px 6px !important;
+    max-height: 90px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .deboche-soundboard-bar .soundboard-buttons-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 3px !important;
+  }
+
+  .deboche-soundboard-bar .chip-btn {
+    padding: 3px 7px !important;
+    font-size: 0.65rem !important;
+    border-radius: 6px !important;
+  }
 }
 
 body.court-focus-mode .team-inline-switcher:disabled {
@@ -5589,6 +5962,333 @@ html[data-theme="light"] .pin-error-msg {
 .pin-shake {
   animation: pinShakeAnim 0.35s ease;
   border-color: #f43f5e !important;
+}
+
+/* ==========================================
+   TIMER RESET BUTTON & CONTROLS
+   ========================================== */
+.timer-reset-btn {
+  background: rgba(239, 68, 68, 0.16) !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  color: #fca5a5 !important;
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  transition: all 0.16s ease;
+}
+
+.timer-reset-btn:hover {
+  background: rgba(239, 68, 68, 0.32) !important;
+  transform: scale(1.08);
+}
+
+/* ==========================================
+   TELA INICIAL / LOGIN DE SALA & ENTRADA
+   ========================================== */
+.entrance-modal-backdrop {
+  padding-top: max(56px, env(safe-area-inset-top, 56px)) !important;
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px)) !important;
+  padding-left: max(14px, env(safe-area-inset-left, 14px)) !important;
+  padding-right: max(14px, env(safe-area-inset-right, 14px)) !important;
+}
+
+.entrance-modal-card {
+  max-height: calc(100dvh - env(safe-area-inset-top, 56px) - env(safe-area-inset-bottom, 24px) - 24px) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.75), 0 0 30px rgba(56, 189, 248, 0.15) !important;
+}
+
+.entrance-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.entrance-logo {
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 12px rgba(56, 189, 248, 0.3);
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  flex-shrink: 0;
+}
+
+.entrance-modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.entrance-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  margin-bottom: 6px;
+}
+
+.entrance-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.entrance-room-box {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.08);
+}
+
+.room-code-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.room-prefix-tag {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 900;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+.room-login-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a7f3d0;
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+.room-login-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #04130d;
+  font-weight: 900;
+  padding: 11px 18px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.room-quick-suggestions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.mini-tag-btn {
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #7dd3fc;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.mini-tag-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.entrance-create-box {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.entrance-create-box .session-inputs-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.session-setup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.session-setup-actions .chip-btn,
+.session-setup-actions .btn-accent-glow,
+.btn-primary.full-width,
+.chip-btn.full-width {
+  white-space: normal !important;
+  text-align: center !important;
+  line-height: 1.35 !important;
+  padding: 12px 14px !important;
+  height: auto !important;
+}
+
+.saved-session-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.saved-session-info {
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+.saved-session-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ==========================================
+   RESPONSIVIDADE CRÍTICA MOBILE (SORTEIO & ELENCO)
+   ========================================== */
+@media (max-width: 768px) {
+  .entrance-create-box .session-inputs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Sorteio */
+  .teams-layout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .four-teams-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .team-config-card {
+    padding: 14px !important;
+  }
+
+  .add-player-form {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .add-player-form #player-name-input {
+    grid-column: 1 / -1 !important;
+  }
+
+  .add-player-form #btn-add-player {
+    grid-column: 1 / -1 !important;
+    padding: 12px 16px !important;
+  }
+
+  .format-pills-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .format-pill {
+    padding: 10px 8px !important;
+  }
+
+  .format-pill strong {
+    font-size: 0.78rem !important;
+  }
+
+  .format-pill small {
+    font-size: 0.68rem !important;
+  }
+
+  .team-quick-add-row {
+    display: flex !important;
+    gap: 6px !important;
+  }
+
+  .team-quick-add-input {
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  /* Elenco */
+  .elenco-header-card {
+    padding: 14px 12px !important;
+  }
+
+  .elenco-quick-create-bar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .master-roster-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .dynamic-games-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .dynamic-games-actions button {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .elenco-filter-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .status-filter-pills {
+    display: flex !important;
+    overflow-x: auto !important;
+    padding-bottom: 4px !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 6px !important;
+  }
+
+  .elenco-search-input {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .mp-roles-section .role-pills-bar {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 3px !important;
+  }
+
+  .mp-roles-section .role-pill-btn {
+    font-size: 0.68rem !important;
+    padding: 6px 1px !important;
+    text-align: center !important;
+  }
 }
 
 @media print {
