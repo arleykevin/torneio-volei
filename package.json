@@ -1,0 +1,15 @@
+{
+  "name": "volei-pro-arena-pwa",
+  "version": "2.1.0",
+  "description": "PWA moderno de Torneio de Vôlei (4 Times, 6 Mini Torneios, 24 Jogos, Sorteio de Times e Placar na Hora sem desfeita)",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "volleyball",
+    "tournament",
+    "scoreboard",
+    "pwa"
+  ]
+}

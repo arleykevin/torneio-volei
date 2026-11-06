@@ -1,0 +1,33 @@
+{
+  "name": "Vôlei Pro Arena • Torneio & Placar ao Vivo",
+  "short_name": "Vôlei Arena",
+  "description": "PWA moderno para gestão de Torneio de Vôlei (4 Times, 6 Mini Torneios, 24 Jogos), Sorteio Transparente de Times e Placar na Hora auditável.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
+  "categories": ["sports", "utilities", "games"],
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

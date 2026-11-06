@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#070b14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Vôlei Arena" />
+  <meta name="description" content="App PWA de Vôlei: Times de 3 ou 4, Jogos Dinâmicos criados na hora (Quem Ganha Fica / Vencedores x Perdedores) e Placar sem desfeita." />
+
+  <title>Vôlei Pro Arena • Placar & Jogos na Hora</title>
+
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./volleyball-svgrepo-com (5).svg" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+
+  <!-- Modern Typography (with offline system fallback) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+    <div class="glow glow-3"></div>
+    <div class="grid-overlay"></div>
+    <img src="./volleyball-player-motion-svgrepo-com.svg" class="bg-watermark wm-left" alt="" />
+    <img src="./volleyball-silhouette-svgrepo-com.svg" class="bg-watermark wm-right" alt="" />
+  </div>
+
+  <!-- Confetti Canvas -->
+  <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+  <!-- Top App Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <div class="brand-logo" aria-hidden="true">
+          <img src="./volleyball-svgrepo-com (5).svg" alt="" width="34" height="34" class="brand-ball-svg" />
+          <span class="live-dot"></span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <h1 id="tournament-title-display" title="Clique para editar o nome da resenha/torneio">VÔLEI INTERNO</h1>
+            <span id="header-teams-badge" class="badge-pill">DINÂMICO</span>
+          </div>
+          <p class="brand-subtitle">Times de 3 ou 4 • Jogos criados na hora • Placar sem desfeita</p>
+        </div>
+      </div>
+
+      <!-- Session Stats & Quick Actions -->
+      <div class="header-actions">
+        <div class="session-stats-pills">
+          <div class="stat-mini-box" title="Jogos concluídos hoje">
+            <span class="stat-mini-label">JOGOS HOJE</span>
+            <strong id="header-games-count" class="stat-mini-value">0 concluídos</strong>
+          </div>
+          <div class="stat-mini-box" title="Tempo total de quadra / sessão">
+            <span class="stat-mini-label">TEMPO DE QUADRA</span>
+            <strong id="session-clock-display" class="stat-mini-value cyan">00h 00m</strong>
+          </div>
+        </div>
+
+        <div class="action-buttons-row">
+          <button id="btn-room-sync" class="action-btn btn-sync-live" type="button" title="Salvamento Automático e Código da Partida para vários celulares assistirem ao vivo">
+            <span class="sync-pulse-dot"></span>
+            <span id="room-sync-label">Salvo Auto • #VOLEI1</span>
+          </button>
+          <button id="btn-voice-toggle" class="icon-btn active" type="button" title="Ativar/Desativar Narração em Voz (Locutor da Quadra)" aria-label="Alternar narração de voz">
+            <span id="voice-icon">🎙️</span>
+          </button>
+          <button id="btn-elevenlabs-studio" class="action-btn btn-voice-studio" type="button" title="Textos prontos para ElevenLabs e Áudios de Narração">
+            <span>🗣️</span>
+            <span class="btn-label">ElevenLabs</span>
+          </button>
+          <button id="btn-sound-toggle" class="icon-btn active" type="button" title="Ativar/Desativar sons de apito e placar" aria-label="Alternar som">
+            <span id="sound-icon">🔊</span>
+          </button>
+          <button id="btn-whatsapp-share" class="action-btn btn-whatsapp" type="button" title="Copiar resumo completo para WhatsApp">
+            <span>📲</span>
+            <span class="btn-label">WhatsApp</span>
+          </button>
+          <button id="btn-install-pwa" class="action-btn btn-install" type="button" title="Instalar aplicativo no celular ou PC">
+            <span>⬇️</span>
+            <span class="btn-label">Instalar App</span>
+          </button>
+          <button id="btn-settings-menu" class="icon-btn" type="button" title="Opções, Backup e Reiniciar Sessão" aria-label="Menu de opções">
+            <span>⚙️</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Navigation Tabs with Custom SVGs -->
+    <nav class="main-nav" aria-label="Navegação Principal">
+      <button class="nav-tab active" data-tab="placar" type="button">
+        <img src="./volleyball-svgrepo-com (1).svg" alt="" class="nav-svg-icon mono-svg" />
+        <span class="nav-text">Placar na Hora</span>
+        <span id="nav-live-badge" class="nav-badge live">QUADRA</span>
+      </button>
+      <button class="nav-tab" data-tab="jogos" type="button">
+        <img src="./volleyball-svgrepo-com (5).svg" alt="" class="nav-svg-icon" />
+        <span class="nav-text">Jogos & Fila</span>
+        <span id="nav-jogos-badge" class="nav-badge">Jogo #1</span>
+      </button>
+      <button class="nav-tab" data-tab="times" type="button">
+        <img src="./volleyball-player-motion-svgrepo-com.svg" alt="" class="nav-svg-icon mono-svg" />
+        <span class="nav-text">Times & Sorteio</span>
+        <span id="nav-times-badge" class="nav-badge subtle">Times</span>
+      </button>
+      <button class="nav-tab" data-tab="classificacao" type="button">
+        <img src="./beach-volleyball-svgrepo-com.svg" alt="" class="nav-svg-icon" />
+        <span class="nav-text">Ranking do Dia</span>
+        <span id="nav-leader-badge" class="nav-badge gold">Geral</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="app-main">
+
+    <!-- ==========================================
+         TAB 1: PLACAR NA HORA (LIVE SCOREBOARD)
+         ========================================== -->
+    <section id="tab-placar" class="tab-panel active" aria-label="Placar na Hora">
+      <!-- Dynamic Mode & Match Rules Control Bar -->
+      <div class="glass-card scoreboard-toolbar">
+        <div class="toolbar-left">
+          <label for="rotation-mode-select" class="toolbar-label">DINÂMICA DE CRIAÇÃO DE JOGOS (VAI GANHANDO / VAI PERDENDO)</label>
+          <div class="match-selector-row">
+            <select id="rotation-mode-select" class="modern-select" title="Como o próximo jogo é gerado quando uma partida acaba">
+              <option value="king">👑 Quem Ganha Fica (Vencedor continua × Próximo da fila)</option>
+              <option value="king_2max">🔄 Quem Ganha Fica (Máx. 2 vitórias seguidas, depois reveza)</option>
+              <option value="winners_losers">⚡ Chave Dinâmica (Vencedor × Vencedor e Perdedor × Perdedor)</option>
+              <option value="free">🎯 Livre na Hora (Você escolhe quem joga a cada partida)</option>
+            </select>
+            <button id="btn-create-custom-match" class="chip-btn accent" type="button" title="Criar ou trocar o confronto agora">
+              ➕ Novo Confronto
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <div class="rule-group">
+            <span class="toolbar-label">META DE PONTOS</span>
+            <div class="target-points-pills" role="group" aria-label="Meta de pontos da partida">
+              <button type="button" class="pt-pill" data-pts="12">12</button>
+              <button type="button" class="pt-pill active" data-pts="15">15</button>
+              <button type="button" class="pt-pill" data-pts="18">18</button>
+              <button type="button" class="pt-pill" data-pts="21">21</button>
+              <button type="button" class="pt-pill" data-pts="25">25</button>
+            </div>
+          </div>
+
+          <div class="rule-group">
+            <span class="toolbar-label">REGRA</span>
+            <button id="btn-toggle-deuce" class="chip-btn active" type="button" title="Exigir 2 pontos de vantagem em caso de empate no ponto final">
+              ✅ Vai a 2
+            </button>
+          </div>
+
+          <div class="rule-group">
+            <span class="toolbar-label">QUADRA</span>
+            <div class="court-tools-row">
+              <button id="btn-swap-sides" class="chip-btn" type="button" title="Inverter o lado dos times na tela">
+                🔄 Virar Lado
+              </button>
+              <button id="btn-fullscreen-score" class="chip-btn" type="button" title="Expandir placar em tela cheia">
+                📺 Tela Cheia
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Queue / Waiting Teams Strip ("Próximos da Fila") -->
+      <div id="waiting-queue-bar" class="waiting-queue-bar">
+        <div class="queue-left">
+          <span class="queue-title">⏳ FILA DE ESPERA (PRÓXIMOS):</span>
+          <div id="waiting-teams-chips" class="waiting-teams-chips"></div>
+        </div>
+        <div class="queue-right">
+          <span id="streak-info-pill" class="streak-pill">🔥 Sequência na quadra: 0V</span>
+        </div>
+      </div>
+
+      <!-- Active Match Context Banner -->
+      <div id="live-match-banner" class="match-status-banner">
+        <div class="banner-info">
+          <img src="./beach-volleyball-svgrepo-com.svg" alt="" width="26" height="26" />
+          <span id="live-game-number" class="mini-tag">JOGO #1</span>
+          <span id="live-stage-desc" class="game-tag">EM QUADRA AGORA</span>
+          <span id="live-status-pill" class="status-indicator in-progress">⚡ PLACAR AUDITADO • SEM DESFEITA</span>
+        </div>
+        <div class="banner-timer">
+          <span class="timer-icon">⏱️</span>
+          <span id="match-timer-display" class="mono-time">00:00</span>
+          <button id="btn-timer-toggle" class="mini-icon-btn" type="button" title="Iniciar/Pausar cronômetro da partida">▶️</button>
+          <button id="btn-timeout-30s" class="timeout-btn" type="button" title="Pedir tempo técnico de 30 segundos">✋ Tempo 30s</button>
+        </div>
+      </div>
+
+      <!-- Set / Match Point or Next Match Generator Alert Banner -->
+      <div id="match-alert-bar" class="match-alert-bar hidden" role="status" aria-live="polite">
+        <span id="match-alert-text">🔥 MATCH POINT!</span>
+        <div id="match-alert-actions" class="match-alert-actions"></div>
+      </div>
+
+      <!-- Main Dual Scoreboard Arena -->
+      <div id="scoreboard-arena" class="scoreboard-arena">
+        <!-- Side A (Left) -->
+        <div id="score-card-left" class="score-team-card" data-side="left">
+          <img id="left-card-watermark" src="./volleyball-player-motion-svgrepo-com.svg" alt="" class="card-svg-watermark" />
+          <div class="team-card-top">
+            <div class="team-identity">
+              <div id="left-team-avatar-box" class="team-crest-badge">
+                <img id="left-team-svg" src="./volleyball-player-motion-svgrepo-com.svg" alt="" class="team-crest-img mono-svg" />
+              </div>
+              <div class="team-title-stack">
+                <div class="team-select-inline-row">
+                  <select id="select-team-left" class="team-inline-switcher" aria-label="Trocar time do lado esquerdo"></select>
+                </div>
+                <p id="left-team-players" class="score-team-roster">Toque em Times & Sorteio para escalar</p>
+              </div>
+            </div>
+            <button id="btn-serve-left" class="serve-badge active" type="button" title="Clique para definir quem está sacando">
+              <img src="./volleyball-svgrepo-com (5).svg" alt="" width="20" height="20" class="ball-spin" />
+              <span>SACANDO</span>
+            </button>
+          </div>
+
+          <div class="score-number-wrapper" id="left-score-tap" title="Toque para +1 ponto">
+            <span id="left-score-value" class="score-giant-number">0</span>
+            <span id="left-point-tag" class="point-status-tag hidden">MATCH POINT</span>
+          </div>
+
+          <div class="score-controls">
+            <button id="btn-minus-left" class="score-btn btn-minus" type="button" aria-label="Diminuir 1 ponto">
+              −1
+            </button>
+            <button id="btn-plus-left" class="score-btn btn-plus" type="button" aria-label="Somar 1 ponto">
+              <span class="plus-sign">+1</span>
+              <span class="plus-label">PONTO</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Center Court Net / Controls -->
+        <div class="score-center-column">
+          <div class="vs-net-box" title="Rede Central">
+            <img src="./volleyball-svgrepo-com (3).svg" alt="" class="net-center-svg mono-svg" />
+            <span class="vs-label-text">VS</span>
+          </div>
+
+          <button id="btn-undo-point" class="center-action-btn" type="button" disabled title="Desfazer o último ponto marcado">
+            <span>↩️</span>
+            <span>Desfazer</span>
+          </button>
+
+          <button id="btn-reset-live-score" class="center-action-btn subtle" type="button" title="Zerar placar desta partida">
+            <span>🧹</span>
+            <span>Zerar</span>
+          </button>
+
+          <button id="btn-finish-match" class="center-action-btn finish" type="button" title="Encerrar partida atual e já gerar o próximo jogo automaticamente">
+            <span>🏁</span>
+            <span>Fechar Jogo</span>
+          </button>
+        </div>
+
+        <!-- Side B (Right) -->
+        <div id="score-card-right" class="score-team-card" data-side="right">
+          <img id="right-card-watermark" src="./volleyball-silhouette-svgrepo-com.svg" alt="" class="card-svg-watermark" />
+          <div class="team-card-top">
+            <div class="team-identity">
+              <div id="right-team-avatar-box" class="team-crest-badge">
+                <img id="right-team-svg" src="./volleyball-silhouette-svgrepo-com.svg" alt="" class="team-crest-img mono-svg" />
+              </div>
+              <div class="team-title-stack">
+                <div class="team-select-inline-row">
+                  <select id="select-team-right" class="team-inline-switcher" aria-label="Trocar time do lado direito"></select>
+                </div>
+                <p id="right-team-players" class="score-team-roster">Toque em Times & Sorteio para escalar</p>
+              </div>
+            </div>
+            <button id="btn-serve-right" class="serve-badge" type="button" title="Clique para definir quem está sacando">
+              <img src="./volleyball-svgrepo-com (5).svg" alt="" width="20" height="20" class="ball-spin" />
+              <span>SACANDO</span>
+            </button>
+          </div>
+
+          <div class="score-number-wrapper" id="right-score-tap" title="Toque para +1 ponto">
+            <span id="right-score-value" class="score-giant-number">0</span>
+            <span id="right-point-tag" class="point-status-tag hidden">MATCH POINT</span>
+          </div>
+
+          <div class="score-controls">
+            <button id="btn-minus-right" class="score-btn btn-minus" type="button" aria-label="Diminuir 1 ponto">
+              −1
+            </button>
+            <button id="btn-plus-right" class="score-btn btn-plus" type="button" aria-label="Somar 1 ponto">
+              <span class="plus-sign">+1</span>
+              <span class="plus-label">PONTO</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Anti-Desfeita Audit Log & Recent Games Feed -->
+      <div class="live-bottom-grid">
+        <!-- Audit Log Point-by-Point -->
+        <div class="glass-card audit-log-card">
+          <div class="card-header-row">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <img src="./volleyball-motion-svgrepo-com.svg" alt="" width="28" height="28" class="mono-svg-accent" />
+              <div>
+                <h3 class="card-title">Histórico Ponto a Ponto (Anti-Desfeita)</h3>
+                <p class="card-subtitle">Registro exato com horário e transição de saque para ninguém reclamar do placar</p>
+              </div>
+            </div>
+            <span id="audit-count-badge" class="badge-pill subtle">0 lances</span>
+          </div>
+          <div id="point-history-list" class="point-history-list"></div>
+        </div>
+
+        <!-- Dynamic Next & Recent Matches Feed -->
+        <div class="glass-card mini-context-card">
+          <div class="card-header-row">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <img src="./volleyball-svgrepo-com (1).svg" alt="" width="26" height="26" class="mono-svg-accent" />
+              <div>
+                <h3 class="card-title">Sequência de Jogos do Dia</h3>
+                <p class="card-subtitle">Vai ganhando, vai perdendo e criando na hora sem limite fixo</p>
+              </div>
+            </div>
+            <button id="btn-goto-all-games" class="text-link-btn" type="button">Ver todos →</button>
+          </div>
+          <div id="live-recent-matches-preview" class="mini-matches-preview"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 2: JOGOS DO DIA & FILA DINÂMICA
+         ========================================== -->
+    <section id="tab-jogos" class="tab-panel" aria-label="Jogos do Dia e Criação Dinâmica">
+      <div class="glass-card filter-bar-card">
+        <div class="filter-bar-top">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <img src="./volleyball-svgrepo-com (5).svg" alt="" width="44" height="44" />
+            <div>
+              <span class="eyebrow-tag">HISTÓRICO & CRIAÇÃO SOB DEMANDA (2H / 3H LIVRES)</span>
+              <h2 class="section-heading">Jogos da Sessão • Crie Quantos Quiser</h2>
+              <p class="section-desc">
+                Não importa se hoje vão rolar 8, 15 ou 30 partidas: os jogos vão sendo criados automaticamente conforme quem ganha e quem perde!
+              </p>
+            </div>
+          </div>
+
+          <div class="dynamic-games-actions">
+            <button id="btn-new-game-modal" class="btn-primary" type="button">
+              ➕ Criar Novo Jogo Agora
+            </button>
+            <button id="btn-generate-mini-round" class="chip-btn accent" type="button" title="Gerar automaticamente uma rodada de Vencedores x Perdedores">
+              ⚡ Gerar Rodada (Mini-Torneio)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Matches List -->
+      <div id="dynamic-matches-list" class="dynamic-matches-grid"></div>
+    </section>
+
+    <!-- ==========================================
+         TAB 3: DEFINIÇÃO & SORTEIO DE TIMES (3 OU 4)
+         ========================================== -->
+    <section id="tab-times" class="tab-panel" aria-label="Definição e Sorteio de Times">
+      <div class="teams-layout-grid">
+        <!-- Left Column: Smart Player Draw ("Sorteio Sem Desfeita") -->
+        <div class="glass-card draw-panel-card">
+          <div class="card-header-row">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <img src="./volleyball-player-motion-svgrepo-com.svg" alt="" width="42" height="42" class="mono-svg-gold" />
+              <div>
+                <span class="eyebrow-tag">TIMES DE 3 OU DE 4 • ZERO PANELA</span>
+                <h2 class="section-heading">Sorteador Flexível de Times</h2>
+                <p class="section-desc">
+                  Escolha se hoje os times serão de <strong>3 ou 4 jogadores</strong> (ou 3 ou 4 equipes) e sorteie na hora!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Flexible Team Format Selector (3 or 4 players per team / 3 or 4 teams) -->
+          <div class="format-selector-box">
+            <span class="toolbar-label">COMO DIVIDIR A GALERA HOJE?</span>
+            <div class="format-pills-grid">
+              <button type="button" class="format-pill active" data-draw-format="size_3">
+                <strong>🏐 Times de 3 (Trios)</strong>
+                <small>3 jogadores por equipe</small>
+              </button>
+              <button type="button" class="format-pill" data-draw-format="size_4">
+                <strong>🏐 Times de 4 (Quartetos)</strong>
+                <small>4 jogadores por equipe</small>
+              </button>
+              <button type="button" class="format-pill" data-draw-format="count_3">
+                <strong>🛡️ 3 Equipes no Total</strong>
+                <small>Divide todos em 3 times</small>
+              </button>
+              <button type="button" class="format-pill" data-draw-format="count_4">
+                <strong>🛡️ 4 Equipes no Total</strong>
+                <small>Divide todos em 4 times</small>
+              </button>
+            </div>
+          </div>
+
+          <!-- Add Single Player Form -->
+          <form id="add-player-form" class="add-player-form">
+            <input
+              type="text"
+              id="player-name-input"
+              class="modern-input"
+              placeholder="Nome do jogador(a)..."
+              autocomplete="off"
+            />
+            <select id="player-role-select" class="modern-select compact" title="Posição / Função">
+              <option value="Geral">Geral / Passe</option>
+              <option value="Levantador">Levantador(a)</option>
+              <option value="Atacante">Atacante / Ponta</option>
+              <option value="Bloqueador">Central / Bloqueio</option>
+              <option value="Defensor">Líbero / Defesa</option>
+            </select>
+            <select id="player-skill-select" class="modern-select compact" title="Nível para equilíbrio do sorteio">
+              <option value="5">⭐⭐⭐⭐⭐ (Nível 5)</option>
+              <option value="4">⭐⭐⭐⭐ (Nível 4)</option>
+              <option value="3" selected>⭐⭐⭐ (Nível 3)</option>
+              <option value="2">⭐⭐ (Nível 2)</option>
+              <option value="1">⭐ (Nível 1)</option>
+            </select>
+            <button type="submit" class="btn-primary">
+              + Adicionar
+            </button>
+          </form>
+
+          <!-- Bulk Tools -->
+          <div class="bulk-player-tools">
+            <button id="btn-paste-whatsapp-list" class="chip-btn" type="button">
+              📋 Colar Lista do WhatsApp
+            </button>
+            <button id="btn-load-demo-12" class="chip-btn" type="button">
+              ⚡ Exemplo 12 Jogadores (Trios/Quartetos)
+            </button>
+            <button id="btn-clear-pool" class="chip-btn danger-subtle" type="button">
+              🗑️ Limpar Lista
+            </button>
+          </div>
+
+          <!-- Pool List -->
+          <div class="pool-header-row">
+            <span id="pool-count-label" class="toolbar-label">JOGADORES PRESENTES (0)</span>
+            <span id="pool-math-hint" class="pool-hint">Adicione os nomes para calcular os times</span>
+          </div>
+
+          <div id="player-pool-list" class="player-pool-list"></div>
+
+          <!-- Draw Execution Actions -->
+          <div class="draw-actions-box">
+            <div class="draw-mode-selector">
+              <label class="radio-card active" id="label-mode-balanced">
+                <input type="radio" name="drawMode" value="balanced" checked />
+                <div>
+                  <strong>⚖️ Sorteio Equilibrado</strong>
+                  <small>Distribui levantadores e níveis de forma justa</small>
+                </div>
+              </label>
+              <label class="radio-card" id="label-mode-random">
+                <input type="radio" name="drawMode" value="random" />
+                <div>
+                  <strong>🎲 100% Aleatório Puro</strong>
+                  <small>Sorteio cego total sem filtro de nível</small>
+                </div>
+              </label>
+            </div>
+
+            <button id="btn-run-team-draw" class="btn-accent-glow full-width" type="button">
+              <img src="./volleyball-svgrepo-com (5).svg" alt="" width="22" height="22" style="vertical-align:middle;margin-right:6px;" />
+              SORTEAR E MONTAR TIMES AGORA!
+            </button>
+
+            <div id="draw-audit-stamp" class="draw-audit-stamp hidden"></div>
+          </div>
+        </div>
+
+        <!-- Right Column: Dynamic Teams Configuration & Rosters -->
+        <div class="teams-cards-column">
+          <div class="glass-card teams-header-card">
+            <div class="card-header-row" style="margin-bottom:0;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <img src="./volleyball-svgrepo-com (2).svg" alt="" width="38" height="38" />
+                <div>
+                  <span class="eyebrow-tag">3, 4 OU MAIS EQUIPES • FLEXÍVEL</span>
+                  <h2 id="teams-column-heading" class="section-heading">Equipes do Dia</h2>
+                  <p class="section-desc">
+                    Adicione ou remova equipes livremente (3 times, 4 times...) e personalize escudos SVG e integrantes.
+                  </p>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button id="btn-add-new-team" class="btn-primary" type="button">
+                  + Novo Time
+                </button>
+                <button id="btn-share-teams-whatsapp" class="chip-btn accent" type="button">
+                  📲 Copiar Times
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="four-teams-grid" class="four-teams-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 4: RANKING DO DIA / CLASSIFICAÇÃO
+         ========================================== -->
+    <section id="tab-classificacao" class="tab-panel" aria-label="Classificação Geral e Estatísticas">
+      <!-- Podium Highlight -->
+      <div id="podium-container" class="podium-grid"></div>
+
+      <!-- Standings Table Card -->
+      <div class="glass-card standings-card">
+        <div class="standings-header">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <img src="./beach-volleyball-svgrepo-com.svg" alt="" width="44" height="44" />
+            <div>
+              <span class="eyebrow-tag">RANKING EM TEMPO REAL • SEM LIMITE DE JOGOS</span>
+              <h2 class="section-heading">Classificação Geral do Dia</h2>
+              <p class="section-desc">
+                Contabiliza automaticamente todas as vitórias, derrotas, sequência invicta e saldo de pontos de cada time nas 2h/3h de jogo.
+              </p>
+            </div>
+          </div>
+
+          <div class="standings-controls">
+            <div class="scoring-rule-box">
+              <label for="scoring-mode-select" class="toolbar-label">ORDENAR RANKING POR</label>
+              <select id="scoring-mode-select" class="modern-select compact">
+                <option value="wins_count">Total de Vitórias (Padrão Racha/Pelada)</option>
+                <option value="wins_3pts">Pontos (Vitória = 3 pts)</option>
+                <option value="win_rate">Aproveitamento (%) + Saldo de Pontos</option>
+                <option value="points_scored">Total de Pontos Marcados nas Partidas</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="standings-table">
+            <thead>
+              <tr>
+                <th>POS</th>
+                <th>EQUIPE</th>
+                <th>JOGOS</th>
+                <th>VITÓRIAS</th>
+                <th>DERROTAS</th>
+                <th title="Maior sequência de vitórias seguidas">🔥 MÁX. SEQ</th>
+                <th title="Pontos marcados a favor / sofridos">PRÓ : CONTRA</th>
+                <th title="Saldo de pontos nas partidas">SALDO</th>
+                <th>PONTOS</th>
+                <th>APROV.</th>
+              </tr>
+            </thead>
+            <tbody id="standings-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Export / Share Footer -->
+        <div class="standings-footer-actions">
+          <button id="btn-copy-standings-wa" class="btn-primary" type="button">
+            📲 Copiar Resumo do Dia p/ WhatsApp
+          </button>
+          <button id="btn-export-csv" class="chip-btn" type="button">
+            📊 Baixar Planilha CSV
+          </button>
+          <button id="btn-print-summary" class="chip-btn" type="button">
+            🖨️ Imprimir Súmula / Salvar PDF
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==========================================
+       MODAL 1: CRIAR / EDITAR JOGO RÁPIDO
+       ========================================== -->
+  <div id="modal-quick-score" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-qs-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span id="modal-qs-subtitle" class="eyebrow-tag">EDITAR PARTIDA</span>
+          <h3 id="modal-qs-title" class="modal-title">Placar / Confronto da Partida</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-quick-score" type="button" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-hint">Escolha as equipes e digite o placar (ou clique em quem venceu):</p>
+
+        <div class="quick-score-inputs">
+          <div class="qs-team-box">
+            <select id="qs-teamA-select" class="modern-select compact full-width"></select>
+            <input type="number" id="qs-scoreA-input" class="qs-number-input" min="0" max="99" value="15" />
+            <button id="btn-qs-winA" class="chip-btn accent full-width" type="button">🏆 Venceu</button>
+          </div>
+
+          <div class="qs-vs">×</div>
+
+          <div class="qs-team-box">
+            <select id="qs-teamB-select" class="modern-select compact full-width"></select>
+            <input type="number" id="qs-scoreB-input" class="qs-number-input" min="0" max="99" value="12" />
+            <button id="btn-qs-winB" class="chip-btn accent full-width" type="button">🏆 Venceu</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btn-qs-delete" class="chip-btn danger-subtle" type="button">🗑️ Excluir Jogo</button>
+        <div class="modal-footer-right">
+          <button id="btn-qs-play-live" class="chip-btn accent" type="button">⚡ Jogar no Placar</button>
+          <button id="btn-qs-save" class="btn-primary" type="button">✅ Salvar Resultado</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 2: COLAR LISTA DO WHATSAPP
+       ========================================== -->
+  <div id="modal-paste-players" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-paste-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow-tag">IMPORTAÇÃO RÁPIDA</span>
+          <h3 id="modal-paste-title" class="modal-title">📋 Colar Lista de Jogadores do WhatsApp</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-paste-players" type="button" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint">
+          Cole abaixo a lista da resenha/grupo (um nome por linha; números como "1. João", "✅ Maria" são limpos automaticamente):
+        </p>
+        <textarea
+          id="whatsapp-paste-textarea"
+          class="modern-textarea"
+          rows="8"
+          placeholder="1. Lucas&#10;2. Rafael&#10;3. Amanda&#10;4. Bruno..."
+        ></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="chip-btn" data-close-modal="modal-paste-players" type="button">Cancelar</button>
+        <button id="btn-confirm-paste-players" class="btn-primary" type="button">➕ Importar Jogadores</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 3: OPÇÕES, BACKUP E RESET
+       ========================================== -->
+  <div id="modal-settings" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-settings-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow-tag">CONFIGURAÇÕES DA SESSÃO</span>
+          <h3 id="modal-settings-title" class="modal-title">⚙️ Gerenciar Vôlei & Backup</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-settings" type="button" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body settings-modal-body">
+        <div class="setting-field">
+          <label for="input-tournament-name" class="toolbar-label">NOME DO GRUPO / TORNEIO</label>
+          <input type="text" id="input-tournament-name" class="modern-input" value="VÔLEI INTERNO" />
+        </div>
+
+        <div class="settings-actions-stack">
+          <button id="btn-export-json" class="chip-btn full-width" type="button">
+            💾 Exportar Backup Completo (.json)
+          </button>
+          <label class="chip-btn full-width file-label-btn">
+            📂 Restaurar Backup (.json)
+            <input type="file" id="input-import-json" accept=".json" hidden />
+          </label>
+          <hr class="modal-divider" />
+          <button id="btn-reset-scores-only" class="chip-btn danger-subtle full-width" type="button">
+            🔄 Limpar Histórico de Jogos de Hoje (Manter Times)
+          </button>
+          <button id="btn-reset-all-factory" class="chip-btn danger full-width" type="button">
+            ⚠️ Reiniciar Tudo do Zero
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" data-close-modal="modal-settings" type="button">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 4: INSTRUÇÕES DE INSTALAÇÃO PWA
+       ========================================== -->
+  <div id="modal-install-help" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-install-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow-tag">APLICATIVO OFFLINE (PWA)</span>
+          <h3 id="modal-install-title" class="modal-title">📲 Como Instalar no seu Celular ou PC</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-install-help" type="button" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="install-steps-grid">
+          <div class="install-step-box">
+            <h4>🤖 Android (Chrome / Samsung)</h4>
+            <p>Toque no menu <strong>⋮ (3 pontinhos)</strong> no canto superior do navegador e selecione <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.</p>
+          </div>
+          <div class="install-step-box">
+            <h4>🍎 iPhone / iPad (Safari)</h4>
+            <p>Toque no ícone de <strong>Compartilhar (quadrado com seta p/ cima)</strong> na barra inferior e escolha <strong>"Adicionar à Tela de Início"</strong>.</p>
+          </div>
+          <div class="install-step-box">
+            <h4>💻 Computador (Chrome / Edge)</h4>
+            <p>Clique no ícone de <strong>Instalar (monitor com seta)</strong> no lado direito da barra de endereços.</p>
+          </div>
+        </div>
+        <p class="modal-hint" style="margin-top: 12px;">
+          ✅ Depois de instalado, o app abre em tela cheia e funciona <strong>100% offline na quadra</strong> sem precisar de internet!
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" data-close-modal="modal-install-help" type="button">Entendi!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 5: SALVAMENTO AUTOMÁTICO & SALA MULTI-CELULARES
+       ========================================== -->
+  <div id="modal-room-sync" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-sync-title">
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow-tag">VÁRIOS CELULARES OLHANDO AO VIVO • SALVAMENTO AUTOMÁTICO</span>
+          <h3 id="modal-sync-title" class="modal-title">📡 Código da Partida & Sincronização em Tempo Real</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-room-sync" type="button" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body settings-modal-body">
+        <div class="sync-status-banner">
+          <div>
+            <strong id="sync-banner-status">🟢 Salvamento Automático Ativo</strong>
+            <p id="sync-last-saved-text" style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">
+              Cada ponto, time e partida é salvo na hora no celular e sincronizado com o código da sala.
+            </p>
+          </div>
+          <span id="sync-code-pill" class="badge-pill">#VOLEI1</span>
+        </div>
+
+        <div class="setting-field">
+          <label for="input-room-code" class="toolbar-label">CÓDIGO DA PARTIDA / SALA (DIGITE O MESMO CÓDIGO NOS OUTROS CELULARES)</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input
+              type="text"
+              id="input-room-code"
+              class="modern-input"
+              style="flex:1;font-family:var(--font-mono);font-weight:800;text-transform:uppercase;letter-spacing:0.08em;"
+              placeholder="Ex: VOLEI1, QUADRA1, MEIOX"
+              maxlength="18"
+            />
+            <button id="btn-join-pull-room" class="btn-primary" type="button" title="Entrar nesta sala e puxar o placar que está rolando agora">
+              📥 Entrar & Puxar Placar
+            </button>
+            <button id="btn-push-room-now" class="chip-btn accent" type="button" title="Enviar o placar deste celular para a sala agora">
+              📤 Publicar Meu Placar
+            </button>
+          </div>
+          <small style="color:var(--text-secondary);font-size:0.76rem;line-height:1.4;">
+            💡 <strong>Como funciona:</strong> Defina um código (ex: <code>QUADRA1</code>). Qualquer pessoa que abrir o app no celular e digitar <code>QUADRA1</code> (ou abrir o link compartilhado abaixo) verá os times, o placar e a fila atualizando <strong>automaticamente ao vivo</strong>!
+          </small>
+        </div>
+
+        <div class="settings-actions-stack">
+          <button id="btn-share-live-link" class="btn-accent-glow full-width" type="button">
+            📲 Copiar Link da Partida ao Vivo p/ WhatsApp (Com Código + Placar Salvo)
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-primary" data-close-modal="modal-room-sync" type="button">Pronto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 6: ESTÚDIO DE VOZ & ROTEIROS ELEVENLABS
+       ========================================== -->
+  <div id="modal-voice-studio" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-voice-title">
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow-tag">LOCUTOR DE QUADRA • VOZ NATIVA + ELEVENLABS</span>
+          <h3 id="modal-voice-title" class="modal-title">🎙️ Narração Audível & Textos para ElevenLabs</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-voice-studio" type="button" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body settings-modal-body">
+        <div class="voice-controls-bar">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+              <strong style="font-size:0.92rem;color:#fff;">🗣️ Locutor Automático em Tempo Real (Ativo no App)</strong>
+              <p style="font-size:0.78rem;color:var(--text-secondary);">
+                O app já fala automaticamente cada ponto, placar, virada de saque, match point e vitória!
+              </p>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button id="btn-test-voice-point" class="chip-btn accent" type="button">🔊 Testar "Ponto!"</button>
+              <button id="btn-test-voice-win" class="chip-btn accent" type="button">🏆 Testar "Vitória!"</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-field">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <label for="elevenlabs-script-textarea" class="toolbar-label">TEXTO PRONTO PARA COLAR NO ELEVENLABS (COM NOMES DOS SEUS TIMES ATUAIS)</label>
+            <button id="btn-copy-elevenlabs-script" class="chip-btn accent" type="button">📋 Copiar Roteiro ElevenLabs</button>
+          </div>
+          <textarea
+            id="elevenlabs-script-textarea"
+            class="modern-textarea"
+            rows="9"
+            readonly
+          ></textarea>
+          <small style="color:var(--text-secondary);font-size:0.75rem;">
+            💡 Dica ElevenLabs: Use o modelo <strong>Eleven Multilingual v2</strong> com uma voz energética (ex: <em>Will, Liam, Valentino ou Borges</em>) e estabilidade em <strong>45%</strong> para soar como um narrador esportivo de verdade!
+          </small>
+        </div>
+
+        <div class="setting-field">
+          <label class="toolbar-label">OPCIONAL: CARREGAR SEUS ÁUDIOS MP3 DO ELEVENLABS NO APP</label>
+          <div class="custom-audio-grid">
+            <label class="chip-btn file-label-btn">
+              🎵 MP3 Ponto Time 1
+              <input type="file" data-audio-slot="point_t1" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              🎵 MP3 Ponto Time 2
+              <input type="file" data-audio-slot="point_t2" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              🎵 MP3 Ponto Time 3
+              <input type="file" data-audio-slot="point_t3" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              🎵 MP3 Ponto Time 4
+              <input type="file" data-audio-slot="point_t4" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              🔥 MP3 Match Point
+              <input type="file" data-audio-slot="matchpoint" accept="audio/*" hidden />
+            </label>
+            <label class="chip-btn file-label-btn">
+              🏆 MP3 Vitória da Partida
+              <input type="file" data-audio-slot="victory" accept="audio/*" hidden />
+            </label>
+          </div>
+          <span id="custom-audio-status" style="font-size:0.74rem;color:#6ee7b7;"></span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-primary" data-close-modal="modal-voice-studio" type="button">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
