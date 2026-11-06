@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.13.0" />
+  <link rel="stylesheet" href="./styles.css?v=4.14.0" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -303,6 +303,9 @@
           <button id="btn-start-focus-match" class="btn-start-focus-match" type="button" title="Travar tela no placar gigante até o final da partida">
             Iniciar Partida (Tela Fixa)
           </button>
+          <button id="btn-fullscreen-score" class="btn-reset-games-top" type="button" title="Placar em tela cheia">
+            Tela Cheia
+          </button>
           <button type="button" class="btn-reset-games-top" onclick="openResetGamesPinModal('scores_only')" title="Zerar todos os jogos e começar de novo (Protegido por senha)">
             Zerar Jogos
           </button>
@@ -541,68 +544,7 @@
         </div>
       </details>
 
-      <!-- GAVETA 2: CONFIGURAÇÕES RÁPIDAS DE PONTOS E REGRA DA QUADRA (Recolhida por padrão) -->
-      <details class="clean-drawer scoreboard-toolbar">
-        <summary class="clean-drawer-summary">
-          <span>⚙️ <strong>Ajustar Meta de Pontos (12/15/21/25) e Sistema de Jogos</strong></span>
-          <span class="drawer-chevron">▾</span>
-        </summary>
-        <div class="clean-drawer-body toolbar-drawer-grid">
-          <div class="toolbar-left">
-            <label for="rotation-mode-select" class="toolbar-label">DINÂMICA DOS JOGOS</label>
-            <div class="match-selector-row">
-              <select id="rotation-mode-select" class="modern-select">
-                <option value="winners_losers">🏆 Mini Torneio (J1, J2, Vencedores e Perdedores)</option>
-                <option value="king">👑 Quem Ganha Fica (Rei da Quadra)</option>
-                <option value="king_2max">🔄 Quem Ganha Fica (Máx. 2 vitórias seguidas)</option>
-                <option value="free">🎯 Livre na Hora</option>
-              </select>
-              <button id="btn-create-custom-match" class="chip-btn accent" type="button">
-                Novo Jogo
-              </button>
-            </div>
-          </div>
-
-          <div class="toolbar-right">
-            <div class="rule-group">
-              <span class="toolbar-label">META DE PONTOS</span>
-              <div class="target-points-pills" role="group">
-                <button type="button" class="pt-pill" data-pts="12">12</button>
-                <button type="button" class="pt-pill active" data-pts="15">15</button>
-                <button type="button" class="pt-pill" data-pts="18">18</button>
-                <button type="button" class="pt-pill" data-pts="21">21</button>
-                <button type="button" class="pt-pill" data-pts="25">25</button>
-              </div>
-            </div>
-
-            <div class="rule-group">
-              <span class="toolbar-label">VANTAGEM</span>
-              <button id="btn-toggle-deuce" class="chip-btn active" type="button">
-                Diferença de 2
-              </button>
-            </div>
-
-            <div class="rule-group">
-              <span class="toolbar-label">APITOS</span>
-              <button id="btn-rule-whistle-toggle" class="chip-btn" type="button" title="Ligar ou desligar apitos automáticos nos pontos">
-                Apitos: Desligados
-              </button>
-            </div>
-
-            <div class="rule-group">
-              <span class="toolbar-label">TELA / REINICIAR</span>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button id="btn-fullscreen-score" class="chip-btn" type="button">
-                  Tela Cheia
-                </button>
-                <button type="button" class="chip-btn danger-subtle" onclick="openResetGamesPinModal('scores_only')">
-                  Zerar Todos os Jogos
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </details>
+      
 
       <!-- GAVETA 3: HISTÓRICO PONTO A PONTO E SEQUÊNCIA DE JOGOS (Recolhida por padrão) -->
       <details class="clean-drawer live-bottom-drawer">
@@ -656,6 +598,39 @@
             <button type="button" class="chip-btn danger-subtle" onclick="openResetGamesPinModal('scores_only')" title="Zerar todos os jogos e começar de novo do Jogo #1 (Pede senha)">
               Zerar Todos os Jogos
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODALIDADE DOS JOGOS (REGRAS DA SESSÃO) -->
+      <div class="glass-card modalidade-card">
+        <div class="modalidade-header">
+          <span class="eyebrow-tag">REGRAS DA SESSÃO</span>
+          <h3 class="card-title">Modalidade dos Jogos</h3>
+        </div>
+        <div class="modalidade-grid">
+          <div class="rule-group modalidade-dinamica">
+            <label for="rotation-mode-select" class="toolbar-label">DINÂMICA DOS JOGOS</label>
+            <select id="rotation-mode-select" class="modern-select">
+              <option value="winners_losers">Mini Torneio (J1, J2, Vencedores e Perdedores)</option>
+              <option value="king">Quem Ganha Fica (Rei da Quadra)</option>
+              <option value="king_2max">Quem Ganha Fica (Máx. 2 vitórias seguidas)</option>
+              <option value="free">Livre na Hora</option>
+            </select>
+          </div>
+          <div class="rule-group">
+            <span class="toolbar-label">META DE PONTOS</span>
+            <div class="target-points-pills" role="group">
+              <button type="button" class="pt-pill" data-pts="12">12</button>
+              <button type="button" class="pt-pill active" data-pts="15">15</button>
+              <button type="button" class="pt-pill" data-pts="18">18</button>
+              <button type="button" class="pt-pill" data-pts="21">21</button>
+              <button type="button" class="pt-pill" data-pts="25">25</button>
+            </div>
+          </div>
+          <div class="rule-group">
+            <span class="toolbar-label">VANTAGEM</span>
+            <button id="btn-toggle-deuce" class="chip-btn active" type="button">Diferença de 2</button>
           </div>
         </div>
       </div>
@@ -1482,6 +1457,6 @@
 
   <!-- Multi-Device Real-Time WebSocket MQTT Engine (Paho MQTT) -->
   <script src="./paho-mqtt.min.js"></script>
-  <script src="./volei-ui.js?v=4.13.0"></script>
+  <script src="./volei-ui.js?v=4.14.0"></script>
 </body>
 </html>

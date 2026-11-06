@@ -4686,14 +4686,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Rotation Mode & New Match Creation
-  document.getElementById('rotation-mode-select').addEventListener('change', (e) => {
+  document.getElementById('rotation-mode-select')?.addEventListener('change', (e) => {
     state.rotationMode = e.target.value;
     saveState();
     renderLiveScoreboard();
     showToast('🔄 Dinâmica de criação de jogos atualizada!', 'info');
   });
 
-  document.getElementById('btn-create-custom-match').addEventListener('click', () => {
+  document.getElementById('btn-create-custom-match')?.addEventListener('click', () => {
     window.openQuickScoreModal(null);
   });
 
@@ -4756,7 +4756,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  document.getElementById('btn-toggle-deuce').addEventListener('click', () => {
+  document.getElementById('btn-toggle-deuce')?.addEventListener('click', () => {
     state.winByTwo = !state.winByTwo;
     saveState();
     renderLiveScoreboard();
@@ -4770,7 +4770,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('🔄 Lados da quadra invertidos na tela!', 'info');
   });
 
-  document.getElementById('btn-fullscreen-score').addEventListener('click', () => {
+  document.getElementById('btn-fullscreen-score')?.addEventListener('click', () => {
     const elem = document.documentElement;
     if (!document.fullscreenElement) {
       elem.requestFullscreen?.();
