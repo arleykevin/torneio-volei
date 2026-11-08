@@ -1589,11 +1589,29 @@ function releaseScreenWakeLock() {
   } catch (_) {}
 }
 
+window.openFocusAudiosModal = function () {
+  const drawer = document.getElementById('soundboard-drawer');
+  if (drawer) drawer.open = true;
+  document.body.classList.add('focus-audios-open');
+};
+
+window.closeFocusAudiosModal = function () {
+  document.body.classList.remove('focus-audios-open');
+};
+
+window.toggleFocusAudiosModal = function () {
+  if (document.body.classList.contains('focus-audios-open')) {
+    window.closeFocusAudiosModal();
+  } else {
+    window.openFocusAudiosModal();
+  }
+};
+
 window.enterCourtFocusMode = function () {
   courtFocusMode = true;
   courtTouchLocked = false;
   document.body.classList.add('court-focus-mode');
-  document.body.classList.remove('court-locked');
+  document.body.classList.remove('court-locked', 'focus-audios-open');
   document.getElementById('focus-mode-bar')?.classList.remove('hidden');
 
   const lockBtn = document.getElementById('btn-toggle-court-lock');
@@ -1616,7 +1634,7 @@ window.enterCourtFocusMode = function () {
 window.exitCourtFocusMode = function () {
   courtFocusMode = false;
   courtTouchLocked = false;
-  document.body.classList.remove('court-focus-mode', 'court-locked');
+  document.body.classList.remove('court-focus-mode', 'court-locked', 'focus-audios-open');
   document.getElementById('focus-mode-bar')?.classList.add('hidden');
   if (document.fullscreenElement && document.exitFullscreen) {
     document.exitFullscreen().catch(() => {});
@@ -2339,18 +2357,16 @@ function renderLiveScoreboard() {
 
   const whistlesOn = state.whistlesEnabled === true;
 
-  // Center Court Whistle Button
+  // Center Court Audios & Whistles Button
   const courtWhistleBtn = document.getElementById('btn-toggle-whistle-court');
   const courtWhistleIcon = document.getElementById('court-whistle-icon');
   const courtWhistleLabel = document.getElementById('court-whistle-label');
   if (courtWhistleBtn) {
-    courtWhistleBtn.classList.toggle('active', whistlesOn);
-    courtWhistleBtn.classList.toggle('subtle', !whistlesOn);
-    if (courtWhistleIcon) courtWhistleIcon.innerHTML = UI_SVGS.courtWhistle;
-    if (courtWhistleLabel) courtWhistleLabel.textContent = whistlesOn ? 'Apito ON' : 'Apito OFF';
-    courtWhistleBtn.title = whistlesOn
-      ? 'Apitos do Juiz: LIGADOS (Toque para desligar)'
-      : 'Apitos do Juiz: DESLIGADOS (Toque para ligar)';
+    courtWhistleBtn.classList.add('active');
+    courtWhistleBtn.classList.remove('subtle');
+    if (courtWhistleIcon) courtWhistleIcon.innerHTML = UI_SVGS.soundOn;
+    if (courtWhistleLabel) courtWhistleLabel.textContent = 'Áudios';
+    courtWhistleBtn.title = 'Abrir Apitos do Juiz e Áudios da Partida';
   }
 
   // Rules Drawer Whistle Button
@@ -4576,7 +4592,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-toggle-whistle-court')?.addEventListener('click', () => {
-    window.toggleWhistles();
+    window.toggleFocusAudiosModal();
   });
 
   document.getElementById('btn-rule-whistle-toggle')?.addEventListener('click', () => {

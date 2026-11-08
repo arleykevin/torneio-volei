@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bg-deep: #060913;
   --bg-surface: rgba(15, 23, 42, 0.72);
   --bg-surface-elevated: rgba(30, 41, 59, 0.78);
@@ -6596,6 +6596,91 @@ body.court-focus-mode .toast-container {
   justify-content: center !important;
 }
 
+/* Modal Flutuante de Apitos & Áudios (Aberto pelo botão único "Áudios" na Tela Cheia) */
+.focus-audios-backdrop,
+.focus-soundboard-header {
+  display: none !important;
+}
+
+body.focus-audios-open .focus-audios-backdrop {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(2, 6, 23, 0.78) !important;
+  z-index: 3590 !important;
+}
+
+body.focus-audios-open .deboche-soundboard-bar,
+body.court-focus-mode.focus-audios-open .deboche-soundboard-bar {
+  display: flex !important;
+  flex-direction: column !important;
+  position: fixed !important;
+  inset: 12px !important;
+  max-width: 680px !important;
+  max-height: calc(100dvh - 24px) !important;
+  margin: auto !important;
+  z-index: 3600 !important;
+  background: rgba(9, 14, 28, 0.98) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.55) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85) !important;
+  overflow: hidden !important;
+}
+
+body.focus-audios-open .deboche-soundboard-bar > .clean-drawer-summary {
+  display: none !important;
+}
+
+body.focus-audios-open .deboche-soundboard-bar .clean-drawer-body {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 12px 14px 16px !important;
+  border-top: none !important;
+}
+
+body.focus-audios-open .deboche-soundboard-bar .soundboard-buttons-grid.deboche-grid {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+body.focus-audios-open .focus-soundboard-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 10px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22) !important;
+  flex-shrink: 0 !important;
+}
+
+.focus-soundboard-title {
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: #f8fafc;
+}
+
+.focus-soundboard-close-btn {
+  background: rgba(244, 63, 94, 0.2);
+  border: 1px solid rgba(244, 63, 94, 0.5);
+  color: #fecdd3;
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+body.court-focus-mode .score-giant-number {
+  font-size: clamp(8rem, 22vw, 15rem) !important;
+  line-height: 0.84 !important;
+}
+
 /* MODO TELA CHEIA / PARTIDA FIXA: RETRATO (Ex: iPhone 7 Plus em pé 414x736) */
 @media (orientation: portrait) {
   body.court-focus-mode .focus-mode-bar {
@@ -6671,8 +6756,8 @@ body.court-focus-mode .toast-container {
   }
 
   body.court-focus-mode .score-giant-number {
-    font-size: clamp(4.2rem, 13.5vh, 6.8rem) !important;
-    line-height: 0.9 !important;
+    font-size: clamp(5.8rem, 19vh, 8.8rem) !important;
+    line-height: 0.82 !important;
     margin: 0 !important;
   }
 
@@ -6884,8 +6969,8 @@ body.court-focus-mode .toast-container {
 
   body.court-focus-mode .score-giant-number,
   .score-giant-number {
-    font-size: clamp(4.2rem, 27vh, 7.6rem) !important;
-    line-height: 0.88 !important;
+    font-size: clamp(6.4rem, 42vh, 10.5rem) !important;
+    line-height: 0.82 !important;
     margin: 0 !important;
   }
 

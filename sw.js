@@ -1,9 +1,9 @@
-﻿const CACHE_NAME = 'volei-arena-v4.19.2';
+const CACHE_NAME = 'volei-arena-v4.20.0';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=4.19.2',
-  './volei-ui.js?v=4.19.2',
+  './styles.css?v=4.20.0',
+  './volei-ui.js?v=4.20.0',
   './paho-mqtt.min.js',
   './manifest.json',
   './logo.png',
