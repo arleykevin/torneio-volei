@@ -149,8 +149,16 @@ function createMiniTorneioBlock(miniIndex = 1, startId = 1, teams = []) {
   ];
 }
 
-const SAVED_SESSIONS_KEY = 'volei_saved_sessions_v1';
+const SAVED_SESSIONS_KEY = 'volei_saved_sessions_v3';
+const DELETED_SESSIONS_KEY = 'volei_deleted_sessions_v3';
+const HUB_TOURNAMENTS_TOPIC = 'volei_arena/hub/tournaments_v3';
 const MASTER_ROSTER_KEY = 'volei_master_roster_v1';
+
+// Limpeza imediata das chaves antigas v1/v2 que continham "VÔLEI INTERNO" fantasma
+try {
+  localStorage.removeItem('volei_saved_sessions_v1');
+  localStorage.removeItem('volei_saved_sessions_v2');
+} catch (_) {}
 
 // Elenco comeca vazio: apenas jogadores cadastrados na aba Elenco existem no app
 const DEFAULT_MASTER_ROSTER = [];
@@ -282,14 +290,15 @@ function formatDateBr(isoStr) {
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
-function createDefaultState(customName = 'VÔLEI INTERNO', customDate = null) {
+function createDefaultState(customName = 'TORNEIO DE VÔLEI', customDate = null) {
   const savedTheme = localStorage.getItem('volei_theme_pref') || 'dark';
   const teams = createDefaultTeams(4);
   return {
     sessionId: `sess_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    tournamentName: customName || 'VÔLEI INTERNO',
+    tournamentName: customName || 'TORNEIO DE VÔLEI',
     tournamentDate: customDate || getTodayDateIso(),
     sessionSetupConfirmed: false,
+    userCreated: false,
     theme: savedTheme,
     roomCode: 'VOLEI1',
     soundEnabled: true,
@@ -428,6 +437,13 @@ function loadState() {
     }
     const parsed = JSON.parse(raw);
     const def = createDefaultState();
+    const parsedNameUpper = String(parsed?.tournamentName || '').trim().toUpperCase();
+    // Se o estado salvo antigo era um "VÔLEI INTERNO" automático (sem userCreated), descarta para não recriar sozinho
+    if (parsedNameUpper === 'VÔLEI INTERNO' && !parsed?.userCreated) {
+      localStorage.removeItem(STORAGE_KEY);
+      if (urlRoom) def.roomCode = urlRoom.toUpperCase();
+      return def;
+    }
     if (!Array.isArray(parsed.teams) || parsed.teams.length < 2) {
       return def;
     }
@@ -453,15 +469,45 @@ function loadState() {
   }
 }
 
-// Torneio "fantasma": criado automaticamente com nome padrao, sem jogadores e sem nenhum ponto marcado
+function getDeletedSessionsMeta() {
+  try {
+    const raw = localStorage.getItem(DELETED_SESSIONS_KEY);
+    if (!raw) return { ids: {}, clearedAllAtMs: 0 };
+    const parsed = JSON.parse(raw);
+    return {
+      ids: parsed && typeof parsed.ids === 'object' && parsed.ids ? parsed.ids : {},
+      clearedAllAtMs: Number(parsed?.clearedAllAtMs) || 0
+    };
+  } catch (_) {
+    return { ids: {}, clearedAllAtMs: 0 };
+  }
+}
+
+function saveDeletedSessionsMeta(meta) {
+  try {
+    localStorage.setItem(DELETED_SESSIONS_KEY, JSON.stringify(meta));
+  } catch (_) {}
+}
+
+function isSessionDeleted(sessionId, updatedAtMs = 0) {
+  if (!sessionId) return true;
+  const meta = getDeletedSessionsMeta();
+  if (meta.ids && meta.ids[sessionId]) return true;
+  if (meta.clearedAllAtMs && updatedAtMs && updatedAtMs <= meta.clearedAllAtMs) return true;
+  return false;
+}
+
+// Torneio "fantasma": criado automaticamente com nome padrao ("VÔLEI INTERNO" / "MEU TORNEIO") ou sem confirmacao
 function isGhostSession(sess) {
   if (!sess || !sess.sessionId) return true;
-  const defaultNames = ['VÔLEI INTERNO', 'MEU TORNEIO'];
+  if (isSessionDeleted(sess.sessionId, sess.updatedAtMs)) return true;
   const name = String(sess.tournamentName || '').trim().toUpperCase();
+  if ((name === 'VÔLEI INTERNO' || name === 'MEU TORNEIO') && !sess.userCreated) return true;
+  const defaultNames = ['VÔLEI INTERNO', 'MEU TORNEIO', 'TORNEIO DE VÔLEI'];
   if (!defaultNames.includes(name)) return false;
   const hasPlayers = Array.isArray(sess.teams) && sess.teams.some((t) => Array.isArray(t.players) && t.players.length > 0);
   const hasPoints = Array.isArray(sess.matches) && sess.matches.some((m) => (m.scoreA || 0) > 0 || (m.scoreB || 0) > 0 || m.status === 'done');
-  return !hasPlayers && !hasPoints;
+  return !hasPlayers && !hasPoints && !sess.userCreated;
 }
 
 function getSavedSessionsList() {
@@ -470,8 +516,7 @@ function getSavedSessionsList() {
     if (!raw) return [];
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr)) return [];
-    const currentId = typeof state !== 'undefined' && state ? state.sessionId : null;
-    const cleaned = arr.filter((sess) => !isGhostSession(sess) || (sess.sessionId === currentId && state.sessionSetupConfirmed));
+    const cleaned = arr.filter((sess) => !isGhostSession(sess));
     if (cleaned.length !== arr.length) {
       localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(cleaned));
     }
@@ -483,13 +528,13 @@ function getSavedSessionsList() {
 
 function upsertCurrentSessionInArchive() {
   try {
+    if (!state || !state.sessionSetupConfirmed || !state.userCreated) return;
+    if (isGhostSession(state)) return;
     if (!state.sessionId) {
       state.sessionId = `sess_${Date.now()}`;
     }
     const list = getSavedSessionsList();
     const idx = list.findIndex((item) => item.sessionId === state.sessionId);
-    // Nao cria "torneio fantasma" (estado padrao que o usuario nunca abriu/criou)
-    if (idx < 0 && !state.sessionSetupConfirmed) return;
     const snapshot = JSON.parse(JSON.stringify(state));
     if (idx >= 0) {
       list[idx] = snapshot;
@@ -619,6 +664,7 @@ function buildCompactSyncPayload() {
     senderId: myTabId,
     senderTabTime: Date.now(),
     sessionId: state.sessionId,
+    userCreated: state.userCreated === true,
     tournamentName: state.tournamentName,
     tournamentDate: state.tournamentDate,
     roomCode: state.roomCode,
@@ -641,12 +687,17 @@ function buildCompactSyncPayload() {
 
 function applyIncomingRoomState(incoming) {
   if (!incoming || !Array.isArray(incoming.teams) || !Array.isArray(incoming.matches)) return false;
+  // Nunca sobrescreve nem cria torneio automatico se o usuario estiver na tela de Lobby (fora de sala)
+  if (!state.sessionSetupConfirmed) return false;
+  if (isGhostSession(incoming)) return false;
+  if (isSessionDeleted(incoming.sessionId, incoming.senderTabTime || incoming.updatedAtMs || 0)) return false;
   if (incoming.senderTabTime && state.updatedAtMs && incoming.senderTabTime <= state.updatedAtMs) {
     return false;
   }
   state = {
     ...state,
     ...incoming,
+    userCreated: true,
     sessionSetupConfirmed: true,
     updatedAtMs: incoming.senderTabTime || Date.now(),
     lastSavedAt: new Date().toLocaleTimeString('pt-BR')
@@ -665,6 +716,7 @@ function scheduleCloudAndLocalRoomPush() {
 }
 
 function pushRoomStateNow(showFeedback = false) {
+  if (!state.sessionSetupConfirmed || !state.userCreated) return;
   const code = (state.roomCode || 'VOLEI1').toUpperCase();
   const payload = buildCompactSyncPayload();
 
@@ -787,14 +839,15 @@ function pushTournamentsHubSync() {
   if (!pahoMqttClient || !pahoMqttConnected) return;
   try {
     const list = getSavedSessionsList();
-    if (!list || list.length === 0) return;
+    const deletedMeta = getDeletedSessionsMeta();
     const payload = {
       senderId: myTabId,
       updatedAt: Date.now(),
-      sessions: list
+      sessions: list,
+      deletedMeta
     };
     const msg = new Paho.MQTT.Message(JSON.stringify(payload));
-    msg.destinationName = 'volei_arena/hub/tournaments';
+    msg.destinationName = HUB_TOURNAMENTS_TOPIC;
     msg.qos = 1;
     msg.retained = true;
     pahoMqttClient.send(msg);
@@ -807,15 +860,38 @@ function applyIncomingHubTournaments(payload) {
   if (!payload || !Array.isArray(payload.sessions)) return;
   if (payload.senderId === myTabId) return;
 
+  const localDeleted = getDeletedSessionsMeta();
+  let deletedChanged = false;
+  if (payload.deletedMeta) {
+    if ((payload.deletedMeta.clearedAllAtMs || 0) > (localDeleted.clearedAllAtMs || 0)) {
+      localDeleted.clearedAllAtMs = payload.deletedMeta.clearedAllAtMs;
+      deletedChanged = true;
+    }
+    if (payload.deletedMeta.ids && typeof payload.deletedMeta.ids === 'object') {
+      for (const [delId, ts] of Object.entries(payload.deletedMeta.ids)) {
+        if (!localDeleted.ids[delId]) {
+          localDeleted.ids[delId] = ts;
+          deletedChanged = true;
+        }
+      }
+    }
+    if (deletedChanged) {
+      saveDeletedSessionsMeta(localDeleted);
+    }
+  }
+
   const currentLocal = getSavedSessionsList();
   const sessionMap = {};
   currentLocal.forEach((s) => {
-    if (s && s.sessionId) sessionMap[s.sessionId] = s;
+    if (s && s.sessionId && !isGhostSession(s)) {
+      sessionMap[s.sessionId] = s;
+    }
   });
 
-  let hasChanges = false;
+  let hasChanges = deletedChanged;
   payload.sessions.forEach((incomingSess) => {
     if (!incomingSess || !incomingSess.sessionId) return;
+    if (isGhostSession(incomingSess)) return;
     reconcileMasterRosterEverywhere(incomingSess);
     const existing = sessionMap[incomingSess.sessionId];
     if (!existing) {
@@ -832,7 +908,7 @@ function applyIncomingHubTournaments(payload) {
   });
 
   if (hasChanges) {
-    const mergedList = Object.values(sessionMap);
+    const mergedList = Object.values(sessionMap).filter((s) => !isGhostSession(s));
     localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(mergedList));
 
     // Se a sessão aberta no momento foi atualizada na nuvem, atualiza na tela
@@ -913,7 +989,7 @@ function initPahoMqtt(roomCode, showToastFeedback = false) {
         const payload = JSON.parse(message.payloadString);
         if (!payload) return;
 
-        if (arrivedTopic === 'volei_arena/hub/tournaments') {
+        if (arrivedTopic === HUB_TOURNAMENTS_TOPIC) {
           applyIncomingHubTournaments(payload);
           return;
         }
@@ -968,7 +1044,7 @@ function initPahoMqtt(roomCode, showToastFeedback = false) {
         // 1. Room state
         pahoMqttClient.subscribe(topic, { qos: 1 });
         // 2. Hub tournaments list (so any tournament created on PC shows on phone)
-        pahoMqttClient.subscribe('volei_arena/hub/tournaments', { qos: 1 });
+        pahoMqttClient.subscribe(HUB_TOURNAMENTS_TOPIC, { qos: 1 });
         // 3. Global presence (how many people are on the site)
         pahoMqttClient.subscribe('volei_arena/global/presence', { qos: 0 });
         // 4. Room presence (how many people in this room)
@@ -982,11 +1058,13 @@ function initPahoMqtt(roomCode, showToastFeedback = false) {
         sendPresencePing('ping');
         pruneAndRenderPresence();
 
-        // Push local tournaments to hub if we have any
-        pushTournamentsHubSync();
+        // Push local tournaments to hub ONLY if we have valid user-created sessions
+        if (getSavedSessionsList().length > 0) {
+          pushTournamentsHubSync();
+        }
 
-        // Push room state if we have teams
-        if (state.teams && state.teams.length > 0) {
+        // Push room state ONLY if user is inside an active confirmed tournament
+        if (state.sessionSetupConfirmed && state.userCreated && state.teams && state.teams.length > 0) {
           pushRoomStateNow(false);
         }
 
@@ -1707,7 +1785,8 @@ window.joinRoomFromLobby = function () {
   }
   state.roomCode = code;
   state.sessionSetupConfirmed = true;
-  saveState();
+  state.userCreated = true;
+  saveState(false);
   showTournamentScreen();
   initPahoMqtt(code, true);
 };
@@ -1722,19 +1801,23 @@ window.quickFillRoomCode = window.quickFillLobbyRoom;
 window.joinRoomFromLogin = window.joinRoomFromLobby;
 
 window.createNewTournamentFromLobby = function () {
-  upsertCurrentSessionInArchive();
+  if (state.sessionSetupConfirmed && state.userCreated) {
+    upsertCurrentSessionInArchive();
+  }
   const nameInput = document.getElementById('input-lobby-new-title');
   const dateInput = document.getElementById('input-lobby-new-date');
   const roomInput = document.getElementById('input-lobby-new-room');
 
-  const newName = (nameInput?.value || '').trim() || 'VÔLEI INTERNO';
+  const rawName = (nameInput?.value || '').trim();
   const newDate = dateInput?.value || getTodayDateIso();
+  const newName = rawName || `Torneio ${formatDateBr(newDate)}`;
   const newRoom = (roomInput?.value || 'VOLEI1').replace(/^#/, '').trim().toUpperCase() || 'VOLEI1';
 
   state = createDefaultState(newName, newDate);
   state.roomCode = newRoom;
   state.sessionSetupConfirmed = true;
-  saveState();
+  state.userCreated = true;
+  saveState(true);
   showTournamentScreen();
   initPahoMqtt(newRoom, false);
   showToast(`✨ Novo torneio <strong>${escapeHtml(newName)}</strong> criado na Sala <strong>#${escapeHtml(newRoom)}</strong>!`, 'success');
@@ -1928,14 +2011,19 @@ window.executeProtectedDelete = function () {
 
   if (pendingDeleteTarget.type === 'single') {
     const sId = pendingDeleteTarget.sessionId;
+    const delMeta = getDeletedSessionsMeta();
+    delMeta.ids[sId] = Date.now();
+    saveDeletedSessionsMeta(delMeta);
+
     let list = getSavedSessionsList().filter((s) => s.sessionId !== sId);
     localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(list));
     if (state.sessionId === sId) {
       if (list.length > 0) {
-        state = { ...createDefaultState(), ...list[0], sessionSetupConfirmed: false };
+        state = { ...createDefaultState(), ...list[0], sessionSetupConfirmed: false, userCreated: true };
       } else {
-        state = createDefaultState('MEU TORNEIO', getTodayDateIso());
+        state = createDefaultState('TORNEIO DE VÔLEI', getTodayDateIso());
         state.sessionSetupConfirmed = false;
+        state.userCreated = false;
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
@@ -1943,9 +2031,20 @@ window.executeProtectedDelete = function () {
     pushTournamentsHubSync();
     showToast(`🗑️ Torneio <strong>"${escapeHtml(pendingDeleteTarget.name)}"</strong> excluído com sucesso!`, 'success');
   } else if (pendingDeleteTarget.type === 'all') {
+    const delMeta = getDeletedSessionsMeta();
+    delMeta.clearedAllAtMs = Date.now();
+    getSavedSessionsList().forEach((s) => {
+      if (s && s.sessionId) delMeta.ids[s.sessionId] = Date.now();
+    });
+    if (state && state.sessionId) {
+      delMeta.ids[state.sessionId] = Date.now();
+    }
+    saveDeletedSessionsMeta(delMeta);
+
     localStorage.removeItem(SAVED_SESSIONS_KEY);
-    state = createDefaultState('MEU TORNEIO', getTodayDateIso());
+    state = createDefaultState('TORNEIO DE VÔLEI', getTodayDateIso());
     state.sessionSetupConfirmed = false;
+    state.userCreated = false;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     renderLobbyFeed();
     pushTournamentsHubSync();
@@ -1958,12 +2057,14 @@ window.executeProtectedDelete = function () {
 };
 
 window.openTournamentSession = function (sessionId) {
-  upsertCurrentSessionInArchive();
+  if (state.sessionSetupConfirmed && state.userCreated) {
+    upsertCurrentSessionInArchive();
+  }
   const list = getSavedSessionsList();
   const target = list.find((s) => s.sessionId === sessionId);
   if (!target) return;
 
-  state = { ...createDefaultState(), ...target, sessionSetupConfirmed: true };
+  state = { ...createDefaultState(), ...target, sessionSetupConfirmed: true, userCreated: true };
   saveState(true);
   showTournamentScreen();
   initPahoMqtt(state.roomCode || 'VOLEI1', true);
@@ -4779,13 +4880,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-save-session-meta')?.addEventListener('click', () => {
-    const newName = (document.getElementById('input-session-title')?.value || '').trim() || 'VÔLEI INTERNO';
     const newDate = document.getElementById('input-session-date')?.value || getTodayDateIso();
+    const newName = (document.getElementById('input-session-title')?.value || '').trim() || `Torneio ${formatDateBr(newDate)}`;
     const newRoom = (document.getElementById('input-session-room-code')?.value || state.roomCode || 'VOLEI1').replace(/^#/, '').trim().toUpperCase() || 'VOLEI1';
     state.tournamentName = newName;
     state.tournamentDate = newDate;
     state.roomCode = newRoom;
     state.sessionSetupConfirmed = true;
+    state.userCreated = true;
     saveState();
     initPahoMqtt(newRoom, false);
     renderAll();
@@ -4794,14 +4896,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-create-new-session-archive')?.addEventListener('click', () => {
-    upsertCurrentSessionInArchive();
-    const newName = (document.getElementById('input-session-title')?.value || '').trim() || 'VÔLEI INTERNO';
+    if (state.sessionSetupConfirmed && state.userCreated) {
+      upsertCurrentSessionInArchive();
+    }
     const newDate = document.getElementById('input-session-date')?.value || getTodayDateIso();
+    const newName = (document.getElementById('input-session-title')?.value || '').trim() || `Torneio ${formatDateBr(newDate)}`;
     const newRoom = (document.getElementById('input-session-room-code')?.value || state.roomCode || 'VOLEI1').replace(/^#/, '').trim().toUpperCase() || 'VOLEI1';
 
     state = createDefaultState(newName, newDate);
     state.roomCode = newRoom;
     state.sessionSetupConfirmed = true;
+    state.userCreated = true;
     saveState();
     initPahoMqtt(newRoom, false);
     renderAll();
@@ -5561,10 +5666,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (resetMode === 'factory') {
-      const preservedName = state.tournamentName || 'VÔLEI INTERNO';
       const preservedDate = state.tournamentDate || (typeof getTodayDateIso === 'function' ? getTodayDateIso() : getTodayISO());
+      const preservedName = state.tournamentName || `Torneio ${formatDateBr(preservedDate)}`;
       state = createDefaultState(preservedName, preservedDate);
       state.sessionSetupConfirmed = true;
+      state.userCreated = true;
       showToast('✅ Senha confirmada! Tudo foi reiniciado do zero no Jogo #1!', 'success');
     } else {
       state.matches = createMiniTorneioBlock(1, 1, state.teams);
