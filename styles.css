@@ -3902,260 +3902,80 @@ html[data-theme="light"] .team-available-select option {
   color: #fecdd3;
 }
 
-/* Quando "Iniciar Partida (Tela Fixa)" está ativo */
+/* Quando "Iniciar Partida (Tela Fixa)" / "Tela Cheia" está ativo */
+.team-focus-title {
+  display: none;
+}
+
+body.court-focus-mode {
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+body.court-focus-mode .ambient-bg,
 body.court-focus-mode .app-header,
 body.court-focus-mode .scoreboard-toolbar,
 body.court-focus-mode .waiting-queue-bar,
 body.court-focus-mode .match-status-banner,
-body.court-focus-mode .live-bottom-grid {
+body.court-focus-mode .live-bottom-grid,
+body.court-focus-mode .deboche-soundboard-bar,
+body.court-focus-mode .clean-drawer,
+body.court-focus-mode #btn-focus-swap-sides {
   display: none !important;
 }
 
-body.court-focus-mode .deboche-soundboard-bar {
-  display: block !important;
-  margin-top: 10px;
-  width: 100%;
+body.court-focus-mode #screen-tournament {
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
 
 body.court-focus-mode .app-main {
-  max-width: 100vw;
-  min-height: 100dvh;
-  padding: calc(var(--safe-top, 0px) + 10px) 12px calc(var(--safe-bottom, 0px) + 12px);
-  display: flex;
-  flex-direction: column;
+  width: 100% !important;
+  max-width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  min-height: 0 !important;
+  padding: max(6px, env(safe-area-inset-top, 6px)) max(10px, env(safe-area-inset-right, 10px)) max(8px, env(safe-area-inset-bottom, 8px)) max(10px, env(safe-area-inset-left, 10px)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
 body.court-focus-mode #tab-placar {
   display: flex !important;
-  flex-direction: column;
-  flex: 1;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+body.court-focus-mode .team-inline-switcher {
+  display: none !important;
+}
+
+body.court-focus-mode .team-focus-title {
+  display: block !important;
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 body.court-focus-mode .scoreboard-arena {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-body.court-focus-mode .score-giant-number {
-  font-size: clamp(7.2rem, 25vw, 14rem);
-}
-
-/* ==========================================
-   MODO LANDSCAPE (CELULAR DEITADO)
-   ========================================== */
-@media (orientation: landscape) and (max-height: 550px), (max-height: 520px) {
-  body.court-focus-mode .app-main {
-    padding: max(4px, env(safe-area-inset-top, 4px)) max(8px, env(safe-area-inset-right, 8px)) max(6px, env(safe-area-inset-bottom, 6px)) max(8px, env(safe-area-inset-left, 8px)) !important;
-    min-height: auto !important;
-  }
-
-  .focus-mode-bar {
-    padding: 3px 8px !important;
-    margin-bottom: 3px !important;
-    gap: 6px !important;
-  }
-
-  .focus-bar-left {
-    gap: 8px !important;
-    font-size: 0.76rem !important;
-  }
-
-  .focus-live-badge {
-    padding: 2px 6px !important;
-    font-size: 0.65rem !important;
-  }
-
-  .focus-bar-actions {
-    gap: 4px !important;
-  }
-
-  .focus-ctrl-btn {
-    padding: 4px 8px !important;
-    font-size: 0.68rem !important;
-  }
-
-  /* Grid dos 2 times e coluna central */
-  .scoreboard-arena,
-  body.court-focus-mode .scoreboard-arena {
-    display: grid !important;
-    grid-template-columns: 1fr auto 1fr !important;
-    gap: 6px !important;
-    align-items: stretch !important;
-    margin-bottom: 4px !important;
-  }
-
-  .score-team-card {
-    padding: 6px 10px !important;
-    border-radius: 14px !important;
-    min-height: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-  }
-
-  .team-card-top {
-    gap: 6px !important;
-    margin-bottom: 2px !important;
-  }
-
-  .team-identity {
-    gap: 6px !important;
-  }
-
-  .team-crest-badge {
-    width: 26px !important;
-    height: 26px !important;
-    border-radius: 6px !important;
-  }
-
-  .team-crest-img {
-    width: 15px !important;
-    height: 15px !important;
-  }
-
-  .team-inline-switcher {
-    font-size: 0.85rem !important;
-    padding: 2px 4px !important;
-    font-weight: 800 !important;
-  }
-
-  .score-team-roster {
-    font-size: 0.62rem !important;
-    max-width: 170px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  .serve-badge {
-    padding: 2px 6px !important;
-    font-size: 0.6rem !important;
-  }
-
-  /* NÚMERO DO PLACAR PERFEITAMENTE PROPORCIONADO */
-  .score-number-wrapper {
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  .score-giant-number,
-  body.court-focus-mode .score-giant-number {
-    font-size: clamp(2.4rem, 18vh, 3.8rem) !important;
-    line-height: 0.95 !important;
-    margin: 1px 0 !important;
-  }
-
-  /* BOTÕES DE MARCAR PONTO */
-  .score-controls {
-    display: flex !important;
-    gap: 4px !important;
-    margin-top: 2px !important;
-  }
-
-  .score-btn.btn-plus,
-  .btn-plus-point {
-    height: 34px !important;
-    min-height: 34px !important;
-    font-size: 0.82rem !important;
-    padding: 2px 10px !important;
-  }
-
-  .score-btn.btn-minus,
-  .btn-minus-point {
-    height: 34px !important;
-    min-height: 34px !important;
-    width: 38px !important;
-    font-size: 0.8rem !important;
-    padding: 2px !important;
-  }
-
-  /* COLUNA CENTRAL DE AÇÕES */
-  .score-center-column {
-    gap: 3px !important;
-    padding: 0 2px !important;
-  }
-
-  .center-action-btn,
-  .court-center-btn {
-    padding: 3px 6px !important;
-    font-size: 0.65rem !important;
-    min-height: 24px !important;
-    gap: 2px !important;
-    border-radius: 6px !important;
-  }
-
-  .center-action-btn img,
-  .court-center-btn img {
-    width: 12px !important;
-    height: 12px !important;
-  }
-
-  /* ÁUDIOS DE DEBOCHE EMBAIXO DO PLACAR (ROLÁVEL HORIZONTALMENTE COM 1 TOQUE) */
-  body.court-focus-mode .deboche-soundboard-bar,
-  .deboche-soundboard-bar {
-    display: block !important;
-    margin-top: 5px !important;
-    margin-bottom: 3px !important;
-    width: 100% !important;
-    background: rgba(15, 23, 42, 0.85) !important;
-    border: 1px solid rgba(148, 163, 184, 0.25) !important;
-    border-radius: 10px !important;
-    padding: 4px 8px !important;
-  }
-
-  .deboche-soundboard-bar .clean-drawer-summary {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    padding: 2px 4px !important;
-    font-size: 0.68rem !important;
-    cursor: pointer !important;
-  }
-
-  .deboche-soundboard-bar .clean-drawer-body {
-    display: block !important;
-    padding: 3px 0 !important;
-    max-height: none !important;
-    overflow: visible !important;
-  }
-
-  .deboche-soundboard-bar .soundboard-section-title {
-    margin: 2px 0 !important;
-  }
-
-  .deboche-soundboard-bar .soundboard-section-title .section-tag {
-    font-size: 0.58rem !important;
-    padding: 1px 6px !important;
-  }
-
-  .deboche-soundboard-bar .soundboard-buttons-grid {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    gap: 5px !important;
-    padding: 4px 2px !important;
-    scrollbar-width: thin !important;
-  }
-
-  .deboche-soundboard-bar .chip-btn {
-    flex-shrink: 0 !important;
-    white-space: nowrap !important;
-    padding: 5px 9px !important;
-    font-size: 0.72rem !important;
-    border-radius: 6px !important;
-    background: rgba(30, 41, 59, 0.9) !important;
-  }
-}
-
-body.court-focus-mode .team-inline-switcher:disabled {
-  opacity: 1;
-  cursor: default;
-  border-color: transparent;
-  background: transparent;
-  padding-left: 0;
-  appearance: none;
-  -webkit-appearance: none;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 /* Quando "Travar Toques" está ativo */
@@ -6704,6 +6524,424 @@ html[data-theme="light"] .pin-error-msg {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+  }
+}
+
+/* ==========================================
+   OTIMIZAÇÃO DE PERFORMANCE GPU (60FPS NO CELULAR / IPHONE)
+   & TELA CHEIA / MODO QUADRA PERFEITO (RETRATO & PAISAGEM)
+   ========================================== */
+@media (max-width: 960px) {
+  .ambient-bg {
+    display: none !important;
+  }
+
+  .app-header,
+  .glass-card,
+  .lobby-header,
+  .lobby-card,
+  .modal-backdrop,
+  .score-team-card,
+  .clean-drawer {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .ball-spin {
+    animation: none !important;
+  }
+}
+
+/* Garantir que o nome do time nunca corte em "Time 0" no modo normal */
+.team-select-inline-row {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.team-inline-switcher {
+  width: auto !important;
+  min-width: 108px !important;
+  max-width: 100% !important;
+  padding: 4px 22px 4px 8px !important;
+}
+
+
+body.court-focus-mode #focus-presence-badge {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+body.court-focus-mode #focus-match-title {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  font-weight: 900 !important;
+  color: #f8fafc !important;
+}
+
+/* MODO TELA CHEIA / PARTIDA FIXA: RETRATO (Ex: iPhone 7 Plus em pé 414x736) */
+@media (orientation: portrait) {
+  body.court-focus-mode .focus-mode-bar {
+    flex-shrink: 0 !important;
+    padding: 6px 10px !important;
+    margin-bottom: 6px !important;
+    gap: 6px !important;
+    border-radius: 12px !important;
+  }
+
+  body.court-focus-mode .focus-bar-left {
+    width: 100% !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  body.court-focus-mode .focus-live-badge {
+    display: none !important;
+  }
+
+  body.court-focus-mode #focus-match-title {
+    font-size: 0.82rem !important;
+    white-space: nowrap !important;
+    flex: 0 0 auto !important;
+  }
+
+  body.court-focus-mode .focus-bar-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  body.court-focus-mode .focus-ctrl-btn {
+    padding: 6px 6px !important;
+    font-size: 0.72rem !important;
+    min-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  body.court-focus-mode .scoreboard-arena {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+    gap: 6px !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: 100% !important;
+  }
+
+  body.court-focus-mode .score-team-card {
+    padding: 10px 12px !important;
+    border-radius: 16px !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+  }
+
+  body.court-focus-mode .score-number-wrapper {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 2px 0 !important;
+  }
+
+  body.court-focus-mode .score-giant-number {
+    font-size: clamp(4.2rem, 13.5vh, 6.8rem) !important;
+    line-height: 0.9 !important;
+    margin: 0 !important;
+  }
+
+  body.court-focus-mode .score-center-column {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 5px !important;
+    width: 100% !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  body.court-focus-mode .center-action-btn {
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 2px 2px !important;
+    font-size: 0.62rem !important;
+  }
+}
+
+/* MODO PAISAGEM / LANDSCAPE (Ex: iPhone 7 Plus deitado 736x414) */
+@media (orientation: landscape) and (max-height: 600px) {
+  body.court-focus-mode .app-main {
+    padding: max(4px, env(safe-area-inset-top, 4px)) max(8px, env(safe-area-inset-right, 8px)) max(6px, env(safe-area-inset-bottom, 6px)) max(8px, env(safe-area-inset-left, 8px)) !important;
+  }
+
+  /* Barra Superior 100% em 1 Única Linha Compacta */
+  body.court-focus-mode .focus-mode-bar,
+  .focus-mode-bar {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 4px 10px !important;
+    margin-bottom: 6px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+    flex-shrink: 0 !important;
+    min-height: 36px !important;
+  }
+
+  body.court-focus-mode .focus-bar-left,
+  .focus-bar-left {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  body.court-focus-mode .focus-live-badge,
+  .focus-live-badge {
+    padding: 2px 6px !important;
+    font-size: 0.62rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  body.court-focus-mode #focus-match-title,
+  #focus-match-title {
+    font-size: 0.78rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
+  }
+
+  body.court-focus-mode .focus-bar-actions,
+  .focus-bar-actions {
+    width: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 5px !important;
+    flex-shrink: 0 !important;
+  }
+
+  body.court-focus-mode .focus-ctrl-btn,
+  .focus-ctrl-btn {
+    padding: 4px 9px !important;
+    font-size: 0.7rem !important;
+    min-height: 28px !important;
+    border-radius: 7px !important;
+    white-space: nowrap !important;
+  }
+
+  body.court-focus-mode .match-alert-bar {
+    padding: 4px 10px !important;
+    margin-bottom: 5px !important;
+    font-size: 0.76rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Grid Principal em Paisagem: Time A (Largo) | Coluna Vertical (72px) | Time B (Largo) */
+  body.court-focus-mode .scoreboard-arena,
+  .scoreboard-arena {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 72px minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    margin-bottom: 0 !important;
+  }
+
+  body.court-focus-mode .score-team-card,
+  .score-team-card {
+    padding: 8px 12px !important;
+    border-radius: 16px !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+  }
+
+  body.court-focus-mode .team-card-top,
+  .team-card-top {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  body.court-focus-mode .team-identity,
+  .team-identity {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  body.court-focus-mode .team-crest-badge,
+  .team-crest-badge {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  body.court-focus-mode .team-crest-img,
+  .team-crest-img {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  body.court-focus-mode .team-title-stack,
+  .team-title-stack {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  body.court-focus-mode .team-focus-title {
+    font-size: 1.08rem !important;
+    font-weight: 900 !important;
+    color: #ffffff !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .team-inline-switcher {
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
+    padding: 2px 18px 2px 6px !important;
+    min-height: 28px !important;
+    min-width: 96px !important;
+  }
+
+  body.court-focus-mode .score-team-roster,
+  .score-team-roster {
+    font-size: 0.7rem !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-top: 1px !important;
+  }
+
+  body.court-focus-mode .serve-badge,
+  .serve-badge {
+    padding: 4px 8px !important;
+    min-height: 26px !important;
+    font-size: 0.64rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Número Gigante Centralizado na Altura Disponível */
+  body.court-focus-mode .score-number-wrapper,
+  .score-number-wrapper {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 4px 0 !important;
+  }
+
+  body.court-focus-mode .score-giant-number,
+  .score-giant-number {
+    font-size: clamp(4.2rem, 27vh, 7.6rem) !important;
+    line-height: 0.88 !important;
+    margin: 0 !important;
+  }
+
+  body.court-focus-mode .point-status-tag,
+  .point-status-tag {
+    font-size: 0.62rem !important;
+    padding: 2px 8px !important;
+    margin-top: 2px !important;
+  }
+
+  /* Botões -1 e +1 PONTO na Base do Card */
+  body.court-focus-mode .score-controls,
+  .score-controls {
+    display: grid !important;
+    grid-template-columns: 50px 1fr !important;
+    gap: 6px !important;
+    margin-top: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  body.court-focus-mode .score-btn.btn-minus,
+  .score-btn.btn-minus {
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    font-size: 0.95rem !important;
+    border-radius: 10px !important;
+    padding: 0 !important;
+  }
+
+  body.court-focus-mode .score-btn.btn-plus,
+  .score-btn.btn-plus {
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    font-size: 0.96rem !important;
+    border-radius: 10px !important;
+    padding: 0 10px !important;
+  }
+
+  /* Coluna Central Empilhada Verticalmente (72px de largura, 5 botões um embaixo do outro) */
+  body.court-focus-mode .score-center-column,
+  .score-center-column {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    width: 72px !important;
+    height: 100% !important;
+    padding: 0 !important;
+  }
+
+  body.court-focus-mode .center-action-btn,
+  .center-action-btn {
+    width: 100% !important;
+    flex: 1 1 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 2px 2px !important;
+    font-size: 0.6rem !important;
+    gap: 2px !important;
+    border-radius: 9px !important;
+  }
+
+  body.court-focus-mode .center-action-btn svg,
+  .center-action-btn svg {
+    width: 14px !important;
+    height: 14px !important;
   }
 }
 

@@ -502,15 +502,59 @@ function upsertCurrentSessionInArchive() {
   } catch (_) {}
 }
 
-function saveState(shouldBroadcast = true) {
+let archiveDebounceTimer = null;
+let storageWriteTimer = null;
+let localApiAvailable = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+function flushStorageAndArchiveNow() {
   try {
-    reconcileMasterRosterEverywhere(state);
-    state.lastSavedAt = new Date().toLocaleTimeString('pt-BR');
-    state.updatedAtMs = Date.now();
-    saveMasterRoster();
+    if (storageWriteTimer) {
+      clearTimeout(storageWriteTimer);
+      storageWriteTimer = null;
+    }
+    if (archiveDebounceTimer) {
+      clearTimeout(archiveDebounceTimer);
+      archiveDebounceTimer = null;
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     upsertCurrentSessionInArchive();
+  } catch (_) {}
+}
+
+function saveState(shouldBroadcast = true, lightweight = false) {
+  try {
+    if (!lightweight) {
+      reconcileMasterRosterEverywhere(state);
+      saveMasterRoster();
+    }
+    state.lastSavedAt = new Date().toLocaleTimeString('pt-BR');
+    state.updatedAtMs = Date.now();
     updateSyncStatusUI();
+
+    if (lightweight) {
+      if (storageWriteTimer) clearTimeout(storageWriteTimer);
+      storageWriteTimer = setTimeout(() => {
+        storageWriteTimer = null;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (_) {}
+      }, 60);
+    } else {
+      if (storageWriteTimer) {
+        clearTimeout(storageWriteTimer);
+        storageWriteTimer = null;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    if (archiveDebounceTimer) clearTimeout(archiveDebounceTimer);
+    archiveDebounceTimer = setTimeout(() => {
+      archiveDebounceTimer = null;
+      upsertCurrentSessionInArchive();
+      if (shouldBroadcast && typeof pushTournamentsHubSync === 'function') {
+        pushTournamentsHubSync();
+      }
+    }, lightweight ? 900 : 250);
 
     if (shouldBroadcast) {
       if (broadcastChannel) {
@@ -519,9 +563,6 @@ function saveState(shouldBroadcast = true) {
         } catch (_) {}
       }
       scheduleCloudAndLocalRoomPush();
-      if (typeof pushTournamentsHubSync === 'function') {
-        pushTournamentsHubSync();
-      }
     }
   } catch (_) {}
 }
@@ -643,15 +684,18 @@ function pushRoomStateNow(showFeedback = false) {
     }
   }
 
-  // 2. Local Node server backup if running
-  fetch(`/api/room/${encodeURIComponent(code)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ state: payload })
-  }).catch(() => {});
-
-  // Também envia sync do Hub de Torneios para o feed do lobby
-  pushTournamentsHubSync();
+  // 2. Local Node server backup if running on localhost
+  if (localApiAvailable) {
+    fetch(`/api/room/${encodeURIComponent(code)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: payload })
+    }).then((res) => {
+      if (!res.ok) localApiAvailable = false;
+    }).catch(() => {
+      localApiAvailable = false;
+    });
+  }
 }
 
 /* ==========================================
@@ -805,9 +849,11 @@ function applyIncomingHubTournaments(payload) {
 }
 
 window.addEventListener('beforeunload', () => {
+  flushStorageAndArchiveNow();
   sendPresencePing('leave');
 });
 window.addEventListener('pagehide', () => {
+  flushStorageAndArchiveNow();
   sendPresencePing('leave');
 });
 
@@ -969,19 +1015,31 @@ function initPahoMqtt(roomCode, showToastFeedback = false) {
     pahoMqttConnecting = false;
   }
 
-  // Backup local polling if running local node server
+  // Backup local polling only if running local node server
   if (localPollInterval) clearInterval(localPollInterval);
-  localPollInterval = setInterval(async () => {
-    try {
-      const res = await fetch(`/api/room/${encodeURIComponent(code)}`, { cache: 'no-store' });
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.payload && json.payload.state) {
-          applyIncomingRoomState(json.payload.state);
-        }
+  if (localApiAvailable) {
+    localPollInterval = setInterval(async () => {
+      if (!localApiAvailable) {
+        clearInterval(localPollInterval);
+        return;
       }
-    } catch (_) {}
-  }, 3000);
+      try {
+        const res = await fetch(`/api/room/${encodeURIComponent(code)}`, { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.payload && json.payload.state) {
+            applyIncomingRoomState(json.payload.state);
+          }
+        } else {
+          localApiAvailable = false;
+          clearInterval(localPollInterval);
+        }
+      } catch (_) {
+        localApiAvailable = false;
+        clearInterval(localPollInterval);
+      }
+    }, 3000);
+  }
 }
 
 // Aliases for compatibility
@@ -1560,6 +1618,9 @@ window.exitCourtFocusMode = function () {
   courtTouchLocked = false;
   document.body.classList.remove('court-focus-mode', 'court-locked');
   document.getElementById('focus-mode-bar')?.classList.add('hidden');
+  if (document.fullscreenElement && document.exitFullscreen) {
+    document.exitFullscreen().catch(() => {});
+  }
   releaseScreenWakeLock();
   renderLiveScoreboard();
   showToast('🔓 Saiu do Modo Tela Fixa. Painel completo liberado!', 'info');
@@ -1995,35 +2056,18 @@ function addPointToSide(sideKey) {
     );
   }
 
-  const teamIdx = state.teams.findIndex((t) => t.id === scoringTeamObj.id) + 1;
-  const customPointSlot = `point_t${teamIdx}`;
-
   if (isMatchTargetReached(match.scoreA, match.scoreB)) {
-    playSound('victory');
     triggerHaptic([80, 50, 140]);
     finalizeMatchFromLive(match);
+    return;
   } else if (isMatchPointState(match.scoreA, match.scoreB)) {
-    playSound('setpoint');
     triggerHaptic([40, 40, 40]);
-    const mpSide = isMatchPointState(match.scoreA, match.scoreB);
-    const mpTeam = mpSide === 'A' ? teamA : teamB;
-    const mpTeamIdx = state.teams.findIndex((t) => t.id === mpTeam.id) + 1;
-    const mpSlot = customAudioMap[`matchpoint_t${mpTeamIdx}`] ? `matchpoint_t${mpTeamIdx}` : 'matchpoint';
-    playCustomAudioOrSpeak(
-      mpSlot,
-      `Atenção! É Match point para ${mpTeam.name}.`
-    );
   } else {
-    playSound('point');
-    triggerHaptic(25);
-    playCustomAudioOrSpeak(
-      customPointSlot,
-      `Ponto para ${scoringTeamObj.name}.`
-    );
+    triggerHaptic(20);
   }
 
-  saveState();
-  renderAll();
+  saveState(true, true);
+  renderLiveScoreboard();
 }
 
 function subtractPointFromSide(sideKey) {
@@ -2065,15 +2109,19 @@ function subtractPointFromSide(sideKey) {
     note: '⚠️ Correção manual de -1 ponto'
   });
 
-  if (match.status === 'done' && !isMatchTargetReached(match.scoreA, match.scoreB)) {
+  const wasDone = match.status === 'done';
+  if (wasDone && !isMatchTargetReached(match.scoreA, match.scoreB)) {
     match.status = 'live';
     match.winnerId = null;
     match.loserId = null;
   }
 
-  playSound('undo');
-  saveState();
-  renderAll();
+  saveState(true, !wasDone);
+  if (wasDone) {
+    renderAll();
+  } else {
+    renderLiveScoreboard();
+  }
 }
 
 function undoLastPoint() {
@@ -2081,6 +2129,7 @@ function undoLastPoint() {
   const match = getCurrentLiveMatch();
   if (!match || !match.history || match.history.length === 0) return;
 
+  const wasDone = match.status === 'done';
   const last = match.history.shift();
   if (typeof last.prevScoreA === 'number' && typeof last.prevScoreB === 'number') {
     match.scoreA = last.prevScoreA;
@@ -2096,10 +2145,13 @@ function undoLastPoint() {
     match.loserId = null;
   }
 
-  playSound('undo');
   showToast('↩️ Último lance desfeito com sucesso.', 'info');
-  saveState();
-  renderAll();
+  saveState(true, !wasDone);
+  if (wasDone) {
+    renderAll();
+  } else {
+    renderLiveScoreboard();
+  }
 }
 
 function finalizeMatchFromLive(match) {
@@ -2125,14 +2177,6 @@ function finalizeMatchFromLive(match) {
   const nextTeamA = getTeamById(nextCreated.teamAId);
   const nextTeamB = getTeamById(nextCreated.teamBId);
 
-  const winTeamIdx = state.teams.findIndex((t) => t.id === match.winnerId) + 1;
-  const winSlot = customAudioMap[`victory_t${winTeamIdx}`] ? `victory_t${winTeamIdx}` : 'victory';
-
-  playCustomAudioOrSpeak(
-    winSlot,
-    `${winnerName} ganhou a partida.`
-  );
-
   showToast(
     `🏆 <strong>${escapeHtml(winnerName)}</strong> venceu o Jogo #${match.id}! Próximo criado: <strong>${escapeHtml(
       nextTeamA.name
@@ -2155,18 +2199,45 @@ window.startMatchById = function (matchId) {
 };
 
 /* ==========================================
-   RENDER ALL VIEWS
+   RENDER ALL VIEWS (FAST & LAZY INACTIVE TABS)
    ========================================== */
+let deferredTabsTimer = null;
+let lastSelectTeamsSig = '';
+
+function renderActiveTab() {
+  const tab = state.activeTab || 'placar';
+  if (tab === 'placar') {
+    renderLiveScoreboard();
+  } else if (tab === 'jogos') {
+    renderDynamicGamesTab();
+  } else if (tab === 'sorteio' || tab === 'times') {
+    renderTeamsAndDrawTab();
+  } else if (tab === 'elenco') {
+    renderElencoTab();
+  } else if (tab === 'classificacao') {
+    renderStandingsTab();
+  }
+}
+
 function renderAll() {
   reconcileMasterRosterEverywhere(state);
   syncMiniTorneioBrackets();
   syncWaitingQueueWithCurrentMatch();
   renderHeaderAndNav();
-  renderLiveScoreboard();
-  renderDynamicGamesTab();
-  renderTeamsAndDrawTab();
-  renderElencoTab();
-  renderStandingsTab();
+  renderActiveTab();
+
+  if (deferredTabsTimer) clearTimeout(deferredTabsTimer);
+  if (!courtFocusMode) {
+    deferredTabsTimer = setTimeout(() => {
+      deferredTabsTimer = null;
+      const tab = state.activeTab || 'placar';
+      if (tab !== 'placar') renderLiveScoreboard();
+      if (tab !== 'jogos') renderDynamicGamesTab();
+      if (tab !== 'sorteio' && tab !== 'times') renderTeamsAndDrawTab();
+      if (tab !== 'elenco') renderElencoTab();
+      if (tab !== 'classificacao') renderStandingsTab();
+    }, 150);
+  }
 }
 
 function renderHeaderAndNav() {
@@ -2338,7 +2409,7 @@ function renderLiveScoreboard() {
   document.getElementById('live-stage-desc').textContent = match.stageLabel || 'Partida em Quadra';
   const focusTitleEl = document.getElementById('focus-match-title');
   if (focusTitleEl) {
-    focusTitleEl.textContent = `JOGO #${match.id} • ${leftTeam.name} × ${rightTeam.name}`;
+    focusTitleEl.textContent = `JOGO #${match.id}`;
   }
 
   const statusPill = document.getElementById('live-status-pill');
@@ -2379,20 +2450,26 @@ function renderLiveScoreboard() {
   }
   if (rightWatermark) rightWatermark.src = rightTeam.icon;
 
-  // Populate inline team switchers on scoreboard (disabled during Focus Mode so nobody changes teams by accident)
+  // Update crisp static team name labels (used in Focus Mode / Fullscreen) & cached <select> options
+  const leftNameLabel = document.getElementById('left-team-name-label');
+  const rightNameLabel = document.getElementById('right-team-name-label');
+  if (leftNameLabel) leftNameLabel.textContent = leftTeam.name;
+  if (rightNameLabel) rightNameLabel.textContent = rightTeam.name;
+
   const selectLeft = document.getElementById('select-team-left');
   const selectRight = document.getElementById('select-team-right');
   if (selectLeft && selectRight) {
-    selectLeft.innerHTML = state.teams
-      .map(
-        (t) => `<option value="${t.id}" ${t.id === leftTeam.id ? 'selected' : ''}>${escapeHtml(t.name)}</option>`
-      )
-      .join('');
-    selectRight.innerHTML = state.teams
-      .map(
-        (t) => `<option value="${t.id}" ${t.id === rightTeam.id ? 'selected' : ''}>${escapeHtml(t.name)}</option>`
-      )
-      .join('');
+    const teamsSig = state.teams.map((t) => `${t.id}:${t.name}`).join('|');
+    if (teamsSig !== lastSelectTeamsSig || selectLeft.options.length !== state.teams.length) {
+      const optionsHtml = state.teams
+        .map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`)
+        .join('');
+      selectLeft.innerHTML = optionsHtml;
+      selectRight.innerHTML = optionsHtml;
+      lastSelectTeamsSig = teamsSig;
+    }
+    selectLeft.value = leftTeam.id;
+    selectRight.value = rightTeam.id;
     selectLeft.disabled = courtFocusMode || courtTouchLocked;
     selectRight.disabled = courtFocusMode || courtTouchLocked;
   }
@@ -2497,7 +2574,8 @@ function renderLiveScoreboard() {
 
   document.getElementById('btn-undo-point').disabled = !match.history || match.history.length === 0;
 
-  // Render Point History Audit Log
+  // Render Point History Audit Log (skip DOM rebuild while in fullscreen Focus Mode)
+  if (courtFocusMode) return;
   const historyList = document.getElementById('point-history-list');
   const auditCount = document.getElementById('audit-count-badge');
   const logs = match.history || [];
@@ -4478,9 +4556,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.nav-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (state.activeTab === btn.dataset.tab) return;
       state.activeTab = btn.dataset.tab;
-      saveState();
-      renderAll();
+      renderHeaderAndNav();
+      renderActiveTab();
+      saveState(false, true);
     });
   });
 
@@ -4726,8 +4806,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-focus-swap-sides')?.addEventListener('click', () => {
     if (isCourtTouchBlocked()) return;
     state.swappedSides = !state.swappedSides;
-    playSound('point');
-    saveState();
+    saveState(true, true);
     renderLiveScoreboard();
     showToast('🔄 Lados invertidos!', 'info');
   });
@@ -4811,18 +4890,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-swap-sides').addEventListener('click', () => {
     state.swappedSides = !state.swappedSides;
-    playSound('point');
-    saveState();
+    saveState(true, true);
     renderLiveScoreboard();
     showToast('🔄 Lados da quadra invertidos na tela!', 'info');
   });
 
   document.getElementById('btn-fullscreen-score')?.addEventListener('click', () => {
+    if (!courtFocusMode) {
+      window.enterCourtFocusMode();
+    }
     const elem = document.documentElement;
-    if (!document.fullscreenElement) {
-      elem.requestFullscreen?.();
-    } else {
-      document.exitFullscreen?.();
+    if (elem.requestFullscreen && !document.fullscreenElement) {
+      elem.requestFullscreen().catch(() => {});
     }
   });
 
