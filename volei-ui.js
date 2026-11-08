@@ -152,20 +152,92 @@ function createMiniTorneioBlock(miniIndex = 1, startId = 1, teams = []) {
 const SAVED_SESSIONS_KEY = 'volei_saved_sessions_v1';
 const MASTER_ROSTER_KEY = 'volei_master_roster_v1';
 
-const DEFAULT_MASTER_ROSTER = [
-  { id: 'mr_1', name: 'Lucas', role: 'Levantador', skill: 5 },
-  { id: 'mr_2', name: 'Rafael', role: 'Atacante', skill: 5 },
-  { id: 'mr_3', name: 'Bruno', role: 'Atacante', skill: 5 },
-  { id: 'mr_4', name: 'Gabriel', role: 'Levantador', skill: 4 },
-  { id: 'mr_5', name: 'Mariana', role: 'Levantador', skill: 4 },
-  { id: 'mr_6', name: 'Pedro', role: 'Levantador', skill: 4 },
-  { id: 'mr_7', name: 'Thiago', role: 'Atacante', skill: 4 },
-  { id: 'mr_8', name: 'Diego', role: 'Atacante', skill: 4 },
-  { id: 'mr_9', name: 'Amanda', role: 'Bloqueador', skill: 4 },
-  { id: 'mr_10', name: 'Camila', role: 'Bloqueador', skill: 4 },
-  { id: 'mr_11', name: 'Juliana', role: 'Defensor', skill: 4 },
-  { id: 'mr_12', name: 'Matheus', role: 'Geral', skill: 3 }
-];
+// Elenco comeca vazio: apenas jogadores cadastrados na aba Elenco existem no app
+const DEFAULT_MASTER_ROSTER = [];
+
+/**
+ * Garante que o Elenco Fixo (masterRoster) seja a UNICA fonte de jogadores:
+ * - Remove do Sorteio (playerPool) e dos Times qualquer pessoa que nao esteja no Elenco
+ * - Mantem nomes, estrelas e posicoes 100% sincronizados com o Elenco
+ * - Todo jogador do Elenco (exceto se marcado absentToday=true) fica disponivel no Sorteio
+ */
+function reconcileMasterRosterEverywhere(targetState) {
+  const st = targetState || (typeof state !== "undefined" ? state : null);
+  if (!st) return;
+  if (!Array.isArray(st.masterRoster)) {
+    st.masterRoster = loadMasterRoster();
+  }
+
+  // 1. Limpa e deduplica o proprio masterRoster
+  const seenRosterKeys = new Set();
+  const cleanRoster = [];
+  st.masterRoster.forEach((mp, idx) => {
+    if (!mp || !mp.name) return;
+    const trimmedName = String(mp.name).trim();
+    const key = normalizePlayerKey(trimmedName);
+    if (!key || seenRosterKeys.has(key)) return;
+    seenRosterKeys.add(key);
+    cleanRoster.push({
+      id: mp.id || `mr_${Date.now()}_${idx}`,
+      name: trimmedName,
+      role: mp.role || "Geral",
+      skill: Math.max(1, Math.min(5, Number(mp.skill) || 3)),
+      absentToday: mp.absentToday === true
+    });
+  });
+  st.masterRoster = cleanRoster;
+
+  const byId = new Map();
+  const byKey = new Map();
+  st.masterRoster.forEach((mp) => {
+    byId.set(mp.id, mp);
+    byKey.set(normalizePlayerKey(mp.name), mp);
+  });
+
+  const resolveMaster = (p) => {
+    if (!p) return null;
+    if (p.masterId && byId.has(p.masterId)) return byId.get(p.masterId);
+    const k = normalizePlayerKey(p.name);
+    if (k && byKey.has(k)) return byKey.get(k);
+    return null;
+  };
+
+  // 2. Sincroniza playerPool (Sorteio) exclusivamente a partir do masterRoster
+  st.playerPool = st.masterRoster
+    .filter((mp) => mp.absentToday !== true)
+    .map((mp) => ({
+      id: `p_${mp.id}`,
+      masterId: mp.id,
+      name: mp.name,
+      role: mp.role || "Geral",
+      skill: Number(mp.skill) || 3
+    }));
+
+  // 3. Filtra e atualiza os jogadores escalados nos Times (so permite quem existe no Elenco)
+  if (Array.isArray(st.teams)) {
+    const assignedMasterIds = new Set();
+    st.teams.forEach((team) => {
+      if (!Array.isArray(team.players)) {
+        team.players = [];
+        return;
+      }
+      const validPlayers = [];
+      team.players.forEach((p, idx) => {
+        const mp = resolveMaster(p);
+        if (!mp || assignedMasterIds.has(mp.id)) return;
+        assignedMasterIds.add(mp.id);
+        validPlayers.push({
+          id: p.id || `tp_${mp.id}_${idx}`,
+          masterId: mp.id,
+          name: mp.name,
+          role: mp.role || "Geral",
+          skill: Number(mp.skill) || 3
+        });
+      });
+      team.players = validPlayers;
+    });
+  }
+}
 
 function loadMasterRoster() {
   try {
@@ -374,6 +446,7 @@ function loadState() {
       finalState.tournamentDate = getTodayDateIso();
     }
     if (urlRoom) finalState.roomCode = urlRoom.toUpperCase();
+    reconcileMasterRosterEverywhere(finalState);
     return finalState;
   } catch (e) {
     return createDefaultState();
@@ -431,6 +504,7 @@ function upsertCurrentSessionInArchive() {
 
 function saveState(shouldBroadcast = true) {
   try {
+    reconcileMasterRosterEverywhere(state);
     state.lastSavedAt = new Date().toLocaleTimeString('pt-BR');
     state.updatedAtMs = Date.now();
     saveMasterRoster();
@@ -536,6 +610,7 @@ function applyIncomingRoomState(incoming) {
     updatedAtMs: incoming.senderTabTime || Date.now(),
     lastSavedAt: new Date().toLocaleTimeString('pt-BR')
   };
+  reconcileMasterRosterEverywhere(state);
   saveState(false);
   renderAll();
   return true;
@@ -697,6 +772,7 @@ function applyIncomingHubTournaments(payload) {
   let hasChanges = false;
   payload.sessions.forEach((incomingSess) => {
     if (!incomingSess || !incomingSess.sessionId) return;
+    reconcileMasterRosterEverywhere(incomingSess);
     const existing = sessionMap[incomingSess.sessionId];
     if (!existing) {
       sessionMap[incomingSess.sessionId] = incomingSess;
@@ -2082,6 +2158,7 @@ window.startMatchById = function (matchId) {
    RENDER ALL VIEWS
    ========================================== */
 function renderAll() {
+  reconcileMasterRosterEverywhere(state);
   syncMiniTorneioBrackets();
   syncWaitingQueueWithCurrentMatch();
   renderHeaderAndNav();
@@ -2580,40 +2657,21 @@ function getAssignedPlayerKeys() {
 }
 
 function getAvailablePlayers() {
+  reconcileMasterRosterEverywhere(state);
   const assignedKeys = getAssignedPlayerKeys();
-  const seen = new Set();
   const list = [];
-
-  // 1. Jogadores no playerPool que não estão escalados em nenhum time
-  (state.playerPool || []).forEach((p) => {
-    const k = normalizePlayerKey(p.name);
-    if (k && !assignedKeys.has(k) && !seen.has(k)) {
-      seen.add(k);
-      list.push({
-        id: p.id || `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        masterId: p.masterId,
-        name: p.name,
-        role: p.role || 'Geral',
-        skill: p.skill || 3
-      });
-    }
-  });
-
-  // 2. Jogadores no elenco fixo marcados como presentes hoje
   (state.masterRoster || []).forEach((mp) => {
     const k = normalizePlayerKey(mp.name);
-    if (mp.presentToday && k && !assignedKeys.has(k) && !seen.has(k)) {
-      seen.add(k);
+    if (mp.absentToday !== true && k && !assignedKeys.has(k)) {
       list.push({
-        id: `p_m_${mp.id}`,
+        id: `p_${mp.id}`,
         masterId: mp.id,
         name: mp.name,
         role: mp.role || 'Geral',
-        skill: mp.skill || 3
+        skill: Number(mp.skill) || 3
       });
     }
   });
-
   return list;
 }
 
@@ -2940,16 +2998,7 @@ function renderTeamsAndDrawTab() {
               </select>
             </div>
 
-            <div class="team-quick-add-row">
-              <input
-                type="text"
-                id="quick-player-${team.id}"
-                class="team-quick-add-input"
-                placeholder="Ou digite manual (ex: Carlos 4* L)..."
-                onkeydown="if(event.key==='Enter'){event.preventDefault();addDirectPlayerToTeam('${team.id}');}"
-              />
-              <button type="button" class="mini-action-btn" onclick="addDirectPlayerToTeam('${team.id}')">+ Add</button>
-            </div>
+
           </div>
         </div>
       `;
@@ -3435,11 +3484,8 @@ function findMasterPlayerByName(name) {
 }
 
 function isMasterPlayerInPoolToday(masterPlayer) {
-  if (!masterPlayer || !Array.isArray(state.playerPool)) return false;
-  const key = normalizePlayerKey(masterPlayer.name);
-  return state.playerPool.some(
-    (p) => p.masterId === masterPlayer.id || normalizePlayerKey(p.name) === key
-  );
+  if (!masterPlayer) return false;
+  return masterPlayer.absentToday !== true;
 }
 
 function upsertMasterPlayer(name, role = null, skill = null) {
@@ -3454,6 +3500,8 @@ function upsertMasterPlayer(name, role = null, skill = null) {
     if (skill !== null && skill !== undefined && !Number.isNaN(Number(skill))) {
       existing.skill = Math.max(1, Math.min(5, Number(skill)));
     }
+    existing.absentToday = false;
+    reconcileMasterRosterEverywhere(state);
     saveMasterRoster();
     return existing;
   }
@@ -3462,9 +3510,11 @@ function upsertMasterPlayer(name, role = null, skill = null) {
     id: `mr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     name: trimmed,
     role: role || 'Geral',
-    skill: skill !== null && skill !== undefined ? Math.max(1, Math.min(5, Number(skill))) : 3
+    skill: skill !== null && skill !== undefined ? Math.max(1, Math.min(5, Number(skill))) : 3,
+    absentToday: false
   };
   state.masterRoster.push(created);
+  reconcileMasterRosterEverywhere(state);
   saveMasterRoster();
   return created;
 }
@@ -3505,6 +3555,10 @@ function renderElencoTab() {
 
   if (!Array.isArray(state.masterRoster)) {
     state.masterRoster = loadMasterRoster();
+  }
+  const presentCountEl = document.getElementById("elenco-present-count");
+  if (presentCountEl) {
+    presentCountEl.textContent = state.masterRoster.filter((mp) => mp.absentToday !== true).length;
   }
 
   // Update New Player Stars & Role Picker UI
@@ -3635,25 +3689,9 @@ window.togglePlayerPresenceToday = function (masterId) {
   const mp = state.masterRoster.find((item) => item.id === masterId);
   if (!mp) return;
 
-  const key = normalizePlayerKey(mp.name);
-  const existingIdx = state.playerPool.findIndex(
-    (p) => p.masterId === mp.id || normalizePlayerKey(p.name) === key
-  );
-
-  if (existingIdx >= 0) {
-    state.playerPool.splice(existingIdx, 1);
-    playSound('undo');
-  } else {
-    state.playerPool.push({
-      id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      masterId: mp.id,
-      name: mp.name,
-      role: mp.role || 'Geral',
-      skill: Number(mp.skill) || 3
-    });
-    playSound('point');
-  }
-
+  mp.absentToday = mp.absentToday !== true;
+  playSound(mp.absentToday ? "undo" : "point");
+  reconcileMasterRosterEverywhere(state);
   saveState();
   renderAll();
 };
@@ -3705,18 +3743,19 @@ window.deleteMasterPlayer = function (masterId) {
   if (!mp) return;
 
   state.masterRoster = state.masterRoster.filter((item) => item.id !== masterId);
+  reconcileMasterRosterEverywhere(state);
   saveState();
   renderAll();
-  showToast(`🗑️ <strong>${escapeHtml(mp.name)}</strong> removido do Elenco Fixo.`, 'info');
+  showToast(`🗑️ <strong>${escapeHtml(mp.name)}</strong> removido do Elenco, do Sorteio e dos Times.`, "info");
 };
 
 window.setPoolPlayerStars = function (poolId, stars) {
   const p = state.playerPool.find((item) => item.id === poolId);
   if (!p) return;
-
-  const newStars = Math.max(1, Math.min(5, Number(stars) || 3));
-  p.skill = newStars;
-  upsertMasterPlayer(p.name, p.role, newStars);
+  const mp = state.masterRoster.find((m) => m.id === p.masterId || normalizePlayerKey(m.name) === normalizePlayerKey(p.name));
+  if (!mp) return;
+  mp.skill = Math.max(1, Math.min(5, Number(stars) || 3));
+  reconcileMasterRosterEverywhere(state);
   playSound('point');
   saveState();
   renderAll();
@@ -3725,11 +3764,11 @@ window.setPoolPlayerStars = function (poolId, stars) {
 window.cyclePoolPlayerRole = function (poolId) {
   const p = state.playerPool.find((item) => item.id === poolId);
   if (!p) return;
-
-  const currentIdx = ALL_ROLES.indexOf(p.role || 'Geral');
-  const nextRole = ALL_ROLES[(currentIdx + 1) % ALL_ROLES.length];
-  p.role = nextRole;
-  upsertMasterPlayer(p.name, nextRole, p.skill);
+  const mp = state.masterRoster.find((m) => m.id === p.masterId || normalizePlayerKey(m.name) === normalizePlayerKey(p.name));
+  if (!mp) return;
+  const currentIdx = ALL_ROLES.indexOf(mp.role || 'Geral');
+  mp.role = ALL_ROLES[(currentIdx + 1) % ALL_ROLES.length];
+  reconcileMasterRosterEverywhere(state);
   playSound('point');
   saveState();
   renderAll();
@@ -4157,7 +4196,12 @@ window.deleteTeam = function (teamId) {
 };
 
 window.removePlayerFromPool = function (playerId) {
-  state.playerPool = state.playerPool.filter((p) => p.id !== playerId);
+  const p = (state.playerPool || []).find((item) => item.id === playerId);
+  if (p && Array.isArray(state.masterRoster)) {
+    const mp = state.masterRoster.find((m) => m.id === p.masterId || normalizePlayerKey(m.name) === normalizePlayerKey(p.name));
+    if (mp) mp.absentToday = true;
+  }
+  reconcileMasterRosterEverywhere(state);
   saveState();
   renderAll();
 };
@@ -4167,39 +4211,20 @@ window.removePlayerFromTeam = function (teamId, playerIdx) {
   if (!team || !team.players[playerIdx]) return;
 
   const removed = team.players.splice(playerIdx, 1)[0];
-
-  // Devolve o jogador para o playerPool para reaparecer IMEDIATAMENTE nos Disponíveis!
-  if (removed && removed.name) {
-    const alreadyInPool = (state.playerPool || []).some(
-      (p) => normalizePlayerKey(p.name) === normalizePlayerKey(removed.name)
+  if (removed && Array.isArray(state.masterRoster)) {
+    const mp = state.masterRoster.find(
+      (m) => m.id === removed.masterId || normalizePlayerKey(m.name) === normalizePlayerKey(removed.name)
     );
-    if (!alreadyInPool) {
-      if (!Array.isArray(state.playerPool)) state.playerPool = [];
-      state.playerPool.push({
-        id: removed.id || `p_${Date.now()}`,
-        masterId: removed.masterId,
-        name: removed.name,
-        role: removed.role || 'Geral',
-        skill: removed.skill || 3
-      });
-    }
-
-    // Marca no Elenco Fixo como presente hoje
-    if (Array.isArray(state.masterRoster)) {
-      const mp = state.masterRoster.find(
-        (m) => normalizePlayerKey(m.name) === normalizePlayerKey(removed.name)
-      );
-      if (mp) {
-        mp.presentToday = true;
-        saveMasterRoster();
-      }
+    if (mp) {
+      mp.absentToday = false;
+      saveMasterRoster();
     }
   }
-
+  reconcileMasterRosterEverywhere(state);
   saveState();
   renderAll();
   playSound('undo');
-  showToast(`↩️ <strong>${escapeHtml(removed.name)}</strong> saiu do ${escapeHtml(team.name)} e voltou para os <strong>Disponíveis</strong>!`, 'info');
+  showToast(`↩️ <strong>${escapeHtml(removed.name)}</strong> saiu do ${escapeHtml(team.name)} e voltou para os <strong>Disponíveis</strong>!`, "info");
 };
 
 window.addAvailablePlayerToTeam = function (teamId, playerNameOrId) {
@@ -4225,25 +4250,15 @@ window.addAvailablePlayerToTeam = function (teamId, playerNameOrId) {
         role: mp.role || 'Geral',
         skill: mp.skill || 3
       };
-      mp.presentToday = true;
+      mp.absentToday = false;
       saveMasterRoster();
     }
   }
 
-  // Se ainda não encontrou, interpreta como entrada direta
+  // Se nao estiver no Elenco Fixo, NAO cria jogador fora do Elenco!
   if (!found) {
-    const parsed = parsePlayersTextWithCommands(raw)[0];
-    const pName = parsed ? parsed.name : raw;
-    const pRole = parsed ? parsed.role : 'Geral';
-    const pSkill = parsed ? parsed.skill : 3;
-    const masterObj = upsertMasterPlayer(pName, pRole, pSkill);
-    found = {
-      id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      masterId: masterObj ? masterObj.id : undefined,
-      name: masterObj ? masterObj.name : pName,
-      role: pRole,
-      skill: pSkill
-    };
+    showToast("⚠️ Este jogador não está no Elenco! Cadastre jogadores apenas na aba Elenco.", "warn");
+    return;
   }
 
   // Garante que está no playerPool
@@ -5221,32 +5236,24 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('⚠️ Nenhum jogador no Elenco Fixo ainda.', 'warn');
       return;
     }
-    const allPresent = state.masterRoster.every((mp) => isMasterPlayerInPoolToday(mp));
-    if (allPresent) {
-      state.playerPool = [];
-      playSound('undo');
-      showToast('🧹 Seleção de presença de hoje desmarcada.', 'info');
-    } else {
-      state.masterRoster.forEach((mp) => {
-        if (!isMasterPlayerInPoolToday(mp)) {
-          state.playerPool.push({
-            id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            masterId: mp.id,
-            name: mp.name,
-            role: mp.role || 'Geral',
-            skill: Number(mp.skill) || 3
-          });
-        }
-      });
-      playSound('victory');
-      showToast(`✅ Todos os <strong>${state.masterRoster.length} jogadores</strong> do Elenco foram escalados para hoje!`, 'success');
-    }
+    const allPresent = state.masterRoster.every((mp) => mp.absentToday !== true);
+    state.masterRoster.forEach((mp) => {
+      mp.absentToday = allPresent;
+    });
+    reconcileMasterRosterEverywhere(state);
+    playSound(allPresent ? "undo" : "victory");
+    showToast(
+      allPresent
+        ? "🧹 Seleção de presença de hoje desmarcada."
+        : `✅ Todos os <strong>${state.masterRoster.length} jogadores</strong> do Elenco estão disponíveis no Sorteio!`,
+      allPresent ? "info" : "success"
+    );
     saveState();
     renderAll();
   });
 
   document.getElementById('btn-elenco-goto-sorteio')?.addEventListener('click', () => {
-    state.activeTab = 'times';
+    state.activeTab = 'sorteio';
     saveState();
     renderAll();
     window.scrollTo({ top: 0, behavior: 'smooth' });
