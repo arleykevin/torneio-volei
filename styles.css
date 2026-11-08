@@ -6612,19 +6612,26 @@ body.focus-audios-open .focus-audios-backdrop {
 
 body.focus-audios-open .deboche-soundboard-bar,
 body.court-focus-mode.focus-audios-open .deboche-soundboard-bar {
-  display: flex !important;
-  flex-direction: column !important;
+  display: block !important;
   position: fixed !important;
-  inset: 12px !important;
+  top: 12px !important;
+  bottom: 12px !important;
+  left: 12px !important;
+  right: 12px !important;
   max-width: 680px !important;
+  height: auto !important;
   max-height: calc(100dvh - 24px) !important;
-  margin: auto !important;
+  margin: 0 auto !important;
   z-index: 3600 !important;
   background: rgba(9, 14, 28, 0.98) !important;
   border: 1.5px solid rgba(56, 189, 248, 0.55) !important;
   border-radius: 18px !important;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85) !important;
-  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
 }
 
 body.focus-audios-open .deboche-soundboard-bar > .clean-drawer-summary {
@@ -6632,16 +6639,14 @@ body.focus-audios-open .deboche-soundboard-bar > .clean-drawer-summary {
 }
 
 body.focus-audios-open .deboche-soundboard-bar .clean-drawer-body {
-  display: flex !important;
-  flex-direction: column !important;
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  padding: 12px 14px 16px !important;
+  display: block !important;
+  height: auto !important;
+  overflow: visible !important;
+  padding: 12px 14px 28px !important;
   border-top: none !important;
 }
 
+.deboche-soundboard-bar .soundboard-buttons-grid.deboche-grid,
 body.focus-audios-open .deboche-soundboard-bar .soundboard-buttons-grid.deboche-grid {
   max-height: none !important;
   overflow: visible !important;
@@ -6652,10 +6657,13 @@ body.focus-audios-open .focus-soundboard-header {
   align-items: center !important;
   justify-content: space-between !important;
   gap: 10px !important;
-  padding-bottom: 10px !important;
-  margin-bottom: 10px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+  background: rgba(9, 14, 28, 0.98) !important;
+  padding: 12px 14px 10px !important;
+  margin: -12px -14px 12px -14px !important;
   border-bottom: 1px solid rgba(148, 163, 184, 0.22) !important;
-  flex-shrink: 0 !important;
 }
 
 .focus-soundboard-title {
