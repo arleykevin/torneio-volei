@@ -380,12 +380,29 @@ function loadState() {
   }
 }
 
+// Torneio "fantasma": criado automaticamente com nome padrao, sem jogadores e sem nenhum ponto marcado
+function isGhostSession(sess) {
+  if (!sess || !sess.sessionId) return true;
+  const defaultNames = ['VÔLEI INTERNO', 'MEU TORNEIO'];
+  const name = String(sess.tournamentName || '').trim().toUpperCase();
+  if (!defaultNames.includes(name)) return false;
+  const hasPlayers = Array.isArray(sess.teams) && sess.teams.some((t) => Array.isArray(t.players) && t.players.length > 0);
+  const hasPoints = Array.isArray(sess.matches) && sess.matches.some((m) => (m.scoreA || 0) > 0 || (m.scoreB || 0) > 0 || m.status === 'done');
+  return !hasPlayers && !hasPoints;
+}
+
 function getSavedSessionsList() {
   try {
     const raw = localStorage.getItem(SAVED_SESSIONS_KEY);
     if (!raw) return [];
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
+    if (!Array.isArray(arr)) return [];
+    const currentId = typeof state !== 'undefined' && state ? state.sessionId : null;
+    const cleaned = arr.filter((sess) => !isGhostSession(sess) || (sess.sessionId === currentId && state.sessionSetupConfirmed));
+    if (cleaned.length !== arr.length) {
+      localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(cleaned));
+    }
+    return cleaned;
   } catch (_) {
     return [];
   }
@@ -397,8 +414,10 @@ function upsertCurrentSessionInArchive() {
       state.sessionId = `sess_${Date.now()}`;
     }
     const list = getSavedSessionsList();
-    const snapshot = JSON.parse(JSON.stringify(state));
     const idx = list.findIndex((item) => item.sessionId === state.sessionId);
+    // Nao cria "torneio fantasma" (estado padrao que o usuario nunca abriu/criou)
+    if (idx < 0 && !state.sessionSetupConfirmed) return;
+    const snapshot = JSON.parse(JSON.stringify(state));
     if (idx >= 0) {
       list[idx] = snapshot;
     } else {
@@ -5520,8 +5539,12 @@ document.addEventListener('DOMContentLoaded', () => {
   } else if (urlParams.get('jogar') === '1' || urlParams.get('quadra') === '1') {
     showTournamentScreen();
     initPahoMqtt(state.roomCode || 'VOLEI1');
+  } else if (state.sessionSetupConfirmed && localStorage.getItem(STORAGE_KEY)) {
+    // CONTINUA DE ONDE PAROU: o usuario estava dentro de um torneio e nao saiu dele
+    showTournamentScreen();
+    initPahoMqtt(state.roomCode || 'VOLEI1', false);
   } else {
-    // SEMPRE ABRIR NA PÁGINA PRINCIPAL (LOBBY) QUANDO O USUÁRIO CLICAR NO LINK!
+    // Sem torneio aberto: mostra a pagina principal (lobby) para entrar ou criar
     showLobbyScreen();
   }
 });
