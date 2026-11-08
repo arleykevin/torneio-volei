@@ -2045,23 +2045,22 @@ function addPointToSide(sideKey) {
     setTimeout(() => numEl.classList.remove('pop'), 220);
   }
 
-  const halfPoint = Math.ceil(state.targetPoints / 2);
-  if (
-    (match.scoreA === halfPoint && prevScoreA === halfPoint - 1 && match.scoreB < halfPoint) ||
-    (match.scoreB === halfPoint && prevScoreB === halfPoint - 1 && match.scoreA < halfPoint)
-  ) {
-    showToast(
-      `🔄 <strong>${halfPoint} pontos!</strong> Metade do set — use "Virar Lado" se trocarem de quadra.`,
-      'info'
-    );
-  }
-
   if (isMatchTargetReached(match.scoreA, match.scoreB)) {
+    playSound('victory');
     triggerHaptic([80, 50, 140]);
     finalizeMatchFromLive(match);
     return;
   } else if (isMatchPointState(match.scoreA, match.scoreB)) {
+    playSound('setpoint');
     triggerHaptic([40, 40, 40]);
+    const mpSide = isMatchPointState(match.scoreA, match.scoreB);
+    const mpTeam = mpSide === 'A' ? teamA : teamB;
+    const mpTeamIdx = state.teams.findIndex((t) => t.id === mpTeam.id) + 1;
+    const mpSlot = customAudioMap[`matchpoint_t${mpTeamIdx}`] ? `matchpoint_t${mpTeamIdx}` : 'matchpoint';
+    playCustomAudioOrSpeak(
+      mpSlot,
+      `Atenção! É Match point para ${mpTeam.name}.`
+    );
   } else {
     triggerHaptic(20);
   }
@@ -2176,6 +2175,14 @@ function finalizeMatchFromLive(match) {
   launchConfetti();
   const nextTeamA = getTeamById(nextCreated.teamAId);
   const nextTeamB = getTeamById(nextCreated.teamBId);
+
+  const winTeamIdx = state.teams.findIndex((t) => t.id === match.winnerId) + 1;
+  const winSlot = customAudioMap[`victory_t${winTeamIdx}`] ? `victory_t${winTeamIdx}` : 'victory';
+
+  playCustomAudioOrSpeak(
+    winSlot,
+    `${winnerName} ganhou a partida.`
+  );
 
   showToast(
     `🏆 <strong>${escapeHtml(winnerName)}</strong> venceu o Jogo #${match.id}! Próximo criado: <strong>${escapeHtml(
