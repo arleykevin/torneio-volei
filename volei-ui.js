@@ -3152,29 +3152,38 @@ function renderTeamsShareCanvas() {
   if (!canvas) return null;
 
   const teams = state.teams || [];
-  const cols = 2;
-  const rowsCount = Math.ceil(teams.length / cols);
-  const maxPlayersInTeam = Math.max(4, ...teams.map((t) => (t.players ? t.players.length : 0)));
-
+  // Formato vertical 9:16 Full HD (1080 x 1920) para WhatsApp / Stories / Celular
   const W = 1080;
+  const H = 1920;
   const padX = 48;
   const gap = 28;
-  const cardW = Math.floor((W - padX * 2 - gap) / cols);
-  const playerRowH = 54;
-  const cardHeaderH = 106;
-  const cardPadBottom = 24;
-  const cardH = cardHeaderH + maxPlayersInTeam * (playerRowH + 10) + cardPadBottom;
 
-  const headerSectionH = 230;
-  const matchesSectionH = 155;
-  const footerSectionH = 75;
-  const H = headerSectionH + rowsCount * cardH + (rowsCount - 1) * gap + matchesSectionH + footerSectionH;
+  const cols = teams.length <= 2 ? 1 : 2;
+  const rowsCount = Math.max(1, Math.ceil(teams.length / cols));
+  const maxPlayersInTeam = Math.max(4, ...teams.map((t) => (t.players ? t.players.length : 0)));
+
+  const headerTop = 44;
+  const headerH = 196;
+  const headerSectionH = headerTop + headerH + 32; // 272
+  const footerReserveH = 278; // espaco para Primeiros Confrontos + Rodape
+  const gridAvailH = H - headerSectionH - footerReserveH;
+
+  const cardW = Math.floor((W - padX * 2 - (cols - 1) * gap) / cols);
+  const cardH = Math.floor((gridAvailH - (rowsCount - 1) * gap) / rowsCount);
+  const cardHeaderH = 116;
+  const cardPadBottom = 22;
+  const rowsAvailH = cardH - cardHeaderH - cardPadBottom;
+  const rowGap = 12;
+  const playerRowH = Math.max(
+    52,
+    Math.min(82, Math.floor((rowsAvailH - (maxPlayersInTeam - 1) * rowGap) / maxPlayersInTeam))
+  );
 
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // 1. Background Stadium Gradient
+  // 1. Background Stadium Gradient (9:16)
   const bgGrad = ctx.createLinearGradient(0, 0, W, H);
   bgGrad.addColorStop(0, '#050914');
   bgGrad.addColorStop(0.5, '#0b1326');
@@ -3183,53 +3192,53 @@ function renderTeamsShareCanvas() {
   ctx.fillRect(0, 0, W, H);
 
   // Subtle ambient glow top-left and bottom-right
-  const glow1 = ctx.createRadialGradient(180, 110, 10, 180, 110, 460);
-  glow1.addColorStop(0, 'rgba(56, 189, 248, 0.18)');
+  const glow1 = ctx.createRadialGradient(200, 140, 10, 200, 140, 520);
+  glow1.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
   glow1.addColorStop(1, 'rgba(56, 189, 248, 0)');
   ctx.fillStyle = glow1;
   ctx.fillRect(0, 0, W, H);
 
-  const glow2 = ctx.createRadialGradient(W - 160, H - 140, 10, W - 160, H - 140, 460);
-  glow2.addColorStop(0, 'rgba(250, 204, 21, 0.14)');
+  const glow2 = ctx.createRadialGradient(W - 180, H - 180, 10, W - 180, H - 180, 520);
+  glow2.addColorStop(0, 'rgba(250, 204, 21, 0.15)');
   glow2.addColorStop(1, 'rgba(250, 204, 21, 0)');
   ctx.fillStyle = glow2;
   ctx.fillRect(0, 0, W, H);
 
   // 2. Top Header Banner
   ctx.save();
-  drawRoundedRectPath(ctx, padX, 34, W - padX * 2, 166, 24);
-  const headerGrad = ctx.createLinearGradient(padX, 34, W - padX, 200);
-  headerGrad.addColorStop(0, 'rgba(15, 23, 42, 0.95)');
-  headerGrad.addColorStop(1, 'rgba(30, 41, 59, 0.88)');
+  drawRoundedRectPath(ctx, padX, headerTop, W - padX * 2, headerH, 26);
+  const headerGrad = ctx.createLinearGradient(padX, headerTop, W - padX, headerTop + headerH);
+  headerGrad.addColorStop(0, 'rgba(15, 23, 42, 0.96)');
+  headerGrad.addColorStop(1, 'rgba(30, 41, 59, 0.9)');
   ctx.fillStyle = headerGrad;
   ctx.fill();
   ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.38)';
   ctx.stroke();
 
   // Eyebrow pill
-  ctx.font = '800 18px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+  ctx.font = '800 20px "Plus Jakarta Sans", "Segoe UI", sans-serif';
   ctx.fillStyle = '#facc15';
-  ctx.fillText('🏐 ESCALAÇÃO OFICIAL DOS TIMES • VÔLEI PRO ARENA', padX + 30, 76);
+  ctx.fillText('ESCALAÇÃO OFICIAL DOS TIMES • VÔLEI PRO ARENA', padX + 34, headerTop + 50);
 
   // Main Tournament Name
-  ctx.font = '900 46px "Outfit", "Segoe UI", sans-serif';
+  ctx.font = '900 50px "Outfit", "Segoe UI", sans-serif';
   ctx.fillStyle = '#ffffff';
-  const titleStr = truncateCanvasText(ctx, (state.tournamentName || 'VÔLEI INTERNO').toUpperCase(), W - padX * 2 - 60);
-  ctx.fillText(titleStr, padX + 30, 132);
+  const titleStr = truncateCanvasText(ctx, (state.tournamentName || 'VÔLEI INTERNO').toUpperCase(), W - padX * 2 - 68);
+  ctx.fillText(titleStr, padX + 34, headerTop + 114);
 
   // Date & Summary line
   const totalPlayers = teams.reduce((acc, t) => acc + (t.players ? t.players.length : 0), 0);
-  ctx.font = '700 21px "JetBrains Mono", "Segoe UI", monospace';
+  ctx.font = '700 22px "JetBrains Mono", "Segoe UI", monospace';
   ctx.fillStyle = '#94a3b8';
   ctx.fillText(
-    `📅 Data: ${formatDateBr(state.tournamentDate)}   •   🛡️ ${teams.length} Equipes   •   👥 ${totalPlayers} Jogadores`,
-    padX + 30,
-    174
+    `Data: ${formatDateBr(state.tournamentDate)}   •   ${teams.length} Equipes   •   ${totalPlayers} Jogadores`,
+    padX + 34,
+    headerTop + 160
   );
   ctx.restore();
 
-  // 3. Draw Each Team Card
+  // 3. Draw Each Team Card (Sem exibir estrelas individuais nem media de estrelas)
   teams.forEach((team, idx) => {
     const col = idx % cols;
     const row = Math.floor(idx / cols);
@@ -3238,11 +3247,11 @@ function renderTeamsShareCanvas() {
     const teamColor = team.color || '#38bdf8';
 
     ctx.save();
-    drawRoundedRectPath(ctx, x, y, cardW, cardH, 22);
+    drawRoundedRectPath(ctx, x, y, cardW, cardH, 24);
     const cardGrad = ctx.createLinearGradient(x, y, x, y + cardH);
     cardGrad.addColorStop(0, hexToRgba(teamColor, 0.28));
-    cardGrad.addColorStop(0.55, 'rgba(15, 23, 42, 0.94)');
-    cardGrad.addColorStop(1, 'rgba(9, 14, 28, 0.97)');
+    cardGrad.addColorStop(0.55, 'rgba(15, 23, 42, 0.95)');
+    cardGrad.addColorStop(1, 'rgba(9, 14, 28, 0.98)');
     ctx.fillStyle = cardGrad;
     ctx.fill();
 
@@ -3250,24 +3259,24 @@ function renderTeamsShareCanvas() {
     ctx.save();
     ctx.clip();
     ctx.fillStyle = teamColor;
-    ctx.fillRect(x, y, cardW, 8);
+    ctx.fillRect(x, y, cardW, 9);
     ctx.restore();
 
     // Card subtle border
-    drawRoundedRectPath(ctx, x, y, cardW, cardH, 22);
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = hexToRgba(teamColor, 0.5);
+    drawRoundedRectPath(ctx, x, y, cardW, cardH, 24);
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.55);
     ctx.stroke();
 
     // Team Badge Circle
     const badgeX = x + 24;
-    const badgeY = y + 26;
-    const badgeSize = 54;
+    const badgeY = y + 28;
+    const badgeSize = 58;
     drawRoundedRectPath(ctx, badgeX, badgeY, badgeSize, badgeSize, 16);
     ctx.fillStyle = teamColor;
     ctx.fill();
 
-    ctx.font = '900 24px "Outfit", "Segoe UI", sans-serif';
+    ctx.font = '900 26px "Outfit", "Segoe UI", sans-serif';
     ctx.fillStyle = '#060913';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -3276,65 +3285,68 @@ function renderTeamsShareCanvas() {
     // Team Name
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-    ctx.font = '900 31px "Outfit", "Segoe UI", sans-serif';
+    ctx.font = '900 33px "Outfit", "Segoe UI", sans-serif';
     ctx.fillStyle = '#ffffff';
-    const cleanTeamName = truncateCanvasText(ctx, team.name || `Time 0${idx + 1}`, cardW - 210);
-    ctx.fillText(cleanTeamName, badgeX + badgeSize + 16, y + 54);
+    const cleanTeamName = truncateCanvasText(ctx, team.name || `Time 0${idx + 1}`, cardW - 120);
+    ctx.fillText(cleanTeamName, badgeX + badgeSize + 18, y + 58);
 
-    // Team Sub-meta (Player count + Average stars)
+    // Team Sub-meta (Apenas quantidade de integrantes, SEM media de estrelas)
     const players = Array.isArray(team.players) ? team.players : [];
-    const avgSkill =
-      players.length > 0
-        ? (players.reduce((acc, p) => acc + (Number(p.skill) || 3), 0) / players.length).toFixed(1)
-        : '—';
-    ctx.font = '700 17px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+    ctx.font = '700 18px "Plus Jakarta Sans", "Segoe UI", sans-serif';
     ctx.fillStyle = '#cbd5e1';
-    ctx.fillText(`${players.length} integrantes  •  Média ⭐ ${avgSkill}`, badgeX + badgeSize + 16, y + 80);
+    ctx.fillText(`${players.length} ${players.length === 1 ? 'integrante escalado' : 'integrantes escalados'}`, badgeX + badgeSize + 18, y + 86);
 
-    // Players List inside Card
+    // Players List inside Card (Apenas nome e posicao, SEM estrelas)
     if (players.length === 0) {
-      drawRoundedRectPath(ctx, x + 20, y + cardHeaderH, cardW - 40, playerRowH, 12);
+      drawRoundedRectPath(ctx, x + 22, y + cardHeaderH, cardW - 44, playerRowH, 14);
       ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
       ctx.fill();
-      ctx.font = '600 19px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+      ctx.font = '600 20px "Plus Jakarta Sans", "Segoe UI", sans-serif';
       ctx.fillStyle = '#64748b';
-      ctx.fillText('Nenhum jogador escalado neste time', x + 36, y + cardHeaderH + 34);
+      ctx.fillText('Nenhum jogador escalado neste time', x + 38, y + cardHeaderH + Math.round(playerRowH * 0.6));
     } else {
       players.forEach((p, pIdx) => {
-        const py = y + cardHeaderH + pIdx * (playerRowH + 10);
-        drawRoundedRectPath(ctx, x + 20, py, cardW - 40, playerRowH, 13);
-        ctx.fillStyle = 'rgba(9, 14, 28, 0.78)';
+        const py = y + cardHeaderH + pIdx * (playerRowH + rowGap);
+        drawRoundedRectPath(ctx, x + 22, py, cardW - 44, playerRowH, 14);
+        ctx.fillStyle = 'rgba(9, 14, 28, 0.82)';
         ctx.fill();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
         ctx.stroke();
 
+        const textBaselineY = py + Math.round(playerRowH * 0.61);
+
         // Number index
-        ctx.font = '800 20px "JetBrains Mono", monospace';
+        ctx.font = '800 22px "JetBrains Mono", monospace';
         ctx.fillStyle = teamColor;
-        ctx.fillText(`${pIdx + 1}.`, x + 34, py + 34);
+        ctx.fillText(`${pIdx + 1}.`, x + 38, textBaselineY);
+
+        // Role pill on the right (sem estrelas)
+        const roleShort = getRoleShortCode(p.role || 'Geral').toUpperCase();
+        ctx.font = '800 16px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+        const roleTextW = ctx.measureText(roleShort).width;
+        const pillW = Math.max(64, roleTextW + 24);
+        const pillH = 32;
+        const pillX = x + cardW - 38 - pillW;
+        const pillY = py + Math.round((playerRowH - pillH) / 2);
+
+        drawRoundedRectPath(ctx, pillX, pillY, pillW, pillH, 9);
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.stroke();
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#7dd3fc';
+        ctx.fillText(roleShort, pillX + pillW / 2, pillY + 22);
+        ctx.textAlign = 'left';
 
         // Player Name
-        ctx.font = '800 22px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+        ctx.font = '800 25px "Plus Jakarta Sans", "Segoe UI", sans-serif';
         ctx.fillStyle = '#f8fafc';
-        const pName = truncateCanvasText(ctx, p.name || 'Jogador', cardW - 245);
-        ctx.fillText(pName, x + 68, py + 34);
-
-        // Role Badge & Stars on the right
-        const roleShort = getRoleShortCode(p.role || 'Geral');
-        const starsCount = Math.max(1, Math.min(5, Number(p.skill) || 3));
-        const starsStr = '★'.repeat(starsCount);
-
-        ctx.textAlign = 'right';
-        ctx.font = '800 18px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#facc15';
-        ctx.fillText(starsStr, x + cardW - 34, py + 33);
-
-        const starsWidth = ctx.measureText(starsStr).width;
-        ctx.font = '700 15px "Plus Jakarta Sans", "Segoe UI", sans-serif';
-        ctx.fillStyle = '#7dd3fc';
-        ctx.fillText(roleShort.toUpperCase(), x + cardW - 44 - starsWidth, py + 32);
-        ctx.textAlign = 'left';
+        const pName = truncateCanvasText(ctx, p.name || 'Jogador', cardW - 130 - pillW);
+        ctx.fillText(pName, x + 76, textBaselineY);
       });
     }
 
@@ -3342,42 +3354,43 @@ function renderTeamsShareCanvas() {
   });
 
   // 4. Opening Matches Strip ("PRIMEIROS CONFRONTOS")
-  const matchesY = headerSectionH + rowsCount * cardH + (rowsCount - 1) * gap + 24;
+  const matchesY = H - 246;
   ctx.save();
-  drawRoundedRectPath(ctx, padX, matchesY, W - padX * 2, 118, 20);
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+  drawRoundedRectPath(ctx, padX, matchesY, W - padX * 2, 168, 22);
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
   ctx.fill();
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(250, 204, 21, 0.35)';
+  ctx.lineWidth = 1.8;
+  ctx.strokeStyle = 'rgba(250, 204, 21, 0.38)';
   ctx.stroke();
 
-  ctx.font = '800 17px "Plus Jakarta Sans", "Segoe UI", sans-serif';
+  ctx.font = '800 19px "Plus Jakarta Sans", "Segoe UI", sans-serif';
   ctx.fillStyle = '#facc15';
-  ctx.fillText('⚡ PRIMEIROS CONFRONTOS DA TABELA (1º MINI TORNEIO)', padX + 26, matchesY + 36);
+  ctx.fillText('PRIMEIROS CONFRONTOS DA TABELA (1º MINI TORNEIO)', padX + 30, matchesY + 42);
 
   const t1Name = teams[0]?.name || 'Time 01';
   const t2Name = teams[1]?.name || 'Time 02';
   const t3Name = teams[2]?.name || 'Time 03';
   const t4Name = teams[3]?.name || 'Time 04';
 
-  ctx.font = '800 24px "Outfit", "Segoe UI", sans-serif';
+  ctx.font = '800 26px "Outfit", "Segoe UI", sans-serif';
   ctx.fillStyle = '#ffffff';
   if (teams.length >= 4) {
-    ctx.fillText(`🏐 Jogo 1:  ${t1Name}  ×  ${t2Name}`, padX + 26, matchesY + 80);
-    ctx.fillText(`🏐 Jogo 2:  ${t3Name}  ×  ${t4Name}`, padX + 510, matchesY + 80);
+    ctx.fillText(`Jogo 1:  ${t1Name}  ×  ${t2Name}`, padX + 30, matchesY + 92);
+    ctx.fillText(`Jogo 2:  ${t3Name}  ×  ${t4Name}`, padX + 30, matchesY + 138);
   } else if (teams.length === 3) {
-    ctx.fillText(`🏐 Jogo 1:  ${t1Name}  ×  ${t2Name}   |   Espera: ${t3Name}`, padX + 26, matchesY + 80);
+    ctx.fillText(`Jogo 1:  ${t1Name}  ×  ${t2Name}`, padX + 30, matchesY + 92);
+    ctx.fillText(`Próximo na Fila:  ${t3Name}`, padX + 30, matchesY + 138);
   } else {
-    ctx.fillText(`🏐 Jogo 1:  ${t1Name}  ×  ${t2Name}`, padX + 26, matchesY + 80);
+    ctx.fillText(`Jogo 1:  ${t1Name}  ×  ${t2Name}`, padX + 30, matchesY + 106);
   }
   ctx.restore();
 
   // 5. Footer Audit Stamp
-  const footerY = H - 28;
-  ctx.font = '600 17px "JetBrains Mono", monospace';
+  const footerY = H - 34;
+  ctx.font = '600 18px "JetBrains Mono", monospace';
   ctx.fillStyle = '#64748b';
   const stampText = state.lastDrawStamp || `Gerado em ${new Date().toLocaleString('pt-BR')}`;
-  ctx.fillText(`✅ ${stampText}  •  Sala #${(state.roomCode || 'VOLEI1').toUpperCase()}`, padX + 6, footerY);
+  ctx.fillText(`${stampText}  •  Sala #${(state.roomCode || 'VOLEI1').toUpperCase()}`, padX + 6, footerY);
 
   const previewImg = document.getElementById('teams-share-preview-img');
   if (previewImg) {

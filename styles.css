@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg-deep: #060913;
   --bg-surface: rgba(15, 23, 42, 0.72);
   --bg-surface-elevated: rgba(30, 41, 59, 0.78);
@@ -5192,7 +5192,7 @@ html[data-theme="light"] #btn-soundboard-whistle-toggle.active {
 
 .teams-share-preview-img {
   width: 100%;
-  max-width: 560px;
+  max-width: 340px; aspect-ratio: 9 / 16; object-fit: contain;
   height: auto;
   border-radius: 12px;
   display: block;
