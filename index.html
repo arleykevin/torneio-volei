@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="./styles.css?v=4.20.5" />
+  <link rel="stylesheet" href="./styles.css?v=4.20.6" />
 </head>
 <body>
   <!-- Ambient Background Glows & Floating SVG Court Watermarks -->
@@ -292,6 +292,22 @@
          ========================================== -->
     <section id="tab-placar" class="tab-panel active" aria-label="Placar na Hora">
 
+      <!-- Banner de Torneio Encerrado e Gravado -->
+      <div id="tournament-closed-banner" class="tournament-closed-banner hidden">
+        <div class="tournament-closed-info">
+          <span class="closed-pill-tag">TORNEIO ENCERRADO E GRAVADO</span>
+          <span id="tournament-closed-summary-text">Todos os resultados foram gravados no histórico.</span>
+        </div>
+        <div class="tournament-closed-actions">
+          <button type="button" class="btn-primary" onclick="openFinishTournamentModal()">
+            Ver Resumo Final
+          </button>
+          <button type="button" class="chip-btn" onclick="reopenFinishedTournament()">
+            Reabrir Torneio
+          </button>
+        </div>
+      </div>
+
       <!-- Barra Compacta da Partida Atual (Fica logo acima do placar, sem poluição) -->
       <div id="live-match-banner" class="match-status-banner">
         <div class="banner-info">
@@ -300,11 +316,17 @@
           <span id="live-status-pill" class="status-indicator in-progress">⚡ AO VIVO</span>
         </div>
         <div class="banner-timer">
+          <button id="btn-start-tournament-top" class="btn-start-tournament-official" type="button" onclick="startTournamentOfficial()" title="Dar início oficial ao torneio e gravar horário de abertura">
+            Iniciar Torneio
+          </button>
           <button id="btn-start-focus-match" class="btn-start-focus-match" type="button" title="Travar tela no placar gigante até o final da partida">
             Iniciar Partida (Tela Fixa)
           </button>
           <button id="btn-fullscreen-score" class="btn-reset-games-top" type="button" title="Placar em tela cheia">
             Tela Cheia
+          </button>
+          <button id="btn-finish-tournament-top" class="btn-finish-tournament-top" type="button" onclick="openFinishTournamentModal()" title="Gravar todos os jogos e encerrar o torneio">
+            Encerrar Torneio
           </button>
           <button type="button" class="btn-reset-games-top" onclick="openResetGamesPinModal('scores_only')" title="Zerar todos os jogos e começar de novo (Protegido por senha)">
             Zerar Jogos
@@ -599,6 +621,9 @@
             </button>
             <button id="btn-generate-mini-round" class="chip-btn accent" type="button" title="Gerar automaticamente uma rodada de Vencedores x Perdedores">
               Gerar Rodada Automática
+            </button>
+            <button id="btn-jogos-finish-tournament" type="button" class="btn-finish-tournament-top" onclick="openFinishTournamentModal()" title="Gravar tudo e encerrar o torneio">
+              Encerrar Torneio
             </button>
             <button type="button" class="chip-btn danger-subtle" onclick="openResetGamesPinModal('scores_only')" title="Zerar todos os jogos e começar de novo do Jogo #1 (Pede senha)">
               Zerar Todos os Jogos
@@ -947,6 +972,9 @@
 
         <!-- Export / Share Footer -->
         <div class="standings-footer-actions">
+          <button id="btn-ranking-finish-tournament" type="button" class="btn-finish-tournament-top" onclick="openFinishTournamentModal()">
+            Encerrar Torneio
+          </button>
           <button id="btn-copy-standings-wa" class="btn-primary" type="button">
             Copiar Resumo para WhatsApp
           </button>
@@ -1457,11 +1485,55 @@
     </div>
   </div>
 
+  <!-- ==========================================
+       MODAL: ENCERRAR TORNEIO & GRAVAR RESUMO FINAL
+       ========================================== -->
+  <div id="modal-finish-tournament" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-finish-tournament-title">
+    <div class="modal-card modal-wide">
+      <div class="modal-header">
+        <div>
+          <span id="modal-finish-eyebrow" class="eyebrow-tag">FECHAMENTO OFICIAL DA SESSÃO</span>
+          <h3 id="modal-finish-tournament-title" class="modal-title">Encerrar Torneio e Gravar Resultados</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-finish-tournament" type="button" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="finish-tournament-summary-box" class="finish-tournament-summary-box"></div>
+
+        <div class="finish-tournament-actions-grid" style="margin-top:14px;">
+          <button id="btn-confirm-finish-tournament" class="btn-finish-confirm-main full-width" type="button" onclick="confirmFinishAndSaveTournament()">
+            Gravar Tudo e Encerrar Torneio
+          </button>
+          <button id="btn-reopen-tournament-modal" class="chip-btn full-width hidden" type="button" onclick="reopenFinishedTournament()">
+            Reabrir Torneio para Continuar Jogando
+          </button>
+        </div>
+
+        <div class="finish-export-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:12px;">
+          <button type="button" class="btn-primary" onclick="copyTextToClipboard(generateWhatsAppSummary(), 'Resumo final copiado para o WhatsApp!')">
+            Copiar Resumo WhatsApp
+          </button>
+          <button type="button" class="chip-btn" onclick="exportTournamentCSV()">
+            Baixar Planilha CSV
+          </button>
+          <button type="button" class="chip-btn" onclick="goToLobbyScreen()">
+            Ir para o Painel Principal
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="chip-btn" data-close-modal="modal-finish-tournament" type="button">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
   <!-- Multi-Device Real-Time WebSocket MQTT Engine (Paho MQTT) -->
   <script src="./paho-mqtt.min.js"></script>
-  <script src="./volei-ui.js?v=4.20.5"></script>
+  <script src="./volei-ui.js?v=4.20.6"></script>
 </body>
 </html>

@@ -421,6 +421,11 @@ function createDefaultState(customName = 'TORNEIO DE VÔLEI', customDate = null)
     scoringMode: 'wins_count',
     lastDrawStamp: null,
     sessionStartTime: Date.now(),
+    tournamentStatus: 'ready', // 'ready' | 'in_progress' | 'finished'
+    tournamentStartedAt: null,
+    tournamentFinishedAt: null,
+    finishedAtMs: 0,
+    reopenedAt: 0,
     teams,
     waitingQueue: ['t3', 't4'],
     courtStreakTeamId: null,
@@ -805,6 +810,11 @@ function buildCompactSyncPayload() {
     winByTwo: state.winByTwo,
     scoringMode: state.scoringMode,
     lastDrawStamp: state.lastDrawStamp,
+    tournamentStatus: state.tournamentStatus || 'ready',
+    tournamentStartedAt: state.tournamentStartedAt || null,
+    tournamentFinishedAt: state.tournamentFinishedAt || null,
+    finishedAtMs: state.finishedAtMs || 0,
+    reopenedAt: state.reopenedAt || 0,
     teams: state.teams,
     waitingQueue: state.waitingQueue,
     courtStreakTeamId: state.courtStreakTeamId,
@@ -827,9 +837,25 @@ function applyIncomingRoomState(incoming) {
   const inProg = computeStateProgressScore(incoming);
   const wasExplicitReset = Boolean(incoming.explicitResetAt && incoming.explicitResetAt > (state.updatedAtMs || 0));
 
-  // PROTEÇÃO ANTI-RESET: Se este aparelho tem jogos/pontos/times e o outro aparelho enviou 0x0 vazio (ex: PC abriu aba antiga),
+  // Se o torneio já foi ENCERRADO e gravado neste aparelho, não deixa outro aparelho reabri-lo ou sobrescrevê-lo sem ação explícita
+  if (
+    state.tournamentStatus === 'finished' &&
+    incoming.tournamentStatus !== 'finished' &&
+    !(incoming.reopenedAt && incoming.reopenedAt > (state.finishedAtMs || 0)) &&
+    !wasExplicitReset
+  ) {
+    scheduleCloudAndLocalRoomPush();
+    return false;
+  }
+
+  // PROTEÇÃO ANTI-RESET: Se este aparelho tem mais jogos concluídos (ou pontos) que o estado recebido sem reset explícito,
   // bloqueia a sobrescrita e reenvia nosso placar real para a sala!
-  if (localProg > 0 && inProg === 0 && !wasExplicitReset) {
+  const localDoneCount = (state.matches || []).filter((m) => m.status === 'done').length;
+  const inDoneCount = (incoming.matches || []).filter((m) => m.status === 'done').length;
+  if (
+    ((localProg > 0 && inProg === 0) || (localDoneCount > inDoneCount && inDoneCount === 0)) &&
+    !wasExplicitReset
+  ) {
     scheduleCloudAndLocalRoomPush();
     return false;
   }
@@ -1904,12 +1930,190 @@ function generateNextMatchesAfterFinish(finishedMatch) {
    MODO PARTIDA FIXA (TELA TRAVADA) & HISTÓRICO DE SESSÕES
    ========================================== */
 function isCourtTouchBlocked() {
+  if (state.tournamentStatus === 'finished') {
+    showToast(
+      '🏁 <strong>Torneio Encerrado e Gravado!</strong> Toque em "Reabrir Torneio" se quiser continuar jogando.',
+      'warn'
+    );
+    return true;
+  }
   if (courtTouchLocked) {
     showToast('🔒 <strong>Placar Travado!</strong> Toque em "🔓 Destravar" no topo para alterar os pontos.', 'warn');
     return true;
   }
   return false;
 }
+
+window.startTournamentOfficial = function () {
+  const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  state.tournamentStatus = 'in_progress';
+  if (!state.tournamentStartedAt) {
+    state.tournamentStartedAt = nowStr;
+    state.sessionStartTime = Date.now();
+  }
+  state.tournamentFinishedAt = null;
+  state.reopenedAt = Date.now();
+  state.sessionSetupConfirmed = true;
+  state.userCreated = true;
+
+  if (!timerRunning) {
+    document.getElementById('btn-timer-toggle')?.click();
+  }
+  playSound('whistle_short');
+  flushStorageAndArchiveNow();
+  saveState(true);
+  if (typeof pushRoomStateNow === 'function') pushRoomStateNow(false);
+  renderAll();
+  showToast(
+    `🏐 <strong>Torneio Iniciado às ${nowStr}!</strong> Todos os jogos e placares estão sendo gravados automaticamente.`,
+    'success'
+  );
+};
+
+function renderFinishTournamentModalContent() {
+  const box = document.getElementById('finish-tournament-summary-box');
+  if (!box) return;
+
+  const rows = computeStandings();
+  const doneMatches = (state.matches || []).filter((m) => m.status === 'done');
+  const liveMatches = (state.matches || []).filter(
+    (m) => m.status !== 'done' && ((m.scoreA || 0) > 0 || (m.scoreB || 0) > 0)
+  );
+  const isFinished = state.tournamentStatus === 'finished';
+  const champion = rows[0] && doneMatches.length > 0 ? rows[0] : null;
+
+  const confirmBtn = document.getElementById('btn-confirm-finish-tournament');
+  const reopenBtn = document.getElementById('btn-reopen-tournament-modal');
+  const titleEl = document.getElementById('modal-finish-tournament-title');
+  const eyebrowEl = document.getElementById('modal-finish-eyebrow');
+
+  if (confirmBtn) confirmBtn.classList.toggle('hidden', isFinished);
+  if (reopenBtn) reopenBtn.classList.toggle('hidden', !isFinished);
+  if (titleEl) {
+    titleEl.textContent = isFinished
+      ? 'Torneio Encerrado e Gravado com Sucesso'
+      : 'Encerrar Torneio e Gravar Resultados';
+  }
+  if (eyebrowEl) {
+    eyebrowEl.textContent = isFinished ? 'HISTÓRICO OFICIAL GRAVADO' : 'FECHAMENTO OFICIAL DA SESSÃO';
+  }
+
+  const warningLiveHtml =
+    !isFinished && liveMatches.length > 0
+      ? `<div style="margin-bottom:10px;padding:9px 12px;border-radius:10px;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.4);font-size:0.8rem;color:#fde68a;">
+           Atenção: O <strong>Jogo #${liveMatches[0].id}</strong> está em andamento (${liveMatches[0].scoreA} × ${liveMatches[0].scoreB}). Ao confirmar o encerramento, se ele não estiver empatado, o resultado atual também será contabilizado.
+         </div>`
+      : '';
+
+  const standingsRowsHtml = rows
+    .map((r, i) => {
+      const posLabel = i === 0 ? '1º Campeão' : `${i + 1}º Lugar`;
+      const diffStr = r.diff >= 0 ? `+${r.diff}` : `${r.diff}`;
+      return `
+        <div class="finish-standing-item ${i === 0 && doneMatches.length > 0 ? 'champion-row' : ''}">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="finish-pos-badge">${posLabel}</span>
+            <span class="team-mini-dot" style="background:${r.color};width:10px;height:10px;border-radius:50%;display:inline-block;"></span>
+            <strong>${escapeHtml(r.name)}</strong>
+          </div>
+          <div style="font-size:0.82rem;color:var(--text-secondary);font-weight:700;">
+            ${r.wins}V - ${r.losses}D &nbsp;•&nbsp; ${r.played}J &nbsp;•&nbsp; Saldo: ${diffStr}
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  box.innerHTML = `
+    ${warningLiveHtml}
+    <div class="finish-meta-header">
+      <div>
+        <strong style="font-size:1.02rem;color:#fff;">${escapeHtml(state.tournamentName)}</strong>
+        <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">
+          Data: <strong>${escapeHtml(formatDateBr(state.tournamentDate))}</strong> &nbsp;•&nbsp;
+          Sala: <strong>#${escapeHtml((state.roomCode || 'VOLEI1').toUpperCase())}</strong> &nbsp;•&nbsp;
+          Jogos Concluídos: <strong>${doneMatches.length}</strong>
+          ${state.tournamentStartedAt ? ` &nbsp;•&nbsp; Início: <strong>${escapeHtml(state.tournamentStartedAt)}</strong>` : ''}
+          ${state.tournamentFinishedAt ? ` &nbsp;•&nbsp; Fim: <strong>${escapeHtml(state.tournamentFinishedAt)}</strong>` : ''}
+        </div>
+      </div>
+      ${
+        champion
+          ? `<div class="finish-champion-pill">Campeão: <strong>${escapeHtml(champion.name)}</strong> (${champion.wins}V)</div>`
+          : ''
+      }
+    </div>
+    <div class="finish-standings-list">
+      ${standingsRowsHtml}
+    </div>
+  `;
+}
+
+window.openFinishTournamentModal = function () {
+  if (courtFocusMode && typeof window.exitCourtFocusMode === 'function') {
+    window.exitCourtFocusMode();
+  }
+  renderFinishTournamentModalContent();
+  document.getElementById('modal-finish-tournament')?.classList.remove('hidden');
+};
+
+window.confirmFinishAndSaveTournament = function () {
+  // Se houver uma partida em andamento com placar desempatado, finaliza e contabiliza antes de encerrar o torneio
+  const currentMatch = getCurrentLiveMatch();
+  if (
+    currentMatch &&
+    currentMatch.status !== 'done' &&
+    ((currentMatch.scoreA || 0) > 0 || (currentMatch.scoreB || 0) > 0) &&
+    currentMatch.scoreA !== currentMatch.scoreB
+  ) {
+    const aWon = currentMatch.scoreA > currentMatch.scoreB;
+    currentMatch.winnerId = aWon ? currentMatch.teamAId : currentMatch.teamBId;
+    currentMatch.loserId = aWon ? currentMatch.teamBId : currentMatch.teamAId;
+    currentMatch.status = 'done';
+    currentMatch.finishedAt = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Para o cronômetro se estiver rodando
+  if (timerRunning) {
+    const toggleBtn = document.getElementById('btn-timer-toggle');
+    if (toggleBtn) toggleBtn.click();
+  }
+
+  const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  state.tournamentStatus = 'finished';
+  state.tournamentFinishedAt = nowStr;
+  state.finishedAtMs = Date.now();
+  state.sessionSetupConfirmed = true;
+  state.userCreated = true;
+
+  saveProtectedProgressBackup(state);
+  flushStorageAndArchiveNow();
+  saveState(true);
+  if (typeof pushRoomStateNow === 'function') pushRoomStateNow(false);
+  if (typeof pushTournamentsHubSync === 'function') pushTournamentsHubSync();
+
+  playSound('victory');
+  launchConfetti();
+  renderAll();
+  renderFinishTournamentModalContent();
+  showToast(
+    `🏆 <strong>Torneio Encerrado às ${nowStr}!</strong> Todos os jogos e a classificação foram gravados com segurança!`,
+    'success'
+  );
+};
+
+window.reopenFinishedTournament = function () {
+  state.tournamentStatus = 'in_progress';
+  state.tournamentFinishedAt = null;
+  state.reopenedAt = Date.now();
+  flushStorageAndArchiveNow();
+  saveState(true);
+  if (typeof pushRoomStateNow === 'function') pushRoomStateNow(false);
+  renderAll();
+  renderFinishTournamentModalContent();
+  document.getElementById('modal-finish-tournament')?.classList.add('hidden');
+  showToast('🔓 <strong>Torneio Reaberto!</strong> Você pode continuar marcando pontos e jogos.', 'info');
+};
 
 async function requestScreenWakeLock() {
   try {
@@ -2157,8 +2361,16 @@ function renderLobbyFeed() {
         <article class="tournament-feed-card ${isCurrent ? 'active-feed-card' : ''}">
           <div class="feed-card-header">
             <div class="feed-card-eyebrow">
-              <span class="feed-live-dot ${isCurrent ? 'pulse' : ''}"></span>
-              <span class="feed-status-text">${isCurrent ? 'EM ANDAMENTO AGORA' : (doneGames === totalGames && totalGames > 0 ? 'CONCLUÍDO' : 'GUARDADO')}</span>
+              <span class="feed-live-dot ${isCurrent && sess.tournamentStatus !== 'finished' ? 'pulse' : ''}"></span>
+              <span class="feed-status-text">${
+                sess.tournamentStatus === 'finished'
+                  ? `TORNEIO ENCERRADO${sess.tournamentFinishedAt ? ` (${escapeHtml(sess.tournamentFinishedAt)})` : ''}`
+                  : isCurrent
+                  ? 'EM ANDAMENTO AGORA'
+                  : doneGames === totalGames && totalGames > 0
+                  ? 'CONCLUÍDO'
+                  : 'GUARDADO'
+              }</span>
               <span class="feed-room-badge">#${escapeHtml(roomTag)}</span>
               <span class="feed-date-badge">📅 ${escapeHtml(dateFormatted)}</span>
             </div>
@@ -2384,6 +2596,13 @@ function addPointToSide(sideKey) {
   if (isCourtTouchBlocked()) return;
   const match = getCurrentLiveMatch();
   if (!match) return;
+
+  if (!state.tournamentStatus || state.tournamentStatus === 'ready') {
+    state.tournamentStatus = 'in_progress';
+    if (!state.tournamentStartedAt) {
+      state.tournamentStartedAt = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
 
   const logicalTeam = state.swappedSides
     ? sideKey === 'left'
@@ -2851,7 +3070,45 @@ function renderLiveScoreboard() {
   }
 
   const statusPill = document.getElementById('live-status-pill');
-  if (match.status === 'done') {
+  const closedBanner = document.getElementById('tournament-closed-banner');
+  const closedSummaryText = document.getElementById('tournament-closed-summary-text');
+  const startTournamentBtn = document.getElementById('btn-start-tournament-top');
+  const finishTournamentBtn = document.getElementById('btn-finish-tournament-top');
+  const jogosFinishBtn = document.getElementById('btn-jogos-finish-tournament');
+  const rankingFinishBtn = document.getElementById('btn-ranking-finish-tournament');
+
+  const isTournamentFinished = state.tournamentStatus === 'finished';
+  const hasAnyScoreOrDone = state.matches.some(
+    (m) => m.status === 'done' || (m.scoreA || 0) > 0 || (m.scoreB || 0) > 0
+  );
+  const isTournamentStarted = state.tournamentStatus === 'in_progress' || hasAnyScoreOrDone;
+
+  if (closedBanner) {
+    closedBanner.classList.toggle('hidden', !isTournamentFinished);
+    if (isTournamentFinished && closedSummaryText) {
+      const doneGamesCount = state.matches.filter((m) => m.status === 'done').length;
+      const finTime = state.tournamentFinishedAt ? ` às ${state.tournamentFinishedAt}` : '';
+      closedSummaryText.innerHTML = `Encerrado${finTime} • <strong>${doneGamesCount} partidas concluídas</strong> e salvas com segurança.`;
+    }
+  }
+
+  if (startTournamentBtn) {
+    startTournamentBtn.classList.toggle('hidden', isTournamentStarted || isTournamentFinished);
+  }
+  if (finishTournamentBtn) {
+    finishTournamentBtn.textContent = isTournamentFinished ? 'Ver Resumo Final' : 'Encerrar Torneio';
+  }
+  if (jogosFinishBtn) {
+    jogosFinishBtn.textContent = isTournamentFinished ? 'Ver Resumo Final' : 'Encerrar Torneio';
+  }
+  if (rankingFinishBtn) {
+    rankingFinishBtn.textContent = isTournamentFinished ? 'Ver Resumo Final' : 'Encerrar Torneio';
+  }
+
+  if (isTournamentFinished) {
+    statusPill.className = 'status-indicator finished';
+    statusPill.textContent = `🏁 TORNEIO ENCERRADO${state.tournamentFinishedAt ? ` ÀS ${state.tournamentFinishedAt}` : ''}`;
+  } else if (match.status === 'done') {
     const winnerObj = getTeamById(match.winnerId);
     statusPill.className = 'status-indicator finished';
     statusPill.textContent = `✅ ENCERRADO • VENCEDOR: ${winnerObj ? winnerObj.name : ''}`;
