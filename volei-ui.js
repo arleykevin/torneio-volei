@@ -153,11 +153,83 @@ const SAVED_SESSIONS_KEY = 'volei_saved_sessions_v3';
 const DELETED_SESSIONS_KEY = 'volei_deleted_sessions_v3';
 const HUB_TOURNAMENTS_TOPIC = 'volei_arena/hub/tournaments_v3';
 const MASTER_ROSTER_KEY = 'volei_master_roster_v1';
+const PROTECTED_BACKUP_KEY = 'volei_protected_progress_backup_v1';
 
-// Limpeza imediata das chaves antigas v1/v2 que continham "VÔLEI INTERNO" fantasma
+// Calcula o progresso real de um torneio (jogos concluídos, pontos marcados, jogadores escalados)
+// Usado para IMPEDIR que uma aba/PC zerado (0x0) sobrescreva um torneio em andamento ou concluído!
+function computeStateProgressScore(st) {
+  if (!st) return 0;
+  const matches = Array.isArray(st.matches) ? st.matches : [];
+  const teams = Array.isArray(st.teams) ? st.teams : [];
+  let doneCount = 0;
+  let totalPts = 0;
+  let historySteps = 0;
+  matches.forEach((m) => {
+    if (!m) return;
+    if (m.status === 'done' || m.winnerId) doneCount += 1;
+    totalPts += (Number(m.scoreA) || 0) + (Number(m.scoreB) || 0);
+    if (Array.isArray(m.history)) historySteps += m.history.length;
+  });
+  let assignedPlayers = 0;
+  teams.forEach((t) => {
+    if (t && Array.isArray(t.players)) assignedPlayers += t.players.length;
+  });
+  const extraMatches = Math.max(0, matches.length - 4);
+  return doneCount * 100000 + extraMatches * 10000 + totalPts * 100 + historySteps * 10 + assignedPlayers;
+}
+
+function saveProtectedProgressBackup(st) {
+  try {
+    if (!st || computeStateProgressScore(st) <= 0) return;
+    const raw = localStorage.getItem(PROTECTED_BACKUP_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    const key = st.sessionId || st.roomCode || 'default';
+    const existing = map[key];
+    if (!existing || computeStateProgressScore(st) >= computeStateProgressScore(existing)) {
+      map[key] = JSON.parse(JSON.stringify(st));
+      map.__latest = JSON.parse(JSON.stringify(st));
+      localStorage.setItem(PROTECTED_BACKUP_KEY, JSON.stringify(map));
+    }
+  } catch (_) {}
+}
+
+// Migra torneios reais (ex: "VÔLEI DOMINGO" com pontos/jogos) das chaves antigas v1/v2 antes de descartar os "VÔLEI INTERNO" fantasmas
 try {
-  localStorage.removeItem('volei_saved_sessions_v1');
-  localStorage.removeItem('volei_saved_sessions_v2');
+  const existingV3Raw = localStorage.getItem(SAVED_SESSIONS_KEY);
+  const v3List = existingV3Raw ? JSON.parse(existingV3Raw) : [];
+  const v3Map = new Map();
+  if (Array.isArray(v3List)) {
+    v3List.forEach((s) => {
+      if (s && s.sessionId) v3Map.set(s.sessionId, s);
+    });
+  }
+  ['volei_saved_sessions_v1', 'volei_saved_sessions_v2'].forEach((oldKey) => {
+    const oldRaw = localStorage.getItem(oldKey);
+    if (!oldRaw) return;
+    try {
+      const oldArr = JSON.parse(oldRaw);
+      if (Array.isArray(oldArr)) {
+        oldArr.forEach((s) => {
+          if (!s || !s.sessionId) return;
+          const tName = String(s.tournamentName || '').trim().toUpperCase();
+          const isReal = tName !== 'VÔLEI INTERNO' && tName !== 'MEU TORNEIO' && tName !== 'TORNEIO DE VÔLEI';
+          const prog = computeStateProgressScore(s);
+          if (isReal || prog > 0) {
+            s.userCreated = true;
+            saveProtectedProgressBackup(s);
+            const cur = v3Map.get(s.sessionId);
+            if (!cur || prog > computeStateProgressScore(cur)) {
+              v3Map.set(s.sessionId, s);
+            }
+          }
+        });
+      }
+    } catch (_) {}
+    localStorage.removeItem(oldKey);
+  });
+  if (v3Map.size > 0) {
+    localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(Array.from(v3Map.values())));
+  }
 } catch (_) {}
 
 // Elenco comeca vazio: apenas jogadores cadastrados na aba Elenco existem no app
@@ -193,6 +265,26 @@ function reconcileMasterRosterEverywhere(targetState) {
       absentToday: mp.absentToday === true
     });
   });
+  // Se ja existem jogadores escalados nos times (ex: recebidos via sincronizacao) que ainda nao estavam no masterRoster local, preserva-os no masterRoster para NUNCA esvaziar os times sorteados
+  if (Array.isArray(st.teams)) {
+    st.teams.forEach((team) => {
+      if (!team || !Array.isArray(team.players)) return;
+      team.players.forEach((p, idx) => {
+        if (!p || !p.name) return;
+        const trimmedName = String(p.name).trim();
+        const key = normalizePlayerKey(trimmedName);
+        if (!key || seenRosterKeys.has(key)) return;
+        seenRosterKeys.add(key);
+        cleanRoster.push({
+          id: p.masterId || `mr_${Date.now()}_t_${idx}`,
+          name: trimmedName,
+          role: p.role || "Geral",
+          skill: Math.max(1, Math.min(5, Number(p.skill) || 3)),
+          absentToday: false
+        });
+      });
+    });
+  }
   st.masterRoster = cleanRoster;
 
   const byId = new Map();
@@ -462,6 +554,23 @@ function loadState() {
       finalState.tournamentDate = getTodayDateIso();
     }
     if (urlRoom) finalState.roomCode = urlRoom.toUpperCase();
+    // Se o estado carregado estiver 0x0 mas existir um backup protegido deste mesmo torneio com pontos/jogos, restaura automaticamente
+    if (computeStateProgressScore(finalState) === 0) {
+      try {
+        const bRaw = localStorage.getItem(PROTECTED_BACKUP_KEY);
+        const bMap = bRaw ? JSON.parse(bRaw) : {};
+        const candidate = bMap[finalState.sessionId] || bMap[finalState.roomCode];
+        if (
+          candidate &&
+          computeStateProgressScore(candidate) > 0 &&
+          !(finalState.explicitResetAt && finalState.explicitResetAt > (candidate.updatedAtMs || 0))
+        ) {
+          Object.assign(finalState, candidate);
+        }
+      } catch (_) {}
+    } else {
+      saveProtectedProgressBackup(finalState);
+    }
     reconcileMasterRosterEverywhere(finalState);
     return finalState;
   } catch (e) {
@@ -537,6 +646,12 @@ function upsertCurrentSessionInArchive() {
     const idx = list.findIndex((item) => item.sessionId === state.sessionId);
     const snapshot = JSON.parse(JSON.stringify(state));
     if (idx >= 0) {
+      const existingProg = computeStateProgressScore(list[idx]);
+      const currentProg = computeStateProgressScore(snapshot);
+      // Nunca permite que um estado 0x0 sem reset explícito apague um torneio salvo que já tinha jogos/pontos
+      if (existingProg > 0 && currentProg === 0 && !(snapshot.explicitResetAt && snapshot.explicitResetAt > (list[idx].updatedAtMs || 0))) {
+        return;
+      }
       list[idx] = snapshot;
     } else {
       list.unshift(snapshot);
@@ -544,6 +659,7 @@ function upsertCurrentSessionInArchive() {
     // Keep up to 35 saved sessions sorted newest updated first
     list.sort((a, b) => (b.updatedAtMs || 0) - (a.updatedAtMs || 0));
     localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(list.slice(0, 35)));
+    saveProtectedProgressBackup(snapshot);
   } catch (_) {}
 }
 
@@ -665,6 +781,7 @@ function buildCompactSyncPayload() {
     senderTabTime: Date.now(),
     sessionId: state.sessionId,
     userCreated: state.userCreated === true,
+    explicitResetAt: state.explicitResetAt || 0,
     tournamentName: state.tournamentName,
     tournamentDate: state.tournamentDate,
     roomCode: state.roomCode,
@@ -691,7 +808,20 @@ function applyIncomingRoomState(incoming) {
   if (!state.sessionSetupConfirmed) return false;
   if (isGhostSession(incoming)) return false;
   if (isSessionDeleted(incoming.sessionId, incoming.senderTabTime || incoming.updatedAtMs || 0)) return false;
-  if (incoming.senderTabTime && state.updatedAtMs && incoming.senderTabTime <= state.updatedAtMs) {
+
+  const localProg = computeStateProgressScore(state);
+  const inProg = computeStateProgressScore(incoming);
+  const wasExplicitReset = Boolean(incoming.explicitResetAt && incoming.explicitResetAt > (state.updatedAtMs || 0));
+
+  // PROTEÇÃO ANTI-RESET: Se este aparelho tem jogos/pontos/times e o outro aparelho enviou 0x0 vazio (ex: PC abriu aba antiga),
+  // bloqueia a sobrescrita e reenvia nosso placar real para a sala!
+  if (localProg > 0 && inProg === 0 && !wasExplicitReset) {
+    scheduleCloudAndLocalRoomPush();
+    return false;
+  }
+
+  // Só ignora por timestamp se o estado recebido NÃO tiver mais jogos/pontos concluídos que o estado local
+  if (inProg <= localProg && incoming.senderTabTime && state.updatedAtMs && incoming.senderTabTime <= state.updatedAtMs) {
     return false;
   }
   state = {
@@ -703,6 +833,7 @@ function applyIncomingRoomState(incoming) {
     lastSavedAt: new Date().toLocaleTimeString('pt-BR')
   };
   reconcileMasterRosterEverywhere(state);
+  saveProtectedProgressBackup(state);
   saveState(false);
   renderAll();
   return true;
@@ -900,7 +1031,15 @@ function applyIncomingHubTournaments(payload) {
     } else {
       const incomingStamp = incomingSess.updatedAtMs || 0;
       const existingStamp = existing.updatedAtMs || 0;
-      if (incomingStamp > existingStamp) {
+      const inProg = computeStateProgressScore(incomingSess);
+      const exProg = computeStateProgressScore(existing);
+      const wasExplicitReset = Boolean(incomingSess.explicitResetAt && incomingSess.explicitResetAt > existingStamp);
+
+      // Nunca deixa uma sessao 0x0 (sem pontos/jogos) sobrescrever uma sessao que ja tinha jogos/pontos!
+      if (exProg > 0 && inProg === 0 && !wasExplicitReset) {
+        return;
+      }
+      if (inProg > exProg || incomingStamp > existingStamp) {
         sessionMap[incomingSess.sessionId] = incomingSess;
         hasChanges = true;
       }
@@ -914,8 +1053,12 @@ function applyIncomingHubTournaments(payload) {
     // Se a sessão aberta no momento foi atualizada na nuvem, atualiza na tela
     if (state.sessionId && sessionMap[state.sessionId]) {
       const updatedSess = sessionMap[state.sessionId];
-      if ((updatedSess.updatedAtMs || 0) > (state.updatedAtMs || 0)) {
+      const uProg = computeStateProgressScore(updatedSess);
+      const lProg = computeStateProgressScore(state);
+      const wasExplicit = Boolean(updatedSess.explicitResetAt && updatedSess.explicitResetAt > (state.updatedAtMs || 0));
+      if (!(lProg > 0 && uProg === 0 && !wasExplicit) && (uProg > lProg || (updatedSess.updatedAtMs || 0) > (state.updatedAtMs || 0))) {
         state = { ...state, ...updatedSess };
+        saveProtectedProgressBackup(state);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         renderAll();
       }
@@ -1058,13 +1201,14 @@ function initPahoMqtt(roomCode, showToastFeedback = false) {
         sendPresencePing('ping');
         pruneAndRenderPresence();
 
-        // Push local tournaments to hub ONLY if we have valid user-created sessions
-        if (getSavedSessionsList().length > 0) {
+        // Push local tournaments to hub ONLY if we have valid user-created sessions with actual progress
+        const savedList = getSavedSessionsList();
+        if (savedList.some((s) => computeStateProgressScore(s) > 0)) {
           pushTournamentsHubSync();
         }
 
-        // Push room state ONLY if user is inside an active confirmed tournament
-        if (state.sessionSetupConfirmed && state.userCreated && state.teams && state.teams.length > 0) {
+        // Push room state ONLY if user is inside an active confirmed tournament that has points/games/players
+        if (state.sessionSetupConfirmed && state.userCreated && computeStateProgressScore(state) > 0) {
           pushRoomStateNow(false);
         }
 
@@ -1786,7 +1930,12 @@ window.joinRoomFromLobby = function () {
   state.roomCode = code;
   state.sessionSetupConfirmed = true;
   state.userCreated = true;
-  saveState(false);
+  if (computeStateProgressScore(state) === 0) {
+    state.updatedAtMs = 0;
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (_) {}
   showTournamentScreen();
   initPahoMqtt(code, true);
 };
@@ -2064,8 +2213,21 @@ window.openTournamentSession = function (sessionId) {
   const target = list.find((s) => s.sessionId === sessionId);
   if (!target) return;
 
-  state = { ...createDefaultState(), ...target, sessionSetupConfirmed: true, userCreated: true };
-  saveState(true);
+  const hasProgress = computeStateProgressScore(target) > 0;
+  state = {
+    ...createDefaultState(),
+    ...target,
+    sessionSetupConfirmed: true,
+    userCreated: true,
+    updatedAtMs: hasProgress ? (target.updatedAtMs || Date.now()) : 0
+  };
+  if (hasProgress) {
+    saveState(true);
+  } else {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (_) {}
+  }
   showTournamentScreen();
   initPahoMqtt(state.roomCode || 'VOLEI1', true);
   showToast(
@@ -4684,7 +4846,9 @@ document.addEventListener('DOMContentLoaded', () => {
       state.activeTab = btn.dataset.tab;
       renderHeaderAndNav();
       renderActiveTab();
-      saveState(false, true);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (_) {}
     });
   });
 
@@ -5671,12 +5835,14 @@ document.addEventListener('DOMContentLoaded', () => {
       state = createDefaultState(preservedName, preservedDate);
       state.sessionSetupConfirmed = true;
       state.userCreated = true;
+      state.explicitResetAt = Date.now();
       showToast('✅ Senha confirmada! Tudo foi reiniciado do zero no Jogo #1!', 'success');
     } else {
       state.matches = createMiniTorneioBlock(1, 1, state.teams);
       state.liveMatchId = 1;
       state.courtStreakCount = 0;
       state.courtStreakTeamId = null;
+      state.explicitResetAt = Date.now();
       syncWaitingQueueWithCurrentMatch();
       showToast('✅ Senha confirmada! Todos os jogos foram zerados e recomeçaram do Jogo #1!', 'success');
     }
