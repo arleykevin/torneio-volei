@@ -1748,13 +1748,13 @@ function syncMiniTorneioBrackets() {
       (!m.history || m.history.length === 0) &&
       !m.customTeamsLocked
     ) {
-      const pairings = getMiniTorneioOpeningPairings(miniIdx, state.teams);
+      const [openA1, openB1, openA2, openB2] = getMiniTorneioOpeningPairings(miniIdx, state.teams);
       if (slot === 1) {
-        m.teamAId = pairings.j1[0];
-        m.teamBId = pairings.j1[1];
+        m.teamAId = openA1;
+        m.teamBId = openB1;
       } else {
-        m.teamAId = pairings.j2[0];
-        m.teamBId = pairings.j2[1];
+        m.teamAId = openA2;
+        m.teamBId = openB2;
       }
     }
 
