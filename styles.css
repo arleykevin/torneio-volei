@@ -4122,7 +4122,19 @@ body.court-locked .serve-badge {
     text-align: center;
   }
 
-  body.court-focus-mode .score-giant-number {
+  body.court-focus-mode .match-alert-bar:not(.victory) {
+  display: none !important;
+}
+
+body.court-focus-mode .match-alert-bar.victory {
+  padding: 6px 10px !important;
+  margin-bottom: 6px !important;
+  font-size: 0.78rem !important;
+  flex-shrink: 0 !important;
+  gap: 8px !important;
+}
+
+body.court-focus-mode .score-giant-number {
     font-size: clamp(6.4rem, 25vw, 9.2rem);
   }
 }
@@ -6684,6 +6696,18 @@ body.focus-audios-open .focus-soundboard-header {
   cursor: pointer;
 }
 
+body.court-focus-mode .match-alert-bar:not(.victory) {
+  display: none !important;
+}
+
+body.court-focus-mode .match-alert-bar.victory {
+  padding: 6px 10px !important;
+  margin-bottom: 6px !important;
+  font-size: 0.78rem !important;
+  flex-shrink: 0 !important;
+  gap: 8px !important;
+}
+
 body.court-focus-mode .score-giant-number {
   font-size: clamp(8rem, 22vw, 15rem) !important;
   line-height: 0.84 !important;
@@ -6763,7 +6787,19 @@ body.court-focus-mode .score-giant-number {
     padding: 2px 0 !important;
   }
 
-  body.court-focus-mode .score-giant-number {
+  body.court-focus-mode .match-alert-bar:not(.victory) {
+  display: none !important;
+}
+
+body.court-focus-mode .match-alert-bar.victory {
+  padding: 6px 10px !important;
+  margin-bottom: 6px !important;
+  font-size: 0.78rem !important;
+  flex-shrink: 0 !important;
+  gap: 8px !important;
+}
+
+body.court-focus-mode .score-giant-number {
     font-size: clamp(5.8rem, 19vh, 8.8rem) !important;
     line-height: 0.82 !important;
     margin: 0 !important;
